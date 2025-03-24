@@ -24,12 +24,12 @@ class AuthViewModel(private val remoteUserDataSource: RemoteUserDataSource) : Vi
 
     fun onAction(action: AuthAction) {
         when (action) {
-            is AuthAction.OnRegister -> register(action.email, action.password, action.confirmPassword)
+            is AuthAction.OnRegister -> register(action.email, action.username, action.password, action.confirmPassword)
             is AuthAction.OnLogin -> login(action.email, action.password)
         }
     }
 
-    private fun register(username: String, password: String, confirmPassword: String) {
+    private fun register(email: String, username: String, password: String, confirmPassword: String) {
         viewModelScope.launch {
             setIsLoading(true)
             if (password != confirmPassword) {
@@ -39,10 +39,10 @@ class AuthViewModel(private val remoteUserDataSource: RemoteUserDataSource) : Vi
                     )
                 }
             } else {
-                if (username.isNotEmpty() && password.isNotEmpty()) {
+                if (email.isNotEmpty() && username.isNotEmpty() && password.isNotEmpty()) {
                     remoteUserDataSource.register(
                         username,
-                        ("$username@mail.com"),
+                        email,
                         password,
                         "123"
                     )
@@ -60,16 +60,22 @@ class AuthViewModel(private val remoteUserDataSource: RemoteUserDataSource) : Vi
         }
     }
 
-    private fun login(username: String, password: String) {
+    private fun login(email: String, password: String) {
         viewModelScope.launch {
-            remoteUserDataSource.login(username, password)
-                .onError {
-                    setResultMessage(it.toString())
-                }
-                .onSuccess {
-                    setIsAuthenticated(true)
-                    setResultMessage(it.toString())
-                }
+            setIsLoading(true)
+            if (email.isNotEmpty() && password.isNotEmpty()) {
+                remoteUserDataSource.login(email, password)
+                    .onError {
+                        setResultMessage(it.toString())
+                    }
+                    .onSuccess {
+                        setIsAuthenticated(true)
+                        setResultMessage(it.toString())
+                    }
+            } else {
+                setResultMessage("Please fill out all fields")
+            }
+            setIsLoading(false)
         }
     }
 
@@ -80,6 +86,7 @@ class AuthViewModel(private val remoteUserDataSource: RemoteUserDataSource) : Vi
             )
         }
     }
+
     private fun setIsAuthenticated(isAuthenticated: Boolean) {
         _state.update {
             it.copy(

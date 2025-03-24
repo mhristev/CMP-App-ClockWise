@@ -38,6 +38,9 @@ import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.foundation.lazy.items
 import com.clockwise.company.presentation.CompanyScreen
 import com.clockwise.company.presentation.CompanyViewModel
+import com.clockwise.user.presentation.home.HomeScreen
+import com.clockwise.user.presentation.home.HomeScreenRoot
+import com.clockwise.user.presentation.home.HomeViewModel
 
 import com.clockwise.user.presentation.user_auth.AuthScreen
 import com.clockwise.user.presentation.user_auth.AuthScreenRoot
@@ -58,8 +61,9 @@ fun App() {
             }
             composable("home") {
                 // TODO: Implement HomeScreen
-                val viewModel = koinViewModel<CompanyViewModel>()
-                CompanyScreen(viewModel, {})
+                val viewModel = koinViewModel<HomeViewModel>()
+                HomeScreenRoot(viewModel, { } )
+
             }
         }
     }

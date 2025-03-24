@@ -55,6 +55,8 @@ kotlin {
             api(libs.koin.core)
 
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+            implementation(libs.kotlinx.datetime)
+
         }
         nativeMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -90,7 +92,8 @@ android {
 }
 
 dependencies {
-//    implementation(libs.androidx.navigation.compose)
+//implementation(libs.androidx.core.i18n)
+    //    implementation(libs.androidx.navigation.compose)
     debugImplementation(compose.uiTooling)
 }
 
