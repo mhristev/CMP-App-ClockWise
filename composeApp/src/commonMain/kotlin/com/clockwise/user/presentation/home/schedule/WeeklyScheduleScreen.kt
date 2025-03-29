@@ -15,6 +15,11 @@ import androidx.compose.ui.unit.dp
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.plus
 
 private fun formatDate(date: LocalDate): String {
     val monthName = when (date.month) {
@@ -42,6 +47,9 @@ fun WeeklyScheduleScreen(
 ) {
     LaunchedEffect(Unit) {
         onAction(WeeklyScheduleAction.LoadWeeklySchedule)
+        if (state.selectedDay == null) {
+            onAction(WeeklyScheduleAction.SelectDay(Clock.System.now().toLocalDateTime(TimeZone.UTC).date.dayOfWeek))
+        }
     }
 
     Column(
@@ -49,29 +57,80 @@ fun WeeklyScheduleScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(
-            text = "Weekly Schedule",
-            style = MaterialTheme.typography.h5,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF4A2B8C)
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Weekly Schedule",
+                style = MaterialTheme.typography.h5,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF4A2B8C)
+            )
+            
+            Button(
+                onClick = { onAction(WeeklyScheduleAction.NavigateToCurrentWeek) },
+                colors = ButtonDefaults.buttonColors(
+                    backgroundColor = Color(0xFF4A2B8C),
+                    contentColor = Color.White
+                )
+            ) {
+                Text("Today")
+            }
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Week days row
-        Row(
+        // Week navigation and days row
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color(0xFFF5F5F5))
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly
+                .padding(8.dp)
         ) {
-            DayOfWeek.values().forEach { day ->
-                DayButton(
-                    day = day,
-                    isSelected = state.selectedDay == day,
-                    onClick = { onAction(WeeklyScheduleAction.SelectDay(day)) }
+            // Navigation arrows and current week
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = { onAction(WeeklyScheduleAction.NavigateToPreviousWeek) }
+                ) {
+                    Text("←", color = Color(0xFF4A2B8C))
+                }
+                
+                Text(
+                    text = formatDate(state.currentWeekStart),
+                    style = MaterialTheme.typography.subtitle1,
+                    color = Color(0xFF4A2B8C)
                 )
+                
+                IconButton(
+                    onClick = { onAction(WeeklyScheduleAction.NavigateToNextWeek) }
+                ) {
+                    Text("→", color = Color(0xFF4A2B8C))
+                }
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Week days with dates
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                var currentDate = state.currentWeekStart
+                DayOfWeek.values().forEach { day ->
+                    DayButtonWithDate(
+                        day = day,
+                        date = currentDate,
+                        isSelected = state.selectedDay == day,
+                        onClick = { onAction(WeeklyScheduleAction.SelectDay(day)) }
+                    )
+                    currentDate = currentDate.plus(1, DateTimeUnit.DAY)
+                }
             }
         }
 
@@ -122,25 +181,33 @@ fun WeeklyScheduleScreen(
 }
 
 @Composable
-private fun DayButton(
+private fun DayButtonWithDate(
     day: DayOfWeek,
+    date: LocalDate,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    Box(
+    Column(
         modifier = Modifier
-            .size(40.dp)
+            .width(48.dp)
             .background(
                 if (isSelected) Color(0xFF4A2B8C)
                 else Color.Transparent
             )
-            .clickable(onClick = onClick),
-        contentAlignment = Alignment.Center
+            .clickable(onClick = onClick)
+            .padding(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = day.name.take(3),
             color = if (isSelected) Color.White else Color(0xFF333333),
             style = MaterialTheme.typography.body2
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = date.dayOfMonth.toString(),
+            color = if (isSelected) Color.White else Color(0xFF666666),
+            style = MaterialTheme.typography.caption
         )
     }
 }
@@ -193,10 +260,14 @@ data class Shift(
 sealed interface WeeklyScheduleAction {
     object LoadWeeklySchedule : WeeklyScheduleAction
     data class SelectDay(val day: DayOfWeek) : WeeklyScheduleAction
+    object NavigateToNextWeek : WeeklyScheduleAction
+    object NavigateToPreviousWeek : WeeklyScheduleAction
+    object NavigateToCurrentWeek : WeeklyScheduleAction
 }
 
 data class WeeklyScheduleState(
     val weeklySchedule: Map<DayOfWeek, List<Shift>> = emptyMap(),
-    val selectedDay: DayOfWeek? = null,
+    val selectedDay: DayOfWeek? = Clock.System.now().toLocalDateTime(TimeZone.UTC).date.dayOfWeek,
+    val currentWeekStart: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.UTC).date,
     val isLoading: Boolean = true
 ) 

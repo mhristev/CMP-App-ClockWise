@@ -29,10 +29,11 @@ fun AuthScreenRoot(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    if(state.isAuthenticated) {
-        LaunchedEffect(Unit) {
+    LaunchedEffect(state.isAuthenticated) {
+        if (state.isAuthenticated) {
             navController.navigate("home") {
                 popUpTo("register") { inclusive = true }
+                launchSingleTop = true
             }
         }
     }

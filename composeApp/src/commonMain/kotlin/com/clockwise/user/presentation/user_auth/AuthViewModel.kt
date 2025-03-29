@@ -2,6 +2,7 @@ package com.clockwise.user.presentation.user_auth
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+//import co.touchlab.skie.configuration.annotations.FlowInterop
 import com.clockwise.user.data.network.RemoteUserDataSource
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess
@@ -12,9 +13,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
+
 class AuthViewModel(private val remoteUserDataSource: RemoteUserDataSource) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
+    
+
     val state: StateFlow<AuthState> = _state
         .stateIn(
             viewModelScope,
@@ -22,8 +26,32 @@ class AuthViewModel(private val remoteUserDataSource: RemoteUserDataSource) : Vi
             _state.value
         )
 
+    init {
+        // Initialize state
+        viewModelScope.launch {
+            _state.update { currentState ->
+                currentState.copy(
+                    isLoading = false,
+                    isAuthenticated = false,
+                    resultMessage = null
+                )
+            }
+        }
+    }
+
     fun onAction(action: AuthAction) {
         when (action) {
+            is AuthAction.LoadInitialState -> {
+                viewModelScope.launch {
+                    _state.update { currentState ->
+                        currentState.copy(
+                            isLoading = false,
+                            isAuthenticated = false,
+                            resultMessage = null
+                        )
+                    }
+                }
+            }
             is AuthAction.OnRegister -> register(action.email, action.username, action.password, action.confirmPassword)
             is AuthAction.OnLogin -> login(action.email, action.password)
         }
@@ -31,11 +59,13 @@ class AuthViewModel(private val remoteUserDataSource: RemoteUserDataSource) : Vi
 
     private fun register(email: String, username: String, password: String, confirmPassword: String) {
         viewModelScope.launch {
-            setIsLoading(true)
+            _state.update { it.copy(isLoading = true) }
+            
             if (password != confirmPassword) {
                 _state.update {
                     it.copy(
-                        resultMessage = "Passwords do not match"
+                        resultMessage = "Passwords do not match",
+                        isLoading = false
                     )
                 }
             } else {
@@ -47,59 +77,69 @@ class AuthViewModel(private val remoteUserDataSource: RemoteUserDataSource) : Vi
                         "123"
                     )
                         .onError {
-                            setResultMessage(it.toString())
+                            _state.update { state ->
+                                state.copy(
+                                    resultMessage = it.toString(),
+                                    isLoading = false,
+                                    isAuthenticated = false
+                                )
+                            }
                         }
                         .onSuccess {
-                            setResultMessage(it.toString())
+                            _state.update { state ->
+                                state.copy(
+                                    resultMessage = it.toString(),
+                                    isLoading = false,
+                                    isAuthenticated = true
+                                )
+                            }
                         }
                 } else {
-                    setResultMessage("Please fill out all fields")
+                    _state.update { state ->
+                        state.copy(
+                            resultMessage = "Please fill out all fields",
+                            isLoading = false,
+                            isAuthenticated = false
+                        )
+                    }
                 }
             }
-            setIsLoading(false)
         }
     }
 
     private fun login(email: String, password: String) {
         viewModelScope.launch {
-            setIsLoading(true)
+            _state.update { it.copy(isLoading = true) }
+            
             if (email.isNotEmpty() && password.isNotEmpty()) {
                 remoteUserDataSource.login(email, password)
                     .onError {
-                        setResultMessage(it.toString())
+                        _state.update { state ->
+                            state.copy(
+                                resultMessage = it.toString(),
+                                isLoading = false,
+                                isAuthenticated = false
+                            )
+                        }
                     }
                     .onSuccess {
-                        setIsAuthenticated(true)
-                        setResultMessage(it.toString())
+                        _state.update { state ->
+                            state.copy(
+                                resultMessage = it.toString(),
+                                isLoading = false,
+                                isAuthenticated = true
+                            )
+                        }
                     }
             } else {
-                setResultMessage("Please fill out all fields")
+                _state.update { state ->
+                    state.copy(
+                        resultMessage = "Please fill out all fields",
+                        isLoading = false,
+                        isAuthenticated = false
+                    )
+                }
             }
-            setIsLoading(false)
-        }
-    }
-
-    private fun setResultMessage(msg: String) {
-        _state.update {
-            it.copy(
-                resultMessage = msg
-            )
-        }
-    }
-
-    private fun setIsAuthenticated(isAuthenticated: Boolean) {
-        _state.update {
-            it.copy(
-                isAuthenticated = isAuthenticated
-            )
-        }
-    }
-
-    private fun setIsLoading(isLoading: Boolean) {
-        _state.update {
-            it.copy(
-                isLoading = isLoading
-            )
         }
     }
 }

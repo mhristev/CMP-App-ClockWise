@@ -8,6 +8,10 @@ import com.clockwise.user.presentation.home.profile.ProfileAction
 import com.clockwise.user.presentation.home.profile.ProfileState
 import com.clockwise.user.presentation.home.schedule.WeeklyScheduleAction
 import com.clockwise.user.presentation.home.schedule.WeeklyScheduleState
+import com.clockwise.user.presentation.home.search.SearchAction
+import com.clockwise.user.presentation.home.search.SearchState
+import com.clockwise.user.presentation.home.search.SearchViewModel
+import com.clockwise.user.presentation.home.welcome.ShiftStatus
 import com.clockwise.user.presentation.home.welcome.WelcomeAction
 import com.clockwise.user.presentation.home.welcome.WelcomeState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,7 +27,9 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
-class HomeViewModel : ViewModel() {
+class HomeViewModel(
+    private val searchViewModel: SearchViewModel
+) : ViewModel() {
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state
         .stateIn(
@@ -31,6 +37,17 @@ class HomeViewModel : ViewModel() {
             SharingStarted.WhileSubscribed(5000),
             _state.value
         )
+
+    init {
+        // Collect search state updates
+        viewModelScope.launch {
+            searchViewModel.state.collect { searchState ->
+                _state.update { currentState ->
+                    currentState.copy(searchState = searchState)
+                }
+            }
+        }
+    }
 
     fun onAction(action: HomeAction) {
         when (action) {
@@ -41,6 +58,9 @@ class HomeViewModel : ViewModel() {
             is HomeAction.WeeklyScheduleScreenAction -> handleWeeklyScheduleAction(action.action)
             is HomeAction.CalendarScreenAction -> handleCalendarAction(action.action)
             is HomeAction.ProfileScreenAction -> handleProfileAction(action.action)
+            is HomeAction.SearchScreenAction -> {
+                searchViewModel.onAction(action.action)
+            }
         }
     }
 
@@ -48,12 +68,83 @@ class HomeViewModel : ViewModel() {
         when (action) {
             is WelcomeAction.LoadUpcomingShifts -> {
                 viewModelScope.launch {
-                    // TODO: Load upcoming shifts from repository
+                    val now = Clock.System.now()
+                    val nowLocal = now.toLocalDateTime(TimeZone.UTC)
+                    
+                    // Today's shift
+                    val todayShift = com.clockwise.user.presentation.home.welcome.Shift(
+                        id = 1,
+                        date = nowLocal,
+                        startTime = nowLocal,
+                        endTime = now.plus(8, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC),
+                        location = "Main Office",
+                        status = ShiftStatus.SCHEDULED
+                    )
+                    
+                    // Upcoming shifts
+                    val upcomingShifts = listOf(
+                        com.clockwise.user.presentation.home.welcome.Shift(
+                            id = 2,
+                            date = now.plus(24, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC),
+                            startTime = now.plus(24, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC),
+                            endTime = now.plus(32, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC),
+                            location = "Branch Office",
+                            status = ShiftStatus.SCHEDULED
+                        ),
+                        com.clockwise.user.presentation.home.welcome.Shift(
+                            id = 3,
+                            date = now.plus(48, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC),
+                            startTime = now.plus(48, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC),
+                            endTime = now.plus(56, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC),
+                            location = "Remote Office",
+                            status = ShiftStatus.SCHEDULED
+                        )
+                    )
+                    
                     _state.update { 
                         it.copy(
                             welcomeState = it.welcomeState.copy(
-                                upcomingShifts = emptyList(),
+                                todayShift = todayShift,
+                                upcomingShifts = upcomingShifts,
                                 isLoading = false
+                            )
+                        )
+                    }
+                }
+            }
+            is WelcomeAction.ClockIn -> {
+                viewModelScope.launch {
+                    // Update the shift status to CLOCKED_IN and set clockInTime
+                    _state.update { currentState ->
+                        currentState.copy(
+                            welcomeState = currentState.welcomeState.copy(
+                                todayShift = currentState.welcomeState.todayShift?.let { shift ->
+                                    if (shift.id == action.shiftId) {
+                                        shift.copy(
+                                            status = ShiftStatus.CLOCKED_IN,
+                                            clockInTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+                                        )
+                                    } else shift
+                                }
+                            )
+                        )
+                    }
+                }
+            }
+            is WelcomeAction.ClockOut -> {
+                viewModelScope.launch {
+                    // Update the shift status to COMPLETED and set clockOutTime
+                    _state.update { currentState ->
+                        currentState.copy(
+                            welcomeState = currentState.welcomeState.copy(
+                                todayShift = currentState.welcomeState.todayShift?.let { shift ->
+                                    if (shift.id == action.shiftId) {
+                                        shift.copy(
+                                            status = ShiftStatus.COMPLETED,
+                                            clockOutTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+                                        )
+                                    } else shift
+                                }
                             )
                         )
                     }
@@ -86,6 +177,40 @@ class HomeViewModel : ViewModel() {
                     )
                 }
             }
+            is WeeklyScheduleAction.NavigateToNextWeek -> {
+                _state.update { currentState ->
+                    currentState.copy(
+                        weeklyScheduleState = currentState.weeklyScheduleState.copy(
+                            currentWeekStart = currentState.weeklyScheduleState.currentWeekStart.plus(7, DateTimeUnit.DAY)
+                        )
+                    )
+                }
+                // Reload schedule for the new week
+                onAction(HomeAction.WeeklyScheduleScreenAction(WeeklyScheduleAction.LoadWeeklySchedule))
+            }
+            is WeeklyScheduleAction.NavigateToPreviousWeek -> {
+                _state.update { currentState ->
+                    currentState.copy(
+                        weeklyScheduleState = currentState.weeklyScheduleState.copy(
+                            currentWeekStart = currentState.weeklyScheduleState.currentWeekStart.minus(7, DateTimeUnit.DAY)
+                        )
+                    )
+                }
+                // Reload schedule for the new week
+                onAction(HomeAction.WeeklyScheduleScreenAction(WeeklyScheduleAction.LoadWeeklySchedule))
+            }
+            is WeeklyScheduleAction.NavigateToCurrentWeek -> {
+                _state.update { currentState ->
+                    currentState.copy(
+                        weeklyScheduleState = currentState.weeklyScheduleState.copy(
+                            currentWeekStart = Clock.System.now().toLocalDateTime(TimeZone.UTC).date,
+                            selectedDay = Clock.System.now().toLocalDateTime(TimeZone.UTC).date.dayOfWeek
+                        )
+                    )
+                }
+                // Reload schedule for the current week
+                onAction(HomeAction.WeeklyScheduleScreenAction(WeeklyScheduleAction.LoadWeeklySchedule))
+            }
         }
     }
 
@@ -108,7 +233,8 @@ class HomeViewModel : ViewModel() {
                 _state.update {
                     it.copy(
                         calendarState = it.calendarState.copy(
-                            selectedDate = action.date
+                            selectedDate = action.date,
+                            showAvailabilityDialog = false
                         )
                     )
                 }
@@ -119,16 +245,41 @@ class HomeViewModel : ViewModel() {
                     _state.update {
                         it.copy(
                             calendarState = it.calendarState.copy(
-                                isLoading = false
+                                isLoading = false,
+                                showAvailabilityDialog = false
                             )
                         )
                     }
                 }
             }
+            is CalendarAction.ShowAvailabilityDialog -> {
+                _state.update {
+                    it.copy(
+                        calendarState = it.calendarState.copy(
+                            showAvailabilityDialog = true
+                        )
+                    )
+                }
+            }
+            is CalendarAction.HideAvailabilityDialog -> {
+                _state.update {
+                    it.copy(
+                        calendarState = it.calendarState.copy(
+                            showAvailabilityDialog = false
+                        )
+                    )
+                }
+            }
             is CalendarAction.NavigateToNextMonth -> {
                 val currentDate = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
                 val targetDate = _state.value.calendarState.currentMonth.plus(1, DateTimeUnit.MONTH)
-                if (targetDate <= currentDate.plus(3, DateTimeUnit.MONTH)) {
+                val maxDate = currentDate.plus(3, DateTimeUnit.MONTH)
+                
+                // Compare years and months separately to handle year transitions
+                val isWithinRange = (targetDate.year < maxDate.year) || 
+                    (targetDate.year == maxDate.year && targetDate.month.ordinal <= maxDate.month.ordinal)
+                
+                if (isWithinRange) {
                     _state.update { state ->
                         state.copy(
                             calendarState = state.calendarState.copy(
@@ -141,7 +292,13 @@ class HomeViewModel : ViewModel() {
             is CalendarAction.NavigateToPreviousMonth -> {
                 val currentDate = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
                 val targetDate = _state.value.calendarState.currentMonth.minus(1, DateTimeUnit.MONTH)
-                if (targetDate >= currentDate.minus(3, DateTimeUnit.MONTH)) {
+                val minDate = currentDate.minus(3, DateTimeUnit.MONTH)
+                
+                // Compare years and months separately to handle year transitions
+                val isWithinRange = (targetDate.year > minDate.year) || 
+                    (targetDate.year == minDate.year && targetDate.month.ordinal >= minDate.month.ordinal)
+                
+                if (isWithinRange) {
                     _state.update { state ->
                         state.copy(
                             calendarState = state.calendarState.copy(
@@ -190,6 +347,7 @@ sealed interface HomeAction {
     data class WeeklyScheduleScreenAction(val action: WeeklyScheduleAction) : HomeAction
     data class CalendarScreenAction(val action: CalendarAction) : HomeAction
     data class ProfileScreenAction(val action: ProfileAction) : HomeAction
+    data class SearchScreenAction(val action: SearchAction) : HomeAction
 }
 
 data class HomeState(
@@ -199,5 +357,7 @@ data class HomeState(
     val calendarState: CalendarState = CalendarState(
         currentMonth = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
     ),
-    val profileState: ProfileState = ProfileState()
+    val profileState: ProfileState = ProfileState(),
+    val searchState: SearchState = SearchState()
+
 ) 

@@ -9,6 +9,9 @@ plugins {
     alias(libs.plugins.composeCompiler)
     kotlin("plugin.serialization") version "1.9.0"
 
+    id("co.touchlab.skie") version "0.10.1"
+
+
 }
 
 kotlin {
@@ -56,6 +59,9 @@ kotlin {
 
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
             implementation(libs.kotlinx.datetime)
+          //  implementation("co.touchlab:skie-annotations:0.4.19")
+//            implementation("co.touchlab.skie:skie-core:0.10.1")
+//            implementation("co.touchlab.skie:skie-annotations:0.10.1")
 
         }
         nativeMain.dependencies {
@@ -96,4 +102,3 @@ dependencies {
     //    implementation(libs.androidx.navigation.compose)
     debugImplementation(compose.uiTooling)
 }
-

@@ -20,6 +20,7 @@ import com.clockwise.user.presentation.home.welcome.WelcomeScreen
 import com.clockwise.user.presentation.home.schedule.WeeklyScheduleScreen
 import com.clockwise.user.presentation.home.calendar.CalendarScreen
 import com.clockwise.user.presentation.home.HomeAction
+import com.clockwise.user.presentation.home.search.SearchScreen
 
 
 private val LightPurple = Color(0xFF4A2B8C)
@@ -33,6 +34,7 @@ sealed class HomeScreen(val route: String) {
     object WeeklySchedule : HomeScreen("weekly_schedule")
     object Calendar : HomeScreen("calendar")
     object Profile : HomeScreen("profile")
+    object Search : HomeScreen("search")
 }
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -88,6 +90,15 @@ fun HomeScreenRoot(
                         onNavigate(HomeScreen.Profile)
                     }
                 )
+                BottomNavigationItem(
+                    icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                    label = { Text("Search") },
+                    selected = state.currentScreen == HomeScreen.Search,
+                    onClick = { 
+                        viewModel.onAction(HomeAction.Navigate(HomeScreen.Search))
+                        onNavigate(HomeScreen.Search)
+                    }
+                )
             }
         }
     ) { paddingValues ->
@@ -120,6 +131,10 @@ fun HomeScreenRoot(
                     HomeScreen.Profile -> ProfileScreen(
                         state = state.profileState,
                         onAction = { viewModel.onAction(HomeAction.ProfileScreenAction(it)) }
+                    )
+                    HomeScreen.Search -> SearchScreen(
+                        state = state.searchState,
+                        onAction = { viewModel.onAction(HomeAction.SearchScreenAction(it)) }
                     )
                 }
             }

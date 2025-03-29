@@ -101,13 +101,13 @@ fun CalendarScreen(
             ) {
                 IconButton(
                     onClick = { onAction(CalendarAction.NavigateToPreviousMonth) },
-                    enabled = isWithinAllowedRange(state.currentMonth, -3)
+                   // enabled = isWithinAllowedRange(state.currentMonth, -3)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = "Previous month",
-                        tint = if (isWithinAllowedRange(state.currentMonth, -3)) 
-                            Color(0xFF4A2B8C) else Color.Gray
+//                        tint = if (isWithinAllowedRange(state.currentMonth, -3))
+//                            Color(0xFF4A2B8C) else Color.Gray
                     )
                 }
 
@@ -119,13 +119,13 @@ fun CalendarScreen(
 
                 IconButton(
                     onClick = { onAction(CalendarAction.NavigateToNextMonth) },
-                    enabled = isWithinAllowedRange(state.currentMonth, 3)
+                   // enabled = isWithinAllowedRange(state.currentMonth, 50)
                 ) {
                     Icon(
                         imageVector = Icons.Default.KeyboardArrowRight,
                         contentDescription = "Next month",
-                        tint = if (isWithinAllowedRange(state.currentMonth, 3)) 
-                            Color(0xFF4A2B8C) else Color.Gray
+//                        tint = if (isWithinAllowedRange(state.currentMonth, 50))
+//                            Color(0xFF4A2B8C) else Color.Gray
                     )
                 }
             }
@@ -137,7 +137,16 @@ fun CalendarScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                DayOfWeek.values().forEach { day ->
+                val weekDays = listOf(
+                    DayOfWeek.MONDAY,
+                    DayOfWeek.TUESDAY,
+                    DayOfWeek.WEDNESDAY,
+                    DayOfWeek.THURSDAY,
+                    DayOfWeek.FRIDAY,
+                    DayOfWeek.SATURDAY,
+                    DayOfWeek.SUNDAY
+                )
+                weekDays.forEach { day ->
                     Text(
                         text = day.name.take(3),
                         style = MaterialTheme.typography.body2,
@@ -166,6 +175,7 @@ fun CalendarScreen(
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     items(getDaysInMonth(state.currentMonth)) { day ->
+                        
                         DayCell(
                             day = day,
                             isSelected = state.selectedDate == day,
@@ -179,29 +189,32 @@ fun CalendarScreen(
         }
 
         // Floating Action Button for adding availability
-        if (state.selectedDate != null) {
-            FloatingActionButton(
-                onClick = { onAction(CalendarAction.SelectDate(state.selectedDate)) },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp),
-                backgroundColor = Color(0xFF4A2B8C)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "Add availability",
-                    tint = Color.White
-                )
-            }
+        FloatingActionButton(
+            onClick = { 
+                if (state.selectedDate != null) {
+                    onAction(CalendarAction.ShowAvailabilityDialog)
+                }
+            },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            backgroundColor = if (state.selectedDate != null) Color(0xFF4A2B8C) else Color(0xFFCCCCCC)
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Add availability",
+                tint = Color.White
+            )
         }
 
         // Availability dialog
-        state.selectedDate?.let { selectedDate ->
+        if (state.showAvailabilityDialog && state.selectedDate != null) {
             AvailabilityDialog(
-                date = selectedDate,
-                onDismiss = { onAction(CalendarAction.SelectDate(null)) },
+                date = state.selectedDate,
+                onDismiss = { onAction(CalendarAction.HideAvailabilityDialog) },
                 onSetAvailability = { startTime, endTime ->
-                    onAction(CalendarAction.SetAvailability(selectedDate, startTime, endTime))
+                    onAction(CalendarAction.SetAvailability(state.selectedDate, startTime, endTime))
+                    onAction(CalendarAction.HideAvailabilityDialog)
                 }
             )
         }
@@ -306,9 +319,10 @@ private fun getDaysInMonth(currentMonth: LocalDate): List<LocalDate> {
         else -> TODO()
     }
     
-    // Get the first day of the week (Monday)
-    val firstDayOfWeek = firstDay.dayOfWeek
-    val daysToAddBefore = (firstDayOfWeek.ordinal + 6) % 7
+    // Get the first day of the week (Monday = 1, Sunday = 7)
+    val firstDayOfWeek = firstDay.dayOfWeek.ordinal
+    // Calculate days to add before to make Monday the first day (if firstDayOfWeek is 0 (Monday), we add 0 days)
+    val daysToAddBefore = if (firstDayOfWeek == 0) 0 else firstDayOfWeek
     
     // Add days from previous month
     val daysBefore = (1..daysToAddBefore).map { day ->
@@ -327,22 +341,27 @@ private fun getDaysInMonth(currentMonth: LocalDate): List<LocalDate> {
         LocalDate(currentMonth.year, currentMonth.month, lastDay).plus(day, DateTimeUnit.DAY)
     }
     
+    // Debug print for the first day of the month
+    println("First day of month: ${firstDay.dayOfMonth}/${firstDay.month}/${firstDay.year} is ${firstDay.dayOfWeek}")
+    println("Days to add before: $daysToAddBefore")
+    println("First day ordinal: ${firstDayOfWeek}")
+    
     return daysBefore + daysInCurrentMonth + daysAfter
 }
 
-private fun isWithinAllowedRange(date: LocalDate, monthsOffset: Int): Boolean {
-    val currentDate = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
-    val targetDate = when {
-        monthsOffset > 0 -> date.plus(monthsOffset, DateTimeUnit.MONTH)
-        monthsOffset < 0 -> date.minus(-monthsOffset, DateTimeUnit.MONTH)
-        else -> date
-    }
-    
-    val minDate = currentDate.minus(3, DateTimeUnit.MONTH)
-    val maxDate = currentDate.plus(3, DateTimeUnit.MONTH)
-    
-    return targetDate >= minDate && targetDate <= maxDate
-}
+//private fun isWithinAllowedRange(date: LocalDate, monthsOffset: Int): Boolean {
+//    val currentDate = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+//    val targetDate = when {
+//        monthsOffset > 0 -> date.plus(monthsOffset, DateTimeUnit.MONTH)
+//        monthsOffset < 0 -> date.minus(-monthsOffset, DateTimeUnit.MONTH)
+//        else -> date
+//    }
+//
+//    val minDate = currentDate.minus(3, DateTimeUnit.MONTH)
+//    val maxDate = currentDate.plus(3, DateTimeUnit.MONTH)
+//
+//    return targetDate >= minDate && targetDate <= maxDate
+//}
 
 sealed interface CalendarAction {
     object LoadMonthlySchedule : CalendarAction
@@ -354,11 +373,14 @@ sealed interface CalendarAction {
     ) : CalendarAction
     object NavigateToNextMonth : CalendarAction
     object NavigateToPreviousMonth : CalendarAction
+    object ShowAvailabilityDialog : CalendarAction
+    object HideAvailabilityDialog : CalendarAction
 }
 
 data class CalendarState(
     val monthlySchedule: Map<LocalDate, Pair<String, String>> = emptyMap(),
-    val selectedDate: LocalDate? = null,
+    val selectedDate: LocalDate? = Clock.System.now().toLocalDateTime(TimeZone.UTC).date,
     val isLoading: Boolean = true,
-    val currentMonth: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+    val currentMonth: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.UTC).date,
+    val showAvailabilityDialog: Boolean = false
 ) 
