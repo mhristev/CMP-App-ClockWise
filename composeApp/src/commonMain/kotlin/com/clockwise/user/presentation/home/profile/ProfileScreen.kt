@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavController
+import com.clockwise.navigation.NavigationRoutes
 
 @Composable
 fun ProfileScreen(
@@ -162,8 +163,8 @@ fun ProfileScreen(
             Button(
                 onClick = { 
                     onAction(ProfileAction.Logout)
-                    navController?.navigate("auth") {
-                        popUpTo("home") { inclusive = true }
+                    navController?.navigate(NavigationRoutes.Auth.route) {
+                        popUpTo(NavigationRoutes.Home.route) { inclusive = true }
                     }
                 },
                 modifier = Modifier

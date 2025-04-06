@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.navigation.NavController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -43,6 +44,8 @@ import com.clockwise.user.presentation.home.HomeScreenRoot
 import com.clockwise.user.presentation.home.HomeViewModel
 import com.clockwise.service.UserService
 import org.koin.compose.koinInject
+import com.clockwise.navigation.NavigationRoutes
+import com.clockwise.user.presentation.home.HomeAction
 
 import com.clockwise.user.presentation.user_auth.AuthScreen
 import com.clockwise.user.presentation.user_auth.AuthScreenRoot
@@ -54,19 +57,28 @@ fun App() {
     MaterialTheme {
         val navController = rememberNavController()
         val userService = koinInject<UserService>()
-        NavHost(navController = navController, startDestination = "register") {
-            composable("register") {
+        NavHost(navController = navController, startDestination = NavigationRoutes.Register.route) {
+            composable(NavigationRoutes.Register.route) {
                 val viewModel = koinViewModel<AuthViewModel>()
                 AuthScreenRoot(
                     viewModel = viewModel,
                     navController = navController
                 )
             }
-            composable("home") {
+            composable(NavigationRoutes.Auth.route) {
+                val viewModel = koinViewModel<AuthViewModel>()
+                AuthScreenRoot(
+                    viewModel = viewModel,
+                    navController = navController
+                )
+            }
+            composable(NavigationRoutes.Home.route) {
                 val viewModel = koinViewModel<HomeViewModel>()
                 HomeScreenRoot(
                     viewModel = viewModel,
-                    onNavigate = { },
+                    onNavigate = { screen -> 
+                        viewModel.onAction(HomeAction.Navigate(screen))
+                    },
                     navController = navController,
                     userService = userService
                 )

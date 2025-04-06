@@ -32,23 +32,15 @@ private val White = Color(0xFFFFFFFF)
 private val LightGray = Color(0xFFF5F5F5)
 private val DarkGray = Color(0xFF333333)
 
-sealed class HomeScreen(val route: String) {
-    object Welcome : HomeScreen("welcome")
-    object WeeklySchedule : HomeScreen("weekly_schedule")
-    object Calendar : HomeScreen("calendar")
-    object Profile : HomeScreen("profile")
-    object Search : HomeScreen("search")
-}
-
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun HomeScreenRoot(
-    viewModel: HomeViewModel,
+fun HomeScreenContent(
+    state: HomeState,
+    onAction: (HomeAction) -> Unit,
     onNavigate: (HomeScreen) -> Unit,
     navController: NavController? = null,
     userService: UserService
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
     val profileViewModel = koinViewModel<ProfileViewModel>()
     val profileState by profileViewModel.state.collectAsStateWithLifecycle()
     
@@ -67,8 +59,7 @@ fun HomeScreenRoot(
                     label = { Text("Home") },
                     selected = state.currentScreen == HomeScreen.Welcome,
                     onClick = { 
-                        viewModel.onAction(HomeAction.Navigate(HomeScreen.Welcome))
-                        onNavigate(HomeScreen.Welcome)
+                        onAction(HomeAction.Navigate(HomeScreen.Welcome))
                     }
                 )
                 BottomNavigationItem(
@@ -76,8 +67,7 @@ fun HomeScreenRoot(
                     label = { Text("Schedule") },
                     selected = state.currentScreen == HomeScreen.WeeklySchedule,
                     onClick = { 
-                        viewModel.onAction(HomeAction.Navigate(HomeScreen.WeeklySchedule))
-                        onNavigate(HomeScreen.WeeklySchedule)
+                        onAction(HomeAction.Navigate(HomeScreen.WeeklySchedule))
                     }
                 )
                 BottomNavigationItem(
@@ -85,8 +75,7 @@ fun HomeScreenRoot(
                     label = { Text("Calendar") },
                     selected = state.currentScreen == HomeScreen.Calendar,
                     onClick = { 
-                        viewModel.onAction(HomeAction.Navigate(HomeScreen.Calendar))
-                        onNavigate(HomeScreen.Calendar)
+                        onAction(HomeAction.Navigate(HomeScreen.Calendar))
                     }
                 )
                 if (showSearchTab) {
@@ -95,8 +84,7 @@ fun HomeScreenRoot(
                         label = { Text("Search") },
                         selected = state.currentScreen == HomeScreen.Search,
                         onClick = { 
-                            viewModel.onAction(HomeAction.Navigate(HomeScreen.Search))
-                            onNavigate(HomeScreen.Search)
+                            onAction(HomeAction.Navigate(HomeScreen.Search))
                         }
                     )
                 }
@@ -105,8 +93,7 @@ fun HomeScreenRoot(
                     label = { Text("Profile") },
                     selected = state.currentScreen == HomeScreen.Profile,
                     onClick = { 
-                        viewModel.onAction(HomeAction.Navigate(HomeScreen.Profile))
-                        onNavigate(HomeScreen.Profile)
+                        onAction(HomeAction.Navigate(HomeScreen.Profile))
                     }
                 )
             }
@@ -117,19 +104,19 @@ fun HomeScreenRoot(
                 HomeScreen.Welcome -> WelcomeScreen(
                     state = state.welcomeState,
                     onAction = { action ->
-                        viewModel.onAction(HomeAction.WelcomeScreenAction(action))
+                        onAction(HomeAction.WelcomeScreenAction(action))
                     }
                 )
                 HomeScreen.WeeklySchedule -> WeeklyScheduleScreen(
                     state = state.weeklyScheduleState,
                     onAction = { action ->
-                        viewModel.onAction(HomeAction.WeeklyScheduleScreenAction(action))
+                        onAction(HomeAction.WeeklyScheduleScreenAction(action))
                     }
                 )
                 HomeScreen.Calendar -> CalendarScreen(
                     state = state.calendarState,
                     onAction = { action ->
-                        viewModel.onAction(HomeAction.CalendarScreenAction(action))
+                        onAction(HomeAction.CalendarScreenAction(action))
                     }
                 )
                 HomeScreen.Search -> {
@@ -137,14 +124,13 @@ fun HomeScreenRoot(
                         SearchScreen(
                             state = state.searchState,
                             onAction = { action ->
-                                viewModel.onAction(HomeAction.SearchScreenAction(action))
+                                onAction(HomeAction.SearchScreenAction(action))
                             }
                         )
                     } else {
                         // Redirect to Welcome screen if user doesn't have permission
                         LaunchedEffect(Unit) {
-                            viewModel.onAction(HomeAction.Navigate(HomeScreen.Welcome))
-                            onNavigate(HomeScreen.Welcome)
+                            onAction(HomeAction.Navigate(HomeScreen.Welcome))
                         }
                     }
                 }

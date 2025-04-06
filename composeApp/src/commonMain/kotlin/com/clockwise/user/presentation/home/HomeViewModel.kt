@@ -29,6 +29,8 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import com.clockwise.navigation.NavigationRoutes
+import com.clockwise.user.presentation.home.HomeScreen
 
 class HomeViewModel(
     private val searchViewModel: SearchViewModel,
@@ -56,13 +58,12 @@ class HomeViewModel(
     fun onAction(action: HomeAction) {
         when (action) {
             is HomeAction.Navigate -> {
-                // Check if user has permission to access Search screen
-                if (action.screen == HomeScreen.Search && !AccessControl.hasAccessToScreen("search", userService)) {
-                    // Redirect to Welcome screen if user doesn't have permission
-                    _state.update { it.copy(currentScreen = HomeScreen.Welcome) }
-                    return
+                if (action.screen == HomeScreen.Search) {
+                    if (!AccessControl.hasAccessToScreen("search", userService)) {
+                        _state.update { it.copy(currentScreen = HomeScreen.Welcome) }
+                        return
+                    }
                 }
-                
                 _state.update { it.copy(currentScreen = action.screen) }
             }
             is HomeAction.WelcomeScreenAction -> handleWelcomeAction(action.action)

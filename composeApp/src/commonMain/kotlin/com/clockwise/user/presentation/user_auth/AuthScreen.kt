@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +17,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-
+import com.clockwise.navigation.NavigationRoutes
 import kotlinx.coroutines.flow.asStateFlow
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -26,29 +25,6 @@ private val DarkPurple = Color(0xFF2D1B4E)
 private val LightPurple = Color(0xFF4A2B8C)
 private val Black = Color(0xFF121212)
 private val White = Color(0xFFFFFFFF)
-
-@Composable
-fun AuthScreenRoot(
-    navController: NavController,
-    viewModel: AuthViewModel = koinViewModel()
-) {
-    val state by viewModel.state.collectAsState()
-
-    LaunchedEffect(state.isAuthenticated, state.hasBusinessUnit) {
-        if (state.isAuthenticated && state.hasBusinessUnit) {
-            navController.navigate("home") {
-                popUpTo("auth") { inclusive = true }
-            }
-        }
-    }
-
-    AuthScreen(
-        state = state,
-        onAction = { action ->
-            viewModel.onAction(action)
-        }
-    )
-}
 
 @Composable
 fun AuthScreen(
