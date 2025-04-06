@@ -32,6 +32,6 @@ val sharedModule = module {
     viewModel {CompanyViewModel(get())}
     single<SearchRepository> { SearchRepositoryImpl(get()) }
     viewModel {SearchViewModel(get())}
-    viewModel {HomeViewModel(get())}
+    viewModel {HomeViewModel(get(), get())}
     viewModel {ProfileViewModel(get())}
 }

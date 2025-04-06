@@ -3,6 +3,7 @@ package com.clockwise.user.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clockwise.service.UserService
+import com.clockwise.user.domain.UserRole
 import com.clockwise.user.presentation.home.calendar.CalendarAction
 import com.clockwise.user.presentation.home.calendar.CalendarState
 import com.clockwise.user.presentation.home.profile.ProfileAction
@@ -29,7 +30,8 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 
 class HomeViewModel(
-    private val searchViewModel: SearchViewModel
+    private val searchViewModel: SearchViewModel,
+    private val userService: UserService
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state
@@ -53,13 +55,33 @@ class HomeViewModel(
     fun onAction(action: HomeAction) {
         when (action) {
             is HomeAction.Navigate -> {
+                // Check if user has permission to access Search screen
+                if (action.screen == HomeScreen.Search) {
+                    val currentUser = userService.currentUser.value
+                    val userRole = currentUser?.role ?: UserRole.EMPLOYEE
+                    
+                    // Only allow MANAGER and ADMIN roles to access Search screen
+                    if (userRole != UserRole.MANAGER && userRole != UserRole.ADMIN) {
+                        // Redirect to Welcome screen if user doesn't have permission
+                        _state.update { it.copy(currentScreen = HomeScreen.Welcome) }
+                        return
+                    }
+                }
+                
                 _state.update { it.copy(currentScreen = action.screen) }
             }
             is HomeAction.WelcomeScreenAction -> handleWelcomeAction(action.action)
             is HomeAction.WeeklyScheduleScreenAction -> handleWeeklyScheduleAction(action.action)
             is HomeAction.CalendarScreenAction -> handleCalendarAction(action.action)
             is HomeAction.SearchScreenAction -> {
-                searchViewModel.onAction(action.action)
+                // Check if user has permission to perform search actions
+                val currentUser = userService.currentUser.value
+                val userRole = currentUser?.role ?: UserRole.EMPLOYEE
+                
+                // Only allow MANAGER and ADMIN roles to perform search actions
+                if (userRole == UserRole.MANAGER || userRole == UserRole.ADMIN) {
+                    searchViewModel.onAction(action.action)
+                }
             }
         }
     }

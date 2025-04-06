@@ -23,7 +23,7 @@ import androidx.navigation.NavController
 fun ProfileScreen(
     state: ProfileState,
     onAction: (ProfileAction) -> Unit,
-    navController: NavController
+    navController: NavController? = null
 ) {
     LaunchedEffect(Unit) {
         onAction(ProfileAction.LoadUserProfile)
@@ -162,7 +162,7 @@ fun ProfileScreen(
             Button(
                 onClick = { 
                     onAction(ProfileAction.Logout)
-                    navController.navigate("auth") {
+                    navController?.navigate("auth") {
                         popUpTo("home") { inclusive = true }
                     }
                 },

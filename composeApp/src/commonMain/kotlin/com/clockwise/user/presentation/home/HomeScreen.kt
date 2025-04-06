@@ -13,10 +13,8 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
-
-//import com.arkivanov.decompose.router.stack.StackNavigation
-//import com.arkivanov.decompose.value.Value
-//import com.arkivanov.essenty.lifecycle.doOnCreate
+import com.clockwise.service.UserService
+import com.clockwise.user.domain.UserRole
 import com.clockwise.user.presentation.home.profile.ProfileScreen
 import com.clockwise.user.presentation.home.welcome.WelcomeScreen
 import com.clockwise.user.presentation.home.schedule.WeeklyScheduleScreen
@@ -46,19 +44,23 @@ sealed class HomeScreen(val route: String) {
 fun HomeScreenRoot(
     viewModel: HomeViewModel,
     onNavigate: (HomeScreen) -> Unit,
-    navController: NavController
+    navController: NavController? = null,
+    userService: UserService
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val profileViewModel = koinViewModel<ProfileViewModel>()
     val profileState by profileViewModel.state.collectAsStateWithLifecycle()
+    
+    // Get current user role
+    val currentUser = userService.currentUser.value
+    val userRole = currentUser?.role ?: UserRole.EMPLOYEE
+    val showSearchTab = userRole == UserRole.MANAGER || userRole == UserRole.ADMIN
     
     Scaffold(
         bottomBar = {
             BottomNavigation(
                 backgroundColor = White,
                 contentColor = LightPurple,
-//                selectedItemColor = LightPurpleVariant,
-//                unselectedItemColor = LightPurple,
                 elevation = 8.dp
             ) {
                 BottomNavigationItem(
@@ -88,6 +90,17 @@ fun HomeScreenRoot(
                         onNavigate(HomeScreen.Calendar)
                     }
                 )
+                if (showSearchTab) {
+                    BottomNavigationItem(
+                        icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
+                        label = { Text("Search") },
+                        selected = state.currentScreen == HomeScreen.Search,
+                        onClick = { 
+                            viewModel.onAction(HomeAction.Navigate(HomeScreen.Search))
+                            onNavigate(HomeScreen.Search)
+                        }
+                    )
+                }
                 BottomNavigationItem(
                     icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
                     label = { Text("Profile") },
@@ -97,54 +110,52 @@ fun HomeScreenRoot(
                         onNavigate(HomeScreen.Profile)
                     }
                 )
-                BottomNavigationItem(
-                    icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                    label = { Text("Search") },
-                    selected = state.currentScreen == HomeScreen.Search,
-                    onClick = { 
-                        viewModel.onAction(HomeAction.Navigate(HomeScreen.Search))
-                        onNavigate(HomeScreen.Search)
-                    }
-                )
             }
         }
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(LightGray)
-        ) {
-            AnimatedContent(
-                targetState = state.currentScreen,
-                transitionSpec = {
-                    fadeIn() + slideInHorizontally() with 
-                    fadeOut() + slideOutHorizontally()
+        Box(modifier = Modifier.padding(paddingValues)) {
+            when (state.currentScreen) {
+                HomeScreen.Welcome -> WelcomeScreen(
+                    state = state.welcomeState,
+                    onAction = { action ->
+                        viewModel.onAction(HomeAction.WelcomeScreenAction(action))
+                    }
+                )
+                HomeScreen.WeeklySchedule -> WeeklyScheduleScreen(
+                    state = state.weeklyScheduleState,
+                    onAction = { action ->
+                        viewModel.onAction(HomeAction.WeeklyScheduleScreenAction(action))
+                    }
+                )
+                HomeScreen.Calendar -> CalendarScreen(
+                    state = state.calendarState,
+                    onAction = { action ->
+                        viewModel.onAction(HomeAction.CalendarScreenAction(action))
+                    }
+                )
+                HomeScreen.Search -> {
+                    if (showSearchTab) {
+                        SearchScreen(
+                            state = state.searchState,
+                            onAction = { action ->
+                                viewModel.onAction(HomeAction.SearchScreenAction(action))
+                            }
+                        )
+                    } else {
+                        // Redirect to Welcome screen if user doesn't have permission
+                        LaunchedEffect(Unit) {
+                            viewModel.onAction(HomeAction.Navigate(HomeScreen.Welcome))
+                            onNavigate(HomeScreen.Welcome)
+                        }
+                    }
                 }
-            ) { screen ->
-                when (screen) {
-                    HomeScreen.Welcome -> WelcomeScreen(
-                        state = state.welcomeState,
-                        onAction = { viewModel.onAction(HomeAction.WelcomeScreenAction(it)) }
-                    )
-                    HomeScreen.WeeklySchedule -> WeeklyScheduleScreen(
-                        state = state.weeklyScheduleState,
-                        onAction = { viewModel.onAction(HomeAction.WeeklyScheduleScreenAction(it)) }
-                    )
-                    HomeScreen.Calendar -> CalendarScreen(
-                        state = state.calendarState,
-                        onAction = { viewModel.onAction(HomeAction.CalendarScreenAction(it)) }
-                    )
-                    HomeScreen.Profile -> ProfileScreen(
-                        state = profileState,
-                        onAction = { profileViewModel.onAction(it) },
-                        navController = navController
-                    )
-                    HomeScreen.Search -> SearchScreen(
-                        state = state.searchState,
-                        onAction = { viewModel.onAction(HomeAction.SearchScreenAction(it)) }
-                    )
-                }
+                HomeScreen.Profile -> ProfileScreen(
+                    state = profileState,
+                    onAction = { action ->
+                        profileViewModel.onAction(action)
+                    },
+                    navController = navController
+                )
             }
         }
     }

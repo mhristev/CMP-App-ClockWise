@@ -41,6 +41,8 @@ import com.clockwise.company.presentation.CompanyViewModel
 import com.clockwise.user.presentation.home.HomeScreen
 import com.clockwise.user.presentation.home.HomeScreenRoot
 import com.clockwise.user.presentation.home.HomeViewModel
+import com.clockwise.service.UserService
+import org.koin.compose.koinInject
 
 import com.clockwise.user.presentation.user_auth.AuthScreen
 import com.clockwise.user.presentation.user_auth.AuthScreenRoot
@@ -51,6 +53,7 @@ import com.clockwise.user.presentation.user_auth.AuthViewModel
 fun App() {
     MaterialTheme {
         val navController = rememberNavController()
+        val userService = koinInject<UserService>()
         NavHost(navController = navController, startDestination = "register") {
             composable("register") {
                 val viewModel = koinViewModel<AuthViewModel>()
@@ -64,7 +67,8 @@ fun App() {
                 HomeScreenRoot(
                     viewModel = viewModel,
                     onNavigate = { },
-                    navController = navController
+                    navController = navController,
+                    userService = userService
                 )
             }
         }

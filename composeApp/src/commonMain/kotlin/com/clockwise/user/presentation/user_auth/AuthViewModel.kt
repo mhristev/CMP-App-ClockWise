@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 //import co.touchlab.skie.configuration.annotations.FlowInterop
 import com.clockwise.service.UserService
 import com.clockwise.user.data.network.RemoteUserDataSource
+import com.plcoding.bookpedia.core.domain.Result
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess
 import kotlinx.coroutines.launch
@@ -13,139 +14,129 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.asStateFlow
 
 
 class AuthViewModel(
-    private val remoteUserDataSource: RemoteUserDataSource,
-    private val userService: UserService
+    private val userService: UserService,
+    private val remoteUserDataSource: RemoteUserDataSource
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
-    
-
-    val state: StateFlow<AuthState> = _state
-        .stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000),
-            _state.value
-        )
+    val state: StateFlow<AuthState> = _state.asStateFlow()
 
     init {
         // Initialize state
         viewModelScope.launch {
-            _state.update { currentState ->
-                currentState.copy(
-                    isLoading = false,
-                    isAuthenticated = false,
-                    resultMessage = null
-                )
-            }
+            _state.value = _state.value.copy(
+                isLoading = false,
+                isAuthenticated = false,
+                resultMessage = null,
+                hasBusinessUnit = false
+            )
         }
     }
 
     fun onAction(action: AuthAction) {
         when (action) {
-            is AuthAction.LoadInitialState -> {
-                viewModelScope.launch {
-                    _state.update { currentState ->
-                        currentState.copy(
-                            isLoading = false,
-                            isAuthenticated = false,
-                            resultMessage = null
-                        )
-                    }
-                }
-            }
-            is AuthAction.OnRegister -> register(action.email, action.username, action.password, action.confirmPassword)
-            is AuthAction.OnLogin -> login(action.email, action.password)
-        }
-    }
-
-    private fun register(email: String, username: String, password: String, confirmPassword: String) {
-        viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
-            
-            if (password != confirmPassword) {
-                _state.update {
-                    it.copy(
-                        resultMessage = "Passwords do not match",
-                        isLoading = false
-                    )
-                }
-            } else {
-                if (email.isNotEmpty() && username.isNotEmpty() && password.isNotEmpty()) {
-                    remoteUserDataSource.register(
-                        username,
-                        email,
-                        password
-                    )
-                        .onError {
-                            _state.update { state ->
-                                state.copy(
-                                    resultMessage = it.toString(),
-                                    isLoading = false,
-                                    isAuthenticated = false
-                                )
-                            }
-                        }
-                        .onSuccess { response ->
-                        //    userService.saveAuthResponse(response)
-                            _state.update { state ->
-                                state.copy(
-                                    resultMessage = "Registration successful",
-                                    isLoading = false,
-                                    isAuthenticated = true
-                                )
-                            }
-                        }
-                } else {
-                    _state.update { state ->
-                        state.copy(
-                            resultMessage = "Please fill out all fields",
-                            isLoading = false,
-                            isAuthenticated = false
-                        )
-                    }
-                }
-            }
+            is AuthAction.Login -> login(action.email, action.password)
+            is AuthAction.Register -> register(action.email, action.username, action.password, action.confirmPassword)
+            is AuthAction.Logout -> logout()
         }
     }
 
     private fun login(email: String, password: String) {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+            _state.value = _state.value.copy(isLoading = true, resultMessage = null)
             
-            if (email.isNotEmpty() && password.isNotEmpty()) {
-                remoteUserDataSource.login(email, password)
-                    .onError {
-                        _state.update { state ->
-                            state.copy(
-                                resultMessage = it.toString(),
-                                isLoading = false,
-                                isAuthenticated = false
-                            )
-                        }
-                    }
-                    .onSuccess { response ->
-                        userService.saveAuthResponse(response)
-                        
-                        _state.update { state ->
-                            state.copy(
-                                resultMessage = "Login successful",
-                                isLoading = false,
-                                isAuthenticated = true
-                            )
-                        }
-                    }
-            } else {
-                _state.update { state ->
-                    state.copy(
-                        resultMessage = "Please fill out all fields",
+            if (email.isBlank() || password.isBlank()) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    resultMessage = "Please fill in all fields"
+                )
+                return@launch
+            }
+
+            remoteUserDataSource.login(email, password)
+                .onSuccess { response ->
+                    userService.saveAuthResponse(response)
+                    _state.value = _state.value.copy(
                         isLoading = false,
-                        isAuthenticated = false
+                        isAuthenticated = true,
+                        hasBusinessUnit = response.user.businessUnitId != null,
+                        resultMessage = "Login successful"
                     )
                 }
+                .onError { error ->
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        resultMessage = "Login failed:"
+                    )
+                }
+        }
+    }
+
+    private fun register(email: String, username: String, password: String, confirmPassword: String) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true, resultMessage = null)
+            
+            if (email.isBlank() || username.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    resultMessage = "Please fill in all fields"
+                )
+                return@launch
             }
+
+            if (password != confirmPassword) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    resultMessage = "Passwords do not match"
+                )
+                return@launch
+            }
+
+            remoteUserDataSource.register(email, username, password)
+                .onSuccess { response ->
+                    userService.saveAuthResponse(response)
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        isAuthenticated = true,
+                        hasBusinessUnit = response.user.businessUnitId != null,
+                        resultMessage = "Registration successful"
+                    )
+                }
+                .onError { error ->
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        resultMessage = "Registration failed:"
+                    )
+                }
+        }
+    }
+
+    private fun logout() {
+        viewModelScope.launch {
+            userService.clearAuthData()
+            _state.value = AuthState()
         }
     }
 }
+
+sealed class AuthAction {
+    data class Login(val email: String, val password: String) : AuthAction()
+    data class Register(
+        val email: String,
+        val username: String,
+        val password: String,
+        val confirmPassword: String
+    ) : AuthAction()
+    object Logout : AuthAction()
+}
+
+data class AuthState(
+    val isLoading: Boolean = false,
+    val isAuthenticated: Boolean = false,
+    val hasBusinessUnit: Boolean = false,
+    val resultMessage: String? = null
+)
