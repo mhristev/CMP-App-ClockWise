@@ -15,6 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.clockwise.service.UserService
 import com.clockwise.user.domain.UserRole
+import com.clockwise.user.domain.AccessControl
 import com.clockwise.user.presentation.home.profile.ProfileScreen
 import com.clockwise.user.presentation.home.welcome.WelcomeScreen
 import com.clockwise.user.presentation.home.schedule.WeeklyScheduleScreen
@@ -51,10 +52,8 @@ fun HomeScreenRoot(
     val profileViewModel = koinViewModel<ProfileViewModel>()
     val profileState by profileViewModel.state.collectAsStateWithLifecycle()
     
-    // Get current user role
-    val currentUser = userService.currentUser.value
-    val userRole = currentUser?.role ?: UserRole.EMPLOYEE
-    val showSearchTab = userRole == UserRole.MANAGER || userRole == UserRole.ADMIN
+    // Use the AccessControl utility to check if the user has access to the Search screen
+    val showSearchTab = AccessControl.hasAccessToScreen("search", userService)
     
     Scaffold(
         bottomBar = {
@@ -134,7 +133,7 @@ fun HomeScreenRoot(
                     }
                 )
                 HomeScreen.Search -> {
-                    if (showSearchTab) {
+                    if (AccessControl.hasAccessToScreen("search", userService)) {
                         SearchScreen(
                             state = state.searchState,
                             onAction = { action ->
