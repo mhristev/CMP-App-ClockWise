@@ -161,10 +161,11 @@ fun ProfileScreen(
         item {
             // Logout Button
             Button(
-                onClick = { 
+                onClick = {
                     onAction(ProfileAction.Logout)
                     navController?.navigate(NavigationRoutes.Auth.route) {
-                        popUpTo(NavigationRoutes.Home.route) { inclusive = true }
+                        popUpTo(NavigationRoutes.Home.route) { inclusive = true } // Clear HomeScreen from back stack
+                        launchSingleTop = true // Optional: Prevents multiple instances of the Auth screen
                     }
                 },
                 modifier = Modifier

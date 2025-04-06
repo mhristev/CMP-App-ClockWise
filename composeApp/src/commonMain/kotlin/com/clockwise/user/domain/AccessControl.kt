@@ -17,7 +17,7 @@ object AccessControl {
         val userRole = currentUser?.role ?: UserRole.EMPLOYEE
         
         return when (screen) {
-            "search" -> userRole == UserRole.MANAGER || userRole == UserRole.ADMIN 
+            "search" -> userRole == UserRole.MANAGER || userRole == UserRole.ADMIN
             else -> true // Default access for other screens
         }
     }
