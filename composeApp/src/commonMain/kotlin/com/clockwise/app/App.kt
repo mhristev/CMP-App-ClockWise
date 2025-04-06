@@ -51,7 +51,7 @@ import com.clockwise.user.presentation.user_auth.AuthViewModel
 fun App() {
     MaterialTheme {
         val navController = rememberNavController()
-        NavHost(navController = navController, startDestination = "home") {
+        NavHost(navController = navController, startDestination = "register") {
             composable("register") {
                 val viewModel = koinViewModel<AuthViewModel>()
                 AuthScreenRoot(
@@ -60,10 +60,12 @@ fun App() {
                 )
             }
             composable("home") {
-                // TODO: Implement HomeScreen
                 val viewModel = koinViewModel<HomeViewModel>()
-                HomeScreenRoot(viewModel, { } )
-
+                HomeScreenRoot(
+                    viewModel = viewModel,
+                    onNavigate = { },
+                    navController = navController
+                )
             }
         }
     }

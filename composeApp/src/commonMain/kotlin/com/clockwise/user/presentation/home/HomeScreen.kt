@@ -12,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
+
 //import com.arkivanov.decompose.router.stack.StackNavigation
 //import com.arkivanov.decompose.value.Value
 //import com.arkivanov.essenty.lifecycle.doOnCreate
@@ -20,7 +22,9 @@ import com.clockwise.user.presentation.home.welcome.WelcomeScreen
 import com.clockwise.user.presentation.home.schedule.WeeklyScheduleScreen
 import com.clockwise.user.presentation.home.calendar.CalendarScreen
 import com.clockwise.user.presentation.home.HomeAction
+import com.clockwise.user.presentation.home.profile.ProfileViewModel
 import com.clockwise.user.presentation.home.search.SearchScreen
+import org.koin.compose.viewmodel.koinViewModel
 
 
 private val LightPurple = Color(0xFF4A2B8C)
@@ -41,9 +45,12 @@ sealed class HomeScreen(val route: String) {
 @Composable
 fun HomeScreenRoot(
     viewModel: HomeViewModel,
-    onNavigate: (HomeScreen) -> Unit
+    onNavigate: (HomeScreen) -> Unit,
+    navController: NavController
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val profileViewModel = koinViewModel<ProfileViewModel>()
+    val profileState by profileViewModel.state.collectAsStateWithLifecycle()
     
     Scaffold(
         bottomBar = {
@@ -129,8 +136,9 @@ fun HomeScreenRoot(
                         onAction = { viewModel.onAction(HomeAction.CalendarScreenAction(it)) }
                     )
                     HomeScreen.Profile -> ProfileScreen(
-                        state = state.profileState,
-                        onAction = { viewModel.onAction(HomeAction.ProfileScreenAction(it)) }
+                        state = profileState,
+                        onAction = { profileViewModel.onAction(it) },
+                        navController = navController
                     )
                     HomeScreen.Search -> SearchScreen(
                         state = state.searchState,

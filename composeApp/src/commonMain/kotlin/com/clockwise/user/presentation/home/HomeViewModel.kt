@@ -2,6 +2,7 @@ package com.clockwise.user.presentation.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clockwise.service.UserService
 import com.clockwise.user.presentation.home.calendar.CalendarAction
 import com.clockwise.user.presentation.home.calendar.CalendarState
 import com.clockwise.user.presentation.home.profile.ProfileAction
@@ -57,7 +58,6 @@ class HomeViewModel(
             is HomeAction.WelcomeScreenAction -> handleWelcomeAction(action.action)
             is HomeAction.WeeklyScheduleScreenAction -> handleWeeklyScheduleAction(action.action)
             is HomeAction.CalendarScreenAction -> handleCalendarAction(action.action)
-            is HomeAction.ProfileScreenAction -> handleProfileAction(action.action)
             is HomeAction.SearchScreenAction -> {
                 searchViewModel.onAction(action.action)
             }
@@ -310,35 +310,6 @@ class HomeViewModel(
             }
         }
     }
-
-    private fun handleProfileAction(action: ProfileAction) {
-        when (action) {
-            is ProfileAction.LoadUserProfile -> {
-                viewModelScope.launch {
-                    // TODO: Load user profile from repository
-                    _state.update {
-                        it.copy(
-                            profileState = it.profileState.copy(
-                                isLoading = false
-                            )
-                        )
-                    }
-                }
-            }
-            is ProfileAction.UpdateProfile -> {
-                viewModelScope.launch {
-                    // TODO: Update user profile in repository
-                    _state.update {
-                        it.copy(
-                            profileState = it.profileState.copy(
-                                isLoading = false
-                            )
-                        )
-                    }
-                }
-            }
-        }
-    }
 }
 
 sealed interface HomeAction {
@@ -346,7 +317,6 @@ sealed interface HomeAction {
     data class WelcomeScreenAction(val action: WelcomeAction) : HomeAction
     data class WeeklyScheduleScreenAction(val action: WeeklyScheduleAction) : HomeAction
     data class CalendarScreenAction(val action: CalendarAction) : HomeAction
-    data class ProfileScreenAction(val action: ProfileAction) : HomeAction
     data class SearchScreenAction(val action: SearchAction) : HomeAction
 }
 
@@ -357,7 +327,5 @@ data class HomeState(
     val calendarState: CalendarState = CalendarState(
         currentMonth = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
     ),
-    val profileState: ProfileState = ProfileState(),
     val searchState: SearchState = SearchState()
-
 ) 

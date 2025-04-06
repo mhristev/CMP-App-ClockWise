@@ -1,5 +1,7 @@
 package com.clockwise.user.data.network
 
+import com.clockwise.user.data.model.AuthResponse
+import com.clockwise.user.data.model.UserDto
 import com.plcoding.bookpedia.core.data.safeCall
 import com.plcoding.bookpedia.core.domain.DataError
 import io.ktor.client.HttpClient
@@ -14,20 +16,20 @@ import com.plcoding.bookpedia.core.domain.Result
 private const val BASE_URL = "http://10.0.2.2:8081/v1/auth"
 
 class KtorRemoteUserDataSource(private val httpClient: HttpClient): RemoteUserDataSource {
-    override suspend fun register(username: String, email: String, password: String, restaurantId: String): Result<RegisterResponseDto, DataError.Remote> {
-        return safeCall<RegisterResponseDto> {
+    override suspend fun register(username: String, email: String, password: String): Result<AuthResponse, DataError.Remote> {
+        return safeCall<AuthResponse> {
             httpClient.post("$BASE_URL/register") {
                 contentType(ContentType.Application.Json)
-                setBody(RegisterRequestDto(username, email, password, restaurantId))
+                setBody(RegisterRequestDto(username, email, password))
             }
         }
     }
 
-    override suspend fun login(username: String, password: String): Result<LoginResponseDto, DataError.Remote> {
-        return safeCall<LoginResponseDto> {
+    override suspend fun login(email: String, password: String): Result<AuthResponse, DataError.Remote> {
+        return safeCall<AuthResponse> {
             httpClient.post("$BASE_URL/login") {
                 contentType(ContentType.Application.Json)
-                setBody(LoginRequestDto(username, password))
+                setBody(LoginRequestDto(email, password))
             }
         }
     }
@@ -38,7 +40,6 @@ data class RegisterRequestDto(
     @SerialName("username") val username: String,
     @SerialName("email") val email: String,
     @SerialName("password") val password: String,
-    @SerialName("restaurantId") val restaurantId: String
 )
 
 @Serializable

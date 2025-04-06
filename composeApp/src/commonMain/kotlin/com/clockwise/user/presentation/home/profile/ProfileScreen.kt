@@ -17,11 +17,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.NavController
 
 @Composable
 fun ProfileScreen(
     state: ProfileState,
-    onAction: (ProfileAction) -> Unit
+    onAction: (ProfileAction) -> Unit,
+    navController: NavController
 ) {
     LaunchedEffect(Unit) {
         onAction(ProfileAction.LoadUserProfile)
@@ -96,7 +98,7 @@ fun ProfileScreen(
                     )
 
                     ProfileInfoRow(
-                        icon = Icons.Default.Phone,
+                        icon = Icons.Default.Build,
                         label = "Company",
                         value = state.userProfile?.company ?: "Loading..."
                     )
@@ -141,13 +143,13 @@ fun ProfileScreen(
                     )
 
                     SettingsRow(
-                        icon = Icons.Default.Place,
+                        icon = Icons.Default.Phone,
                         label = "Language",
                         onClick = { /* TODO: Navigate to language settings */ }
                     )
 
                     SettingsRow(
-                        icon = Icons.Default.Place,
+                        icon = Icons.Default.Phone,
                         label = "Dark Mode",
                         onClick = { /* TODO: Toggle dark mode */ }
                     )
@@ -158,7 +160,12 @@ fun ProfileScreen(
         item {
             // Logout Button
             Button(
-                onClick = { /* TODO: Handle logout */ },
+                onClick = { 
+                    onAction(ProfileAction.Logout)
+                    navController.navigate("auth") {
+                        popUpTo("home") { inclusive = true }
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -257,6 +264,7 @@ data class UserProfile(
 sealed interface ProfileAction {
     object LoadUserProfile : ProfileAction
     data class UpdateProfile(val profile: UserProfile) : ProfileAction
+    object Logout : ProfileAction
 }
 
 data class ProfileState(

@@ -3,6 +3,7 @@ package com.clockwise.user.presentation.user_auth
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 //import co.touchlab.skie.configuration.annotations.FlowInterop
+import com.clockwise.service.UserService
 import com.clockwise.user.data.network.RemoteUserDataSource
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess
@@ -14,7 +15,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 
 
-class AuthViewModel(private val remoteUserDataSource: RemoteUserDataSource) : ViewModel() {
+class AuthViewModel(
+    private val remoteUserDataSource: RemoteUserDataSource,
+    private val userService: UserService
+) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
     
@@ -73,8 +77,7 @@ class AuthViewModel(private val remoteUserDataSource: RemoteUserDataSource) : Vi
                     remoteUserDataSource.register(
                         username,
                         email,
-                        password,
-                        "123"
+                        password
                     )
                         .onError {
                             _state.update { state ->
@@ -85,10 +88,11 @@ class AuthViewModel(private val remoteUserDataSource: RemoteUserDataSource) : Vi
                                 )
                             }
                         }
-                        .onSuccess {
+                        .onSuccess { response ->
+                        //    userService.saveAuthResponse(response)
                             _state.update { state ->
                                 state.copy(
-                                    resultMessage = it.toString(),
+                                    resultMessage = "Registration successful",
                                     isLoading = false,
                                     isAuthenticated = true
                                 )
@@ -122,10 +126,12 @@ class AuthViewModel(private val remoteUserDataSource: RemoteUserDataSource) : Vi
                             )
                         }
                     }
-                    .onSuccess {
+                    .onSuccess { response ->
+                        userService.saveAuthResponse(response)
+                        
                         _state.update { state ->
                             state.copy(
-                                resultMessage = it.toString(),
+                                resultMessage = "Login successful",
                                 isLoading = false,
                                 isAuthenticated = true
                             )

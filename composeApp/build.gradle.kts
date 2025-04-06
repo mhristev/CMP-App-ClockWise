@@ -41,6 +41,9 @@ kotlin {
             implementation(libs.ktor.client.okhttp)
             implementation(libs.koin.android)
             implementation(libs.koin.androidx.compose)
+            
+            // DataStore dependencies for Android
+            implementation("androidx.datastore:datastore-preferences:1.0.0")
         }
         commonMain.dependencies {
             implementation(libs.jetbrains.compose.navigation)
@@ -59,6 +62,9 @@ kotlin {
 
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
             implementation(libs.kotlinx.datetime)
+            
+            // DataStore core dependencies
+            implementation("androidx.datastore:datastore-preferences-core:1.0.0")
           //  implementation("co.touchlab:skie-annotations:0.4.19")
 //            implementation("co.touchlab.skie:skie-core:0.10.1")
 //            implementation("co.touchlab.skie:skie-annotations:0.10.1")
