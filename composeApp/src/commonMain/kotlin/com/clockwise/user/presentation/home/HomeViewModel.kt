@@ -31,10 +31,14 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import com.clockwise.navigation.NavigationRoutes
 import com.clockwise.user.presentation.home.HomeScreen
+import com.clockwise.user.presentation.home.business.BusinessAction
+import com.clockwise.user.presentation.home.business.BusinessState
+import com.clockwise.user.presentation.home.business.BusinessViewModel
 
 class HomeViewModel(
     private val searchViewModel: SearchViewModel,
-    private val userService: UserService
+    private val userService: UserService,
+    private val businessViewModel: BusinessViewModel
 ) : ViewModel() {
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state
@@ -53,6 +57,15 @@ class HomeViewModel(
                 }
             }
         }
+        
+        // Collect business state updates
+        viewModelScope.launch {
+            businessViewModel.state.collect { businessState ->
+                _state.update { currentState ->
+                    currentState.copy(businessState = businessState)
+                }
+            }
+        }
     }
 
     fun onAction(action: HomeAction) {
@@ -64,6 +77,15 @@ class HomeViewModel(
                         return
                     }
                 }
+                
+                // Only allow managers and admins to access the Business screen
+                if (action.screen == HomeScreen.Business) {
+                    if (!AccessControl.hasAccessToScreen("business", userService)) {
+                        _state.update { it.copy(currentScreen = HomeScreen.Welcome) }
+                        return
+                    }
+                }
+                
                 _state.update { it.copy(currentScreen = action.screen) }
             }
             is HomeAction.WelcomeScreenAction -> handleWelcomeAction(action.action)
@@ -73,6 +95,12 @@ class HomeViewModel(
                 // Only allow access if user has permission
                 if (AccessControl.hasAccessToScreen("search", userService)) {
                     searchViewModel.onAction(action.action)
+                }
+            }
+            is HomeAction.BusinessScreenAction -> {
+                // Only allow access if user has permission
+                if (AccessControl.hasAccessToScreen("business", userService)) {
+                    businessViewModel.onAction(action.action)
                 }
             }
         }
@@ -332,6 +360,7 @@ sealed interface HomeAction {
     data class WeeklyScheduleScreenAction(val action: WeeklyScheduleAction) : HomeAction
     data class CalendarScreenAction(val action: CalendarAction) : HomeAction
     data class SearchScreenAction(val action: SearchAction) : HomeAction
+    data class BusinessScreenAction(val action: BusinessAction) : HomeAction
 }
 
 data class HomeState(
@@ -341,5 +370,6 @@ data class HomeState(
     val calendarState: CalendarState = CalendarState(
         currentMonth = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
     ),
-    val searchState: SearchState = SearchState()
+    val searchState: SearchState = SearchState(),
+    val businessState: BusinessState = BusinessState()
 ) 

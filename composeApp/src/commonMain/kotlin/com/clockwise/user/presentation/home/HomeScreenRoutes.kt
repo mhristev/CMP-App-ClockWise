@@ -10,4 +10,5 @@ sealed class HomeScreen(val route: String) {
     object Calendar : HomeScreen("calendar")
     object Profile : HomeScreen("profile")
     object Search : HomeScreen("search")
+    object Business : HomeScreen("business")
 } 

@@ -23,6 +23,9 @@ import com.clockwise.user.presentation.home.calendar.CalendarScreen
 import com.clockwise.user.presentation.home.HomeAction
 import com.clockwise.user.presentation.home.profile.ProfileViewModel
 import com.clockwise.user.presentation.home.search.SearchScreen
+import com.clockwise.user.presentation.home.business.BusinessScreen
+import com.clockwise.user.presentation.home.business.BusinessViewModel
+import com.clockwise.user.presentation.home.business.BusinessView
 import org.koin.compose.viewmodel.koinViewModel
 
 
@@ -46,6 +49,19 @@ fun HomeScreenContent(
     
     // Use the AccessControl utility to check if the user has access to the Search screen
     val showSearchTab = AccessControl.hasAccessToScreen("search", userService)
+    
+    // Use the AccessControl utility to check if the user has access to the Business screen
+    val showBusinessTab = AccessControl.hasAccessToScreen("business", userService)
+    
+    // Track the previous screen for back navigation
+    var previousScreen by remember { mutableStateOf<HomeScreen?>(null) }
+    
+    // Update previous screen when current screen changes
+    LaunchedEffect(state.currentScreen) {
+        if (state.currentScreen != HomeScreen.Search) {
+            previousScreen = state.currentScreen
+        }
+    }
     
     Scaffold(
         bottomBar = {
@@ -78,13 +94,13 @@ fun HomeScreenContent(
                         onAction(HomeAction.Navigate(HomeScreen.Calendar))
                     }
                 )
-                if (showSearchTab) {
+                if (showBusinessTab) {
                     BottomNavigationItem(
-                        icon = { Icon(Icons.Default.Search, contentDescription = "Search") },
-                        label = { Text("Search") },
-                        selected = state.currentScreen == HomeScreen.Search,
+                        icon = { Icon(Icons.Default.Lock, contentDescription = "Business") },
+                        label = { Text("Business") },
+                        selected = state.currentScreen == HomeScreen.Business,
                         onClick = { 
-                            onAction(HomeAction.Navigate(HomeScreen.Search))
+                            onAction(HomeAction.Navigate(HomeScreen.Business))
                         }
                     )
                 }
@@ -125,6 +141,28 @@ fun HomeScreenContent(
                             state = state.searchState,
                             onAction = { action ->
                                 onAction(HomeAction.SearchScreenAction(action))
+                            },
+                            onNavigateBack = { 
+                                // Navigate back to the previous screen or Business screen
+                                onAction(HomeAction.Navigate(previousScreen ?: HomeScreen.Business))
+                            }
+                        )
+                    } else {
+                        // Redirect to Welcome screen if user doesn't have permission
+                        LaunchedEffect(Unit) {
+                            onAction(HomeAction.Navigate(HomeScreen.Welcome))
+                        }
+                    }
+                }
+                HomeScreen.Business -> {
+                    if (AccessControl.hasAccessToScreen("business", userService)) {
+                        BusinessScreen(
+                            state = state.businessState,
+                            onAction = { action ->
+                                onAction(HomeAction.BusinessScreenAction(action))
+                            },
+                            onNavigateToSearch = {
+                                onAction(HomeAction.Navigate(HomeScreen.Search))
                             }
                         )
                     } else {

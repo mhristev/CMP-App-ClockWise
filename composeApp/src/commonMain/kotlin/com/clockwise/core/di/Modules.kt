@@ -20,6 +20,7 @@ import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 import com.clockwise.user.presentation.user_auth.AuthViewModel
 import org.koin.core.module.dsl.viewModel
+import com.clockwise.user.presentation.home.business.BusinessViewModel
 
 expect val platformModule: Module
 
@@ -32,6 +33,7 @@ val sharedModule = module {
     viewModel {CompanyViewModel(get())}
     single<SearchRepository> { SearchRepositoryImpl(get()) }
     viewModel {SearchViewModel(get(), get())}
-    viewModel {HomeViewModel(get(), get())}
+    viewModel {BusinessViewModel(get())}
+    viewModel {HomeViewModel(get(), get(), get())}
     viewModel {ProfileViewModel(get())}
 }

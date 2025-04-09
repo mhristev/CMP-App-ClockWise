@@ -8,6 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,7 +25,8 @@ import androidx.compose.animation.slideOutHorizontally
 @Composable
 fun SearchScreen(
     state: SearchState,
-    onAction: (SearchAction) -> Unit
+    onAction: (SearchAction) -> Unit,
+    onNavigateBack: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showConfirmationDialog by remember { mutableStateOf<User?>(null) }
@@ -43,12 +45,31 @@ fun SearchScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        Text(
-            text = "Search Users",
-            style = MaterialTheme.typography.h5,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFF4A2B8C)
-        )
+        // Header with back button
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 24.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(
+                onClick = onNavigateBack,
+                modifier = Modifier.padding(end = 16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color(0xFF4A2B8C)
+                )
+            }
+            
+            Text(
+                text = "Search Employees",
+                style = MaterialTheme.typography.h5,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF4A2B8C)
+            )
+        }
 
         Spacer(modifier = Modifier.height(24.dp))
 

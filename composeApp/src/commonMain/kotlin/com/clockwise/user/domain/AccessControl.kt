@@ -18,6 +18,7 @@ object AccessControl {
         
         return when (screen) {
             "search" -> userRole == UserRole.MANAGER || userRole == UserRole.ADMIN
+            "business" -> userRole == UserRole.MANAGER || userRole == UserRole.ADMIN
             else -> true // Default access for other screens
         }
     }
