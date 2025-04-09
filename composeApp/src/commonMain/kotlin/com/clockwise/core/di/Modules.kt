@@ -31,7 +31,7 @@ val sharedModule = module {
     single<RemoteCompanyDataSource> { KtorRemoteCompanyDataSource(get()) }
     viewModel {CompanyViewModel(get())}
     single<SearchRepository> { SearchRepositoryImpl(get()) }
-    viewModel {SearchViewModel(get())}
+    viewModel {SearchViewModel(get(), get())}
     viewModel {HomeViewModel(get(), get())}
     viewModel {ProfileViewModel(get())}
 }
