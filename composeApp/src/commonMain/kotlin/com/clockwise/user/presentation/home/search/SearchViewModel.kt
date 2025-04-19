@@ -24,6 +24,10 @@ class SearchViewModel(
 
     fun onAction(action: SearchAction) {
         when (action) {
+            is SearchAction.UpdateSearchQuery -> {
+                handleSearch(action.query)
+            }
+            
             is SearchAction.Search -> {
                 handleSearch(action.query)
             }

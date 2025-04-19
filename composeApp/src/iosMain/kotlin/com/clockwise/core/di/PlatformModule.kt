@@ -1,25 +1,89 @@
 package com.clockwise.core.di
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.emptyPreferences
-import androidx.datastore.preferences.core.stringPreferencesKey
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.map
+import com.clockwise.user.data.local.AuthData
+import com.clockwise.user.data.local.UserDto
+import com.clockwise.user.data.local.UserPreferences
+import com.clockwise.user.domain.UserRole
+import com.russhwolf.settings.NSUserDefaultsSettings
+import com.russhwolf.settings.Settings
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.darwin.Darwin
 import org.koin.core.module.Module
 import org.koin.dsl.module
+import platform.Foundation.NSUserDefaults
+
+private const val TOKEN = "token"
+private const val REFRESH_TOKEN = "refresh_token"
+private const val TOKEN_TYPE = "token_type"
+private const val EXPIRES_IN = "expires_in"
+private const val USER_ID = "user_id"
+private const val USERNAME = "username"
+private const val EMAIL = "email"
+private const val ROLE = "role"
+private const val BUSINESS_UNIT_ID = "business_unit_id"
+private const val BUSINESS_UNIT_NAME = "business_unit_name"
 
 actual val platformModule: Module = module {
-    single<DataStore<Preferences>> { 
-        object : DataStore<Preferences> {
-            override val data = kotlinx.coroutines.flow.MutableStateFlow<Preferences>(emptyPreferences())
-            
-            override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences {
-                val currentPreferences = data.first()
-                val updatedPreferences = transform(currentPreferences)
-                data.value = updatedPreferences
-                return updatedPreferences
+    single<HttpClientEngine> { Darwin.create() }
+    
+    // Provide NSUserDefaultsSettings implementation
+    single<Settings> { 
+        val userDefaults = NSUserDefaults.standardUserDefaults
+        NSUserDefaultsSettings(userDefaults)
+    }
+    
+    // Create iOS-specific UserPreferences implementation
+    single { 
+        val settings = get<Settings>()
+        object : UserPreferences() {
+            override suspend fun saveAuthData(
+                token: String, 
+                refreshToken: String, 
+                tokenType: String, 
+                expiresIn: Long, 
+                userId: String?, 
+                username: String, 
+                email: String, 
+                role: UserRole, 
+                businessUnitId: String?, 
+                businessUnitName: String?
+            ) {
+                settings.putString(TOKEN, token)
+                settings.putString(REFRESH_TOKEN, refreshToken)
+                settings.putString(TOKEN_TYPE, tokenType)
+                settings.putLong(EXPIRES_IN, expiresIn)
+                settings.putString(USER_ID, userId ?: "")
+                settings.putString(USERNAME, username)
+                settings.putString(EMAIL, email)
+                settings.putString(ROLE, role.name)
+                settings.putString(BUSINESS_UNIT_ID, businessUnitId ?: "")
+                settings.putString(BUSINESS_UNIT_NAME, businessUnitName ?: "")
+            }
+
+            override suspend fun getAuthData(): AuthData? {
+                try {
+                    val token = settings.getStringOrNull(TOKEN) ?: return null
+                    return AuthData(
+                        token = token,
+                        refreshToken = settings.getStringOrNull(REFRESH_TOKEN) ?: return null,
+                        tokenType = settings.getStringOrNull(TOKEN_TYPE) ?: return null,
+                        expiresIn = settings.getLongOrNull(EXPIRES_IN) ?: return null,
+                        user = UserDto(
+                            id = settings.getStringOrNull(USER_ID)?.takeIf { it.isNotEmpty() },
+                            username = settings.getStringOrNull(USERNAME) ?: return null,
+                            email = settings.getStringOrNull(EMAIL) ?: return null,
+                            role = UserRole.valueOf(settings.getStringOrNull(ROLE) ?: return null),
+                            businessUnitId = settings.getStringOrNull(BUSINESS_UNIT_ID)?.takeIf { it.isNotEmpty() },
+                            businessUnitName = settings.getStringOrNull(BUSINESS_UNIT_NAME)?.takeIf { it.isNotEmpty() }
+                        )
+                    )
+                } catch (e: Exception) {
+                    return null
+                }
+            }
+
+            override suspend fun clearAuthData() {
+                settings.clear()
             }
         }
     }

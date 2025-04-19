@@ -1,7 +1,5 @@
 package com.clockwise.core.di
 
-import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
 import com.clockwise.company.data.network.KtorRemoteCompanyDataSource
 import com.clockwise.company.data.network.RemoteCompanyDataSource
 import com.clockwise.company.presentation.CompanyViewModel
@@ -30,10 +28,10 @@ val sharedModule = module {
     single { UserService() }
     viewModel { AuthViewModel(get(), get()) }
     single<RemoteCompanyDataSource> { KtorRemoteCompanyDataSource(get()) }
-    viewModel {CompanyViewModel(get())}
+    viewModel { CompanyViewModel(get()) }
     single<SearchRepository> { SearchRepositoryImpl(get()) }
-    viewModel {SearchViewModel(get(), get())}
-    viewModel {BusinessViewModel(get())}
-    viewModel {HomeViewModel(get(), get(), get())}
-    viewModel {ProfileViewModel(get())}
+    viewModel { SearchViewModel(get(), get()) }
+    viewModel { BusinessViewModel(get()) }
+    viewModel { HomeViewModel(get(), get(), get()) }
+    viewModel { ProfileViewModel(get()) }
 }

@@ -10,8 +10,11 @@ plugins {
     kotlin("plugin.serialization") version "1.9.0"
 
     id("co.touchlab.skie") version "0.10.1"
+}
 
-
+repositories {
+    google()
+    mavenCentral()
 }
 
 kotlin {
@@ -19,6 +22,7 @@ kotlin {
         @OptIn(ExperimentalKotlinGradlePluginApi::class)
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_11)
+            freeCompilerArgs.add("-Xuse-fir-lt=false")
         }
     }
     
@@ -31,6 +35,13 @@ kotlin {
             baseName = "ComposeApp"
             isStatic = true
         }
+        
+        // Disable LightTree mode for iOS targets
+        iosTarget.compilations.configureEach {
+            compilerOptions.configure {
+                freeCompilerArgs.add("-Xuse-fir-lt=false")
+            }
+        }
     }
     
     sourceSets {
@@ -42,8 +53,12 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.koin.androidx.compose)
             
-            // DataStore dependencies for Android
+            // DataStore dependency for Android
             implementation("androidx.datastore:datastore-preferences:1.0.0")
+            
+            // Android-specific implementation of multiplatform-settings
+            implementation("com.russhwolf:multiplatform-settings:1.3.0")
+            implementation("com.russhwolf:multiplatform-settings-datastore:1.3.0")
         }
         commonMain.dependencies {
             implementation(libs.jetbrains.compose.navigation)
@@ -63,15 +78,16 @@ kotlin {
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
             implementation(libs.kotlinx.datetime)
             
-            // DataStore core dependencies
-            implementation("androidx.datastore:datastore-preferences-core:1.0.0")
-          //  implementation("co.touchlab:skie-annotations:0.4.19")
-//            implementation("co.touchlab.skie:skie-core:0.10.1")
-//            implementation("co.touchlab.skie:skie-annotations:0.10.1")
-
+            // Multiplatform Settings for cross-platform data storage
+            implementation("com.russhwolf:multiplatform-settings:1.3.0")
+            implementation("com.russhwolf:multiplatform-settings-coroutines:1.3.0")
         }
         nativeMain.dependencies {
             implementation(libs.ktor.client.darwin)
+            
+            // iOS-specific implementation of multiplatform-settings
+            implementation("com.russhwolf:multiplatform-settings:1.3.0")
+            implementation("com.russhwolf:multiplatform-settings-no-arg:1.3.0")
         }
     }
 }
