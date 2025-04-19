@@ -29,11 +29,22 @@ import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.isoDayNumber
 import com.clockwise.navigation.NavigationRoutes
 import com.clockwise.user.presentation.home.HomeScreen
 import com.clockwise.user.presentation.home.business.BusinessAction
 import com.clockwise.user.presentation.home.business.BusinessState
 import com.clockwise.user.presentation.home.business.BusinessViewModel
+
+// Helper function to calculate the first day (Monday) of the week containing the given date
+private fun getWeekStartDate(date: LocalDate): LocalDate {
+    // In ISO-8601, Monday is 1 and Sunday is 7
+    val dayOfWeek = date.dayOfWeek.isoDayNumber
+    // Calculate how many days to go back to reach Monday
+    val daysToSubtract = dayOfWeek - 1
+    return date.minus(daysToSubtract, DateTimeUnit.DAY)
+}
 
 class HomeViewModel(
     private val searchViewModel: SearchViewModel,
@@ -242,11 +253,12 @@ class HomeViewModel(
                 onAction(HomeAction.WeeklyScheduleScreenAction(WeeklyScheduleAction.LoadWeeklySchedule))
             }
             is WeeklyScheduleAction.NavigateToCurrentWeek -> {
+                val today = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
                 _state.update { currentState ->
                     currentState.copy(
                         weeklyScheduleState = currentState.weeklyScheduleState.copy(
-                            currentWeekStart = Clock.System.now().toLocalDateTime(TimeZone.UTC).date,
-                            selectedDay = Clock.System.now().toLocalDateTime(TimeZone.UTC).date.dayOfWeek
+                            currentWeekStart = getWeekStartDate(today),
+                            selectedDay = today.dayOfWeek
                         )
                     )
                 }
@@ -366,7 +378,9 @@ sealed interface HomeAction {
 data class HomeState(
     val currentScreen: HomeScreen = HomeScreen.Welcome,
     val welcomeState: WelcomeState = WelcomeState(),
-    val weeklyScheduleState: WeeklyScheduleState = WeeklyScheduleState(),
+    val weeklyScheduleState: WeeklyScheduleState = WeeklyScheduleState(
+        currentWeekStart = getWeekStartDate(Clock.System.now().toLocalDateTime(TimeZone.UTC).date)
+    ),
     val calendarState: CalendarState = CalendarState(
         currentMonth = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
     ),

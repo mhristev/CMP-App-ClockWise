@@ -20,6 +20,8 @@ import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.plus
+import kotlinx.datetime.minus
+import kotlinx.datetime.isoDayNumber
 
 private fun formatDate(date: LocalDate): String {
     val monthName = when (date.month) {
@@ -40,6 +42,15 @@ private fun formatDate(date: LocalDate): String {
     return "$monthName ${date.dayOfMonth}"
 }
 
+// Helper function to calculate the first day (Monday) of the week containing the given date
+private fun getWeekStartDate(date: LocalDate): LocalDate {
+    // In ISO-8601, Monday is 1 and Sunday is 7
+    val dayOfWeek = date.dayOfWeek.isoDayNumber
+    // Calculate how many days to go back to reach Monday
+    val daysToSubtract = dayOfWeek - 1
+    return date.minus(daysToSubtract, DateTimeUnit.DAY)
+}
+
 @Composable
 fun WeeklyScheduleScreen(
     state: WeeklyScheduleState,
@@ -48,7 +59,8 @@ fun WeeklyScheduleScreen(
     LaunchedEffect(Unit) {
         onAction(WeeklyScheduleAction.LoadWeeklySchedule)
         if (state.selectedDay == null) {
-            onAction(WeeklyScheduleAction.SelectDay(Clock.System.now().toLocalDateTime(TimeZone.UTC).date.dayOfWeek))
+            val today = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+            onAction(WeeklyScheduleAction.SelectDay(today.dayOfWeek))
         }
     }
 
@@ -122,11 +134,15 @@ fun WeeklyScheduleScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 var currentDate = state.currentWeekStart
+                val today = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+                
                 DayOfWeek.values().forEach { day ->
+                    val isToday = currentDate == today
                     DayButtonWithDate(
                         day = day,
                         date = currentDate,
                         isSelected = state.selectedDay == day,
+                        isToday = isToday,
                         onClick = { onAction(WeeklyScheduleAction.SelectDay(day)) }
                     )
                     currentDate = currentDate.plus(1, DateTimeUnit.DAY)
@@ -185,14 +201,18 @@ private fun DayButtonWithDate(
     day: DayOfWeek,
     date: LocalDate,
     isSelected: Boolean,
+    isToday: Boolean,
     onClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .width(48.dp)
             .background(
-                if (isSelected) Color(0xFF4A2B8C)
-                else Color.Transparent
+                when {
+                    isSelected -> Color(0xFF4A2B8C)
+                    isToday -> Color(0xFFE6E0F3)  // Light purple for today
+                    else -> Color.Transparent
+                }
             )
             .clickable(onClick = onClick)
             .padding(4.dp),
@@ -201,13 +221,15 @@ private fun DayButtonWithDate(
         Text(
             text = day.name.take(3),
             color = if (isSelected) Color.White else Color(0xFF333333),
-            style = MaterialTheme.typography.body2
+            style = MaterialTheme.typography.body2,
+            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = date.dayOfMonth.toString(),
-            color = if (isSelected) Color.White else Color(0xFF666666),
-            style = MaterialTheme.typography.caption
+            color = if (isSelected) Color.White else if (isToday) Color(0xFF4A2B8C) else Color(0xFF666666),
+            style = MaterialTheme.typography.caption,
+            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal
         )
     }
 }
@@ -268,6 +290,6 @@ sealed interface WeeklyScheduleAction {
 data class WeeklyScheduleState(
     val weeklySchedule: Map<DayOfWeek, List<Shift>> = emptyMap(),
     val selectedDay: DayOfWeek? = Clock.System.now().toLocalDateTime(TimeZone.UTC).date.dayOfWeek,
-    val currentWeekStart: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.UTC).date,
+    val currentWeekStart: LocalDate = getWeekStartDate(Clock.System.now().toLocalDateTime(TimeZone.UTC).date),
     val isLoading: Boolean = true
 ) 
