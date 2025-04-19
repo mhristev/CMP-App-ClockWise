@@ -183,11 +183,30 @@ fun WeeklyScheduleScreen(
                         )
                     }
                 } else {
+                    // Group shifts by position
+                    val shiftsByPosition = daySchedule.groupBy { it.position ?: "No Position" }
+                    
                     LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        items(daySchedule) { shift ->
-                            ShiftCard(shift = shift)
+                        shiftsByPosition.forEach { (position, shifts) ->
+                            item {
+                                // Position header
+                                Text(
+                                    text = position,
+                                    style = MaterialTheme.typography.subtitle1,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color(0xFF4A2B8C),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(Color(0xFFF5F5F5))
+                                        .padding(8.dp)
+                                )
+                            }
+                            
+                            items(shifts) { shift ->
+                                ShiftCard(shift = shift)
+                            }
                         }
                     }
                 }
@@ -260,8 +279,17 @@ private fun ShiftCard(shift: Shift) {
                 color = Color(0xFF333333)
             )
 
+            if (shift.position != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Position: ${shift.position}",
+                    style = MaterialTheme.typography.body2,
+                    color = Color(0xFF666666)
+                )
+            }
+
             if (shift.employees.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = "Employees: ${shift.employees.joinToString(", ")}",
                     style = MaterialTheme.typography.body2,
@@ -276,6 +304,7 @@ data class Shift(
     val date: LocalDate,
     val startTime: String,
     val endTime: String,
+    val position: String? = null,
     val employees: List<String> = emptyList()
 )
 

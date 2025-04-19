@@ -75,7 +75,7 @@ fun HomeScreenContent(
                     label = { Text("Home") },
                     selected = state.currentScreen == HomeScreen.Welcome,
                     onClick = { 
-                        onAction(HomeAction.Navigate(HomeScreen.Welcome))
+                        onAction(HomeAction.NavigateToScreen(HomeScreen.Welcome))
                     }
                 )
                 BottomNavigationItem(
@@ -83,7 +83,7 @@ fun HomeScreenContent(
                     label = { Text("Schedule") },
                     selected = state.currentScreen == HomeScreen.WeeklySchedule,
                     onClick = { 
-                        onAction(HomeAction.Navigate(HomeScreen.WeeklySchedule))
+                        onAction(HomeAction.NavigateToScreen(HomeScreen.WeeklySchedule))
                     }
                 )
                 BottomNavigationItem(
@@ -91,7 +91,7 @@ fun HomeScreenContent(
                     label = { Text("Calendar") },
                     selected = state.currentScreen == HomeScreen.Calendar,
                     onClick = { 
-                        onAction(HomeAction.Navigate(HomeScreen.Calendar))
+                        onAction(HomeAction.NavigateToScreen(HomeScreen.Calendar))
                     }
                 )
                 if (showBusinessTab) {
@@ -100,7 +100,7 @@ fun HomeScreenContent(
                         label = { Text("Business") },
                         selected = state.currentScreen == HomeScreen.Business,
                         onClick = { 
-                            onAction(HomeAction.Navigate(HomeScreen.Business))
+                            onAction(HomeAction.NavigateToScreen(HomeScreen.Business))
                         }
                     )
                 }
@@ -109,7 +109,7 @@ fun HomeScreenContent(
                     label = { Text("Profile") },
                     selected = state.currentScreen == HomeScreen.Profile,
                     onClick = { 
-                        onAction(HomeAction.Navigate(HomeScreen.Profile))
+                        onAction(HomeAction.NavigateToScreen(HomeScreen.Profile))
                     }
                 )
             }
@@ -144,13 +144,13 @@ fun HomeScreenContent(
                             },
                             onNavigateBack = { 
                                 // Navigate back to the previous screen or Business screen
-                                onAction(HomeAction.Navigate(previousScreen ?: HomeScreen.Business))
+                                onAction(HomeAction.NavigateToScreen(previousScreen ?: HomeScreen.Business))
                             }
                         )
                     } else {
                         // Redirect to Welcome screen if user doesn't have permission
                         LaunchedEffect(Unit) {
-                            onAction(HomeAction.Navigate(HomeScreen.Welcome))
+                            onAction(HomeAction.NavigateToScreen(HomeScreen.Welcome))
                         }
                     }
                 }
@@ -162,13 +162,13 @@ fun HomeScreenContent(
                                 onAction(HomeAction.BusinessScreenAction(action))
                             },
                             onNavigateToSearch = {
-                                onAction(HomeAction.Navigate(HomeScreen.Search))
+                                onAction(HomeAction.NavigateToScreen(HomeScreen.Search))
                             }
                         )
                     } else {
                         // Redirect to Welcome screen if user doesn't have permission
                         LaunchedEffect(Unit) {
-                            onAction(HomeAction.Navigate(HomeScreen.Welcome))
+                            onAction(HomeAction.NavigateToScreen(HomeScreen.Welcome))
                         }
                     }
                 }

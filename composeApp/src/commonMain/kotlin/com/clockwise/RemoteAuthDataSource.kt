@@ -1,7 +1,7 @@
 package com.clockwise
 
-import com.plcoding.bookpedia.core.domain.DataError
-import com.plcoding.bookpedia.core.domain.Result
+//import com.plcoding.bookpedia.core.domain.DataError
+//import com.plcoding.bookpedia.core.domain.Result
 
 //interface RemoteAuthDataSource {
 //    suspend fun register(

@@ -3,12 +3,14 @@ package com.clockwise.user.presentation.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clockwise.service.UserService
+import com.clockwise.service.ShiftService
 import com.clockwise.user.domain.UserRole
 import com.clockwise.user.domain.AccessControl
 import com.clockwise.user.presentation.home.calendar.CalendarAction
 import com.clockwise.user.presentation.home.calendar.CalendarState
 import com.clockwise.user.presentation.home.profile.ProfileAction
 import com.clockwise.user.presentation.home.profile.ProfileState
+import com.clockwise.user.presentation.home.schedule.Shift
 import com.clockwise.user.presentation.home.schedule.WeeklyScheduleAction
 import com.clockwise.user.presentation.home.schedule.WeeklyScheduleState
 import com.clockwise.user.presentation.home.search.SearchAction
@@ -30,6 +32,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.isoDayNumber
 import com.clockwise.navigation.NavigationRoutes
 import com.clockwise.user.presentation.home.HomeScreen
@@ -38,7 +41,7 @@ import com.clockwise.user.presentation.home.business.BusinessState
 import com.clockwise.user.presentation.home.business.BusinessViewModel
 
 // Helper function to calculate the first day (Monday) of the week containing the given date
-private fun getWeekStartDate(date: LocalDate): LocalDate {
+fun getWeekStartDate(date: LocalDate): LocalDate {
     // In ISO-8601, Monday is 1 and Sunday is 7
     val dayOfWeek = date.dayOfWeek.isoDayNumber
     // Calculate how many days to go back to reach Monday
@@ -47,10 +50,10 @@ private fun getWeekStartDate(date: LocalDate): LocalDate {
 }
 
 class HomeViewModel(
-    private val searchViewModel: SearchViewModel,
     private val userService: UserService,
-    private val businessViewModel: BusinessViewModel
+    private val shiftService: ShiftService
 ) : ViewModel() {
+
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state
         .stateIn(
@@ -59,61 +62,19 @@ class HomeViewModel(
             _state.value
         )
 
-    init {
-        // Collect search state updates
-        viewModelScope.launch {
-            searchViewModel.state.collect { searchState ->
-                _state.update { currentState ->
-                    currentState.copy(searchState = searchState)
-                }
-            }
-        }
-        
-        // Collect business state updates
-        viewModelScope.launch {
-            businessViewModel.state.collect { businessState ->
-                _state.update { currentState ->
-                    currentState.copy(businessState = businessState)
-                }
-            }
-        }
-    }
-
     fun onAction(action: HomeAction) {
         when (action) {
-            is HomeAction.Navigate -> {
-                if (action.screen == HomeScreen.Search) {
-                    if (!AccessControl.hasAccessToScreen("search", userService)) {
-                        _state.update { it.copy(currentScreen = HomeScreen.Welcome) }
-                        return
-                    }
+            is HomeAction.NavigateToScreen -> {
+                _state.update {
+                    it.copy(currentScreen = action.screen)
                 }
-                
-                // Only allow managers and admins to access the Business screen
-                if (action.screen == HomeScreen.Business) {
-                    if (!AccessControl.hasAccessToScreen("business", userService)) {
-                        _state.update { it.copy(currentScreen = HomeScreen.Welcome) }
-                        return
-                    }
-                }
-                
-                _state.update { it.copy(currentScreen = action.screen) }
             }
             is HomeAction.WelcomeScreenAction -> handleWelcomeAction(action.action)
             is HomeAction.WeeklyScheduleScreenAction -> handleWeeklyScheduleAction(action.action)
             is HomeAction.CalendarScreenAction -> handleCalendarAction(action.action)
-            is HomeAction.SearchScreenAction -> {
-                // Only allow access if user has permission
-                if (AccessControl.hasAccessToScreen("search", userService)) {
-                    searchViewModel.onAction(action.action)
-                }
-            }
-            is HomeAction.BusinessScreenAction -> {
-                // Only allow access if user has permission
-                if (AccessControl.hasAccessToScreen("business", userService)) {
-                    businessViewModel.onAction(action.action)
-                }
-            }
+            is HomeAction.SearchScreenAction -> handleSearchAction(action.action)
+            is HomeAction.BusinessScreenAction -> handleBusinessAction(action.action)
+            is HomeAction.ProfileScreenAction -> handleProfileAction(action.action)
         }
     }
 
@@ -210,11 +171,72 @@ class HomeViewModel(
         when (action) {
             is WeeklyScheduleAction.LoadWeeklySchedule -> {
                 viewModelScope.launch {
-                    // TODO: Load weekly schedule from repository
                     _state.update {
                         it.copy(
                             weeklyScheduleState = it.weeklyScheduleState.copy(
-                                weeklySchedule = emptyMap(),
+                                isLoading = true
+                            )
+                        )
+                    }
+                    
+                    // Fetch shifts for the entire week
+                    val weekStart = _state.value.weeklyScheduleState.currentWeekStart
+                    val shiftsForWeek = shiftService.getShiftsForWeek(weekStart)
+                    
+                    // Group shifts by day of week
+                    val shiftsByDay = mutableMapOf<DayOfWeek, MutableList<Shift>>()
+                    
+                    // Initialize empty lists for each day of the week
+                    DayOfWeek.values().forEach { day ->
+                        shiftsByDay[day] = mutableListOf()
+                    }
+                    
+                    // Organize shifts by day
+                    shiftsForWeek.forEach { shiftDto ->
+                        try {
+                            // Extract date components from the array
+                            val year = shiftDto.startTime[0]
+                            val month = shiftDto.startTime[1]
+                            val day = shiftDto.startTime[2]
+                            val hour = shiftDto.startTime[3]
+                            val minute = shiftDto.startTime[4]
+                            
+                            // Create LocalDate from components
+                            val date = LocalDate(year, month, day)
+                            
+                            // Format time as HH:MM
+                            val startTime = String.format("%02d:%02d", hour, minute)
+                            
+                            // Get end time components and format
+                            val endHour = shiftDto.endTime[3]
+                            val endMinute = shiftDto.endTime[4]
+                            val endTime = String.format("%02d:%02d", endHour, endMinute)
+                            
+                            // Get day of week
+                            val dayOfWeek = date.dayOfWeek
+                            
+                            // Create shift object
+                            val shift = Shift(
+                                date = date,
+                                startTime = startTime,
+                                endTime = endTime,
+                                position = shiftDto.position ?: "General Staff",
+                                employees = listOf(shiftDto.employeeId) // You might want to get actual names later
+                            )
+                            
+                            // Add to the appropriate day
+                            shiftsByDay[dayOfWeek]?.add(shift)
+                            
+                        } catch (e: Exception) {
+                            println("Error processing shift: ${e.message}")
+                        }
+                    }
+                    
+                    // Update state with the organized shifts
+                    _state.update {
+                        it.copy(
+                            weeklyScheduleState = it.weeklyScheduleState.copy(
+                                weeklySchedule = shiftsByDay.mapValues { entry -> entry.value },
                                 isLoading = false
                             )
                         )
@@ -228,6 +250,20 @@ class HomeViewModel(
                             selectedDay = action.day
                         )
                     )
+                }
+                
+                // Optionally fetch shifts just for the selected day
+                viewModelScope.launch {
+                    val selectedDay = _state.value.weeklyScheduleState.selectedDay ?: return@launch
+                    val weekStart = _state.value.weeklyScheduleState.currentWeekStart
+                    
+                    // Calculate the date for the selected day
+                    val daysToAdd = selectedDay.isoDayNumber - DayOfWeek.MONDAY.isoDayNumber
+                    val selectedDate = weekStart.plus(daysToAdd, DateTimeUnit.DAY)
+                    
+                    // Fetch shifts for just this day if needed
+                    // This is optional since we're already loading the whole week
+                    // val shiftsForDay = shiftService.getShiftsForDay(selectedDate)
                 }
             }
             is WeeklyScheduleAction.NavigateToNextWeek -> {
@@ -364,15 +400,52 @@ class HomeViewModel(
             }
         }
     }
+
+    private fun handleSearchAction(action: SearchAction) {
+        when (action) {
+            // Handle each specific SearchAction case
+            is SearchAction.Search -> { /* Implementation */ }
+            is SearchAction.SearchSuccess -> { /* Implementation */ }
+            is SearchAction.SearchError -> { /* Implementation */ }
+            is SearchAction.AddUserToBusinessUnit -> { /* Implementation */ }
+            is SearchAction.AddUserSuccess -> { /* Implementation */ }
+            is SearchAction.AddUserError -> { /* Implementation */ }
+            is SearchAction.ClearMessages -> { /* Implementation */ }
+            else -> { /* Catch any other actions */ }
+        }
+    }
+    
+    private fun handleBusinessAction(action: BusinessAction) {
+        when (action) {
+            // Handle each specific BusinessAction case
+            is BusinessAction.LoadBusinessData -> { /* Implementation */ }
+            is BusinessAction.BusinessDataLoaded -> { /* Implementation */ }
+            is BusinessAction.EmployeesLoaded -> { /* Implementation */ }
+            is BusinessAction.Error -> { /* Implementation */ }
+            is BusinessAction.SwitchView -> { /* Implementation */ }
+            else -> { /* Catch any other actions */ }
+        }
+    }
+
+    private fun handleProfileAction(action: ProfileAction) {
+        when (action) {
+            // Handle each specific ProfileAction case
+            is ProfileAction.LoadUserProfile -> { /* Implementation */ }
+            is ProfileAction.UpdateProfile -> { /* Implementation */ }
+            is ProfileAction.Logout -> { /* Implementation */ }
+            else -> { /* Catch any other actions */ }
+        }
+    }
 }
 
 sealed interface HomeAction {
-    data class Navigate(val screen: HomeScreen) : HomeAction
+    data class NavigateToScreen(val screen: HomeScreen) : HomeAction
     data class WelcomeScreenAction(val action: WelcomeAction) : HomeAction
     data class WeeklyScheduleScreenAction(val action: WeeklyScheduleAction) : HomeAction
     data class CalendarScreenAction(val action: CalendarAction) : HomeAction
     data class SearchScreenAction(val action: SearchAction) : HomeAction
     data class BusinessScreenAction(val action: BusinessAction) : HomeAction
+    data class ProfileScreenAction(val action: ProfileAction) : HomeAction
 }
 
 data class HomeState(

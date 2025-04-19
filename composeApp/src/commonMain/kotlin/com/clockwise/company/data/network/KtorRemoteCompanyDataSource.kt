@@ -4,12 +4,13 @@ import com.clockwise.company.domain.Company
 import com.clockwise.core.di.ApiConfig
 import com.plcoding.bookpedia.core.data.safeCall
 import com.plcoding.bookpedia.core.domain.DataError
-import com.plcoding.bookpedia.core.domain.Result
+
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
+import com.plcoding.bookpedia.core.domain.Result
 
 // Remove hardcoded BASE_URL
 // private const val BASE_URL = "http://10.0.2.2:8080/v1/companies"

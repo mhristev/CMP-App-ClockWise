@@ -32,8 +32,6 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.plcoding.bookpedia.core.domain.onError
-import com.plcoding.bookpedia.core.domain.onSuccess
 import kotlinx.serialization.Serializable
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.foundation.lazy.items
@@ -77,7 +75,7 @@ fun App() {
                 HomeScreenRoot(
                     viewModel = viewModel,
                     onNavigate = { screen -> 
-                        viewModel.onAction(HomeAction.Navigate(screen))
+                        viewModel.onAction(HomeAction.NavigateToScreen(screen))
                     },
                     navController = navController,
                     userService = userService
