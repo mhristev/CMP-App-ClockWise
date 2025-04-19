@@ -1,5 +1,6 @@
 package com.clockwise.user.data.network
 
+import com.clockwise.core.di.ApiConfig
 import com.clockwise.user.data.model.AuthResponse
 import com.clockwise.user.data.model.UserDto
 import com.plcoding.bookpedia.core.data.safeCall
@@ -13,12 +14,13 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.plcoding.bookpedia.core.domain.Result
 
-private const val BASE_URL = "http://10.0.2.2:8081/v1/auth"
-
-class KtorRemoteUserDataSource(private val httpClient: HttpClient): RemoteUserDataSource {
+class KtorRemoteUserDataSource(
+    private val httpClient: HttpClient,
+    private val apiConfig: ApiConfig
+): RemoteUserDataSource {
     override suspend fun register(username: String, email: String, password: String): Result<AuthResponse, DataError.Remote> {
         return safeCall<AuthResponse> {
-            httpClient.post("$BASE_URL/register") {
+            httpClient.post("${apiConfig.baseAuthUrl}/register") {
                 contentType(ContentType.Application.Json)
                 setBody(RegisterRequestDto(username, email, password))
             }
@@ -27,7 +29,7 @@ class KtorRemoteUserDataSource(private val httpClient: HttpClient): RemoteUserDa
 
     override suspend fun login(email: String, password: String): Result<AuthResponse, DataError.Remote> {
         return safeCall<AuthResponse> {
-            httpClient.post("$BASE_URL/login") {
+            httpClient.post("${apiConfig.baseAuthUrl}/login") {
                 contentType(ContentType.Application.Json)
                 setBody(LoginRequestDto(email, password))
             }

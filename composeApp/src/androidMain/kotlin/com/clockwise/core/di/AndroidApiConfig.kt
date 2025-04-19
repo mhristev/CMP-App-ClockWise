@@ -1,0 +1,7 @@
+package com.clockwise.core.di
+
+class AndroidApiConfig : ApiConfig {
+    override val baseAuthUrl: String = "http://10.0.2.2:8081/v1/auth"
+    override val baseUsersUrl: String = "http://10.0.2.2:8081/v1/users"
+    override val baseCompaniesUrl: String = "http://10.0.2.2:8080/v1/companies"
+} 

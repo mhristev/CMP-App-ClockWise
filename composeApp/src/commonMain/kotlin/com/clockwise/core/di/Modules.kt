@@ -24,12 +24,12 @@ expect val platformModule: Module
 
 val sharedModule = module {
     single { HttpClientFactory.create(get()) }
-    single<RemoteUserDataSource> { KtorRemoteUserDataSource(get()) }
+    single<RemoteUserDataSource> { KtorRemoteUserDataSource(get(), get()) }
     single { UserService() }
     viewModel { AuthViewModel(get(), get()) }
-    single<RemoteCompanyDataSource> { KtorRemoteCompanyDataSource(get()) }
+    single<RemoteCompanyDataSource> { KtorRemoteCompanyDataSource(get(), get()) }
     viewModel { CompanyViewModel(get()) }
-    single<SearchRepository> { SearchRepositoryImpl(get()) }
+    single<SearchRepository> { SearchRepositoryImpl(get(), get()) }
     viewModel { SearchViewModel(get(), get()) }
     viewModel { BusinessViewModel(get()) }
     viewModel { HomeViewModel(get(), get(), get()) }

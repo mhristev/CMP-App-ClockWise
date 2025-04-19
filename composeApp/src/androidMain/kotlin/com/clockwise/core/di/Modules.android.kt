@@ -26,6 +26,9 @@ actual val platformModule: Module
     get() = module {
         single<HttpClientEngine> { OkHttp.create() }
         
+        // Provide Api configuration
+        single<ApiConfig> { AndroidApiConfig() }
+        
         // Provide SharedPreferencesSettings implementation
         single { 
             val context = get<Context>()

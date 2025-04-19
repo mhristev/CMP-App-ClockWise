@@ -26,6 +26,9 @@ private const val BUSINESS_UNIT_NAME = "business_unit_name"
 actual val platformModule: Module = module {
     single<HttpClientEngine> { Darwin.create() }
     
+    // Provide iOS-specific API configuration
+    single<ApiConfig> { IosApiConfig() }
+    
     // Provide NSUserDefaultsSettings implementation
     single<Settings> { 
         val userDefaults = NSUserDefaults.standardUserDefaults

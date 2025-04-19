@@ -1,6 +1,7 @@
 package com.clockwise.company.data.network
 
 import com.clockwise.company.domain.Company
+import com.clockwise.core.di.ApiConfig
 import com.plcoding.bookpedia.core.data.safeCall
 import com.plcoding.bookpedia.core.domain.DataError
 import com.plcoding.bookpedia.core.domain.Result
@@ -10,7 +11,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.Serializable
 
-private const val BASE_URL = "http://10.0.2.2:8080/v1/companies"
+// Remove hardcoded BASE_URL
+// private const val BASE_URL = "http://10.0.2.2:8080/v1/companies"
 
 @Serializable
 data class CompanyDto(
@@ -30,11 +32,14 @@ fun CompanyDto.to(): Company {
         description = description
     )
 }
-class KtorRemoteCompanyDataSource(private val httpClient: HttpClient): RemoteCompanyDataSource {
+class KtorRemoteCompanyDataSource(
+    private val httpClient: HttpClient,
+    private val apiConfig: ApiConfig
+): RemoteCompanyDataSource {
     override suspend fun getCompanies(): Flow<Result<List<CompanyDto>, DataError.Remote>> {
         return flow {
             val result = safeCall<List<CompanyDto>> {
-                httpClient.get(BASE_URL)
+                httpClient.get(apiConfig.baseCompaniesUrl)
             }
             emit(result)
         }
