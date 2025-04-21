@@ -15,6 +15,7 @@ data class AvailabilityDto(
     val employeeId: String,
     val startTime: List<Int>, // [year, month, day, hour, minute]
     val endTime: List<Int>,   // [year, month, day, hour, minute]
+    val businessUnitId: String? = null,
     val createdAt: List<Int>? = null, // [year, month, day, hour, minute, second, nano]
     val updatedAt: List<Int>? = null  // [year, month, day, hour, minute, second, nano]
 )
@@ -23,7 +24,8 @@ data class AvailabilityDto(
 data class AvailabilityRequest(
     val employeeId: String,
     val startTime: String, // ISO-8601 format (yyyy-MM-ddTHH:mm:ss)
-    val endTime: String    // ISO-8601 format (yyyy-MM-ddTHH:mm:ss)
+    val endTime: String,   // ISO-8601 format (yyyy-MM-ddTHH:mm:ss)
+    val businessUnitId: String? = null
 )
 
 class AvailabilityService(
@@ -34,6 +36,8 @@ class AvailabilityService(
     suspend fun createAvailability(date: LocalDate, startTimeString: String, endTimeString: String): AvailabilityDto {
         val currentUserId = userService.currentUser.value?.id 
             ?: throw IllegalStateException("User not logged in")
+            
+        val businessUnitId = userService.getCurrentUserBusinessUnitId()
             
         // Parse the time strings (HH:mm format)
         val startComponents = startTimeString.split(":").map { it.toInt() }
@@ -50,7 +54,8 @@ class AvailabilityService(
         val request = AvailabilityRequest(
             employeeId = currentUserId,
             startTime = startTimeIso,
-            endTime = endTimeIso
+            endTime = endTimeIso,
+            businessUnitId = businessUnitId
         )
         
         val response = httpClient.post("$apiBaseUrl/availabilities") {
@@ -99,6 +104,8 @@ class AvailabilityService(
         val currentUserId = userService.currentUser.value?.id 
             ?: throw IllegalStateException("User not logged in")
             
+        val businessUnitId = userService.getCurrentUserBusinessUnitId()
+            
         // Parse the time strings (HH:mm format)
         val startComponents = startTimeString.split(":").map { it.toInt() }
         val endComponents = endTimeString.split(":").map { it.toInt() }
@@ -114,7 +121,8 @@ class AvailabilityService(
         val request = AvailabilityRequest(
             employeeId = currentUserId,
             startTime = startTimeIso,
-            endTime = endTimeIso
+            endTime = endTimeIso,
+            businessUnitId = businessUnitId
         )
         
         val response = httpClient.put("$apiBaseUrl/availabilities/$id") {
