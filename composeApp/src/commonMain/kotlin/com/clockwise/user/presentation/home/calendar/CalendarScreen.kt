@@ -1,6 +1,7 @@
 package com.clockwise.user.presentation.home.calendar
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -11,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +31,7 @@ import kotlinx.datetime.plus
 import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import androidx.compose.material.Divider
 
 private fun formatCurrentMonth(date: LocalDate): String {
     val monthName = when (date.month) {
@@ -171,7 +175,9 @@ fun CalendarScreen(
                 // Calendar grid
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(7),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(300.dp), // Fixed height for the calendar grid
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     items(getDaysInMonth(state.currentMonth)) { day ->
@@ -183,6 +189,43 @@ fun CalendarScreen(
                             currentMonth = state.currentMonth,
                             onClick = { onAction(CalendarAction.SelectDate(day)) }
                         )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Availability details section
+                state.selectedDate?.let { selectedDate ->
+                    val availability = state.monthlySchedule[selectedDate]
+                    
+                    if (availability != null) {
+                        AvailabilityDetailsCard(
+                            date = selectedDate,
+                            startTime = availability.first,
+                            endTime = availability.second,
+                            onEdit = { 
+                                // Prefill the dialog with existing values
+                                onAction(CalendarAction.EditAvailability(selectedDate, availability.first, availability.second))
+                            },
+                            onDelete = { 
+                                // Show delete confirmation
+                                onAction(CalendarAction.ShowDeleteConfirmation(selectedDate))
+                            }
+                        )
+                    } else {
+                        // Show message when no availability is set for selected date
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No availability set for ${formatDate(selectedDate)}",
+                                color = Color.Gray,
+                                style = MaterialTheme.typography.body1
+                            )
+                        }
                     }
                 }
             }
@@ -207,14 +250,31 @@ fun CalendarScreen(
             )
         }
 
-        // Availability dialog
+        // Availability dialog with preloaded values for editing
         if (state.showAvailabilityDialog && state.selectedDate != null) {
+            // Check if we have existing availability for this date (editing)
+            val existingAvailability = state.monthlySchedule[state.selectedDate]
+            
             AvailabilityDialog(
                 date = state.selectedDate,
                 onDismiss = { onAction(CalendarAction.HideAvailabilityDialog) },
                 onSetAvailability = { startTime, endTime ->
                     onAction(CalendarAction.SetAvailability(state.selectedDate, startTime, endTime))
                     onAction(CalendarAction.HideAvailabilityDialog)
+                },
+                initialStartTime = existingAvailability?.first ?: "",
+                initialEndTime = existingAvailability?.second ?: ""
+            )
+        }
+
+        // Delete confirmation dialog
+        if (state.showDeleteConfirmationDialog && state.selectedDate != null) {
+            DeleteConfirmationDialog(
+                date = state.selectedDate,
+                onDismiss = { onAction(CalendarAction.HideDeleteConfirmation) },
+                onConfirmDelete = { 
+                    onAction(CalendarAction.DeleteAvailability(state.selectedDate))
+                    onAction(CalendarAction.HideDeleteConfirmation)
                 }
             )
         }
@@ -238,13 +298,25 @@ private fun DayCell(
             .background(
                 when {
                     isSelected -> Color(0xFF4A2B8C)
-                    hasAvailability -> Color(0xFFE8E0F3)
-                    else -> Color.Transparent
+                    else -> Color.Transparent // Removed light purple background
                 }
             )
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
+        if (hasAvailability && !isSelected) {
+            // Draw a circle around days with availabilities
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .border(
+                        width = 1.5.dp,
+                        color = Color(0xFF4A2B8C),
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    )
+            )
+        }
+        
         Text(
             text = day.dayOfMonth.toString(),
             color = when {
@@ -259,19 +331,170 @@ private fun DayCell(
 }
 
 @Composable
+private fun AvailabilityDetailsCard(
+    date: LocalDate,
+    startTime: String,
+    endTime: String,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        elevation = 4.dp,
+        backgroundColor = Color.White
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Availability Details",
+                    style = MaterialTheme.typography.h6,
+                    color = Color(0xFF4A2B8C),
+                    fontWeight = FontWeight.Bold
+                )
+                
+                // Action buttons
+                Row {
+                    // Edit button
+                    IconButton(
+                        onClick = onEdit,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit availability",
+                            tint = Color(0xFF4A2B8C)
+                        )
+                    }
+                    
+                    // Delete button
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Delete availability",
+                            tint = Color(0xFFE53935) // Red color for delete
+                        )
+                    }
+                }
+            }
+            
+            Divider(
+                modifier = Modifier.padding(vertical = 8.dp),
+                color = Color(0xFFEEEEEE)
+            )
+            
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Date:",
+                    style = MaterialTheme.typography.body1,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF333333),
+                    modifier = Modifier.width(100.dp)
+                )
+                
+                Text(
+                    text = formatDate(date),
+                    style = MaterialTheme.typography.body1,
+                    color = Color(0xFF333333)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Start Time:",
+                    style = MaterialTheme.typography.body1,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF333333),
+                    modifier = Modifier.width(100.dp)
+                )
+                
+                Text(
+                    text = startTime,
+                    style = MaterialTheme.typography.body1,
+                    color = Color(0xFF333333)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "End Time:",
+                    style = MaterialTheme.typography.body1,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF333333),
+                    modifier = Modifier.width(100.dp)
+                )
+                
+                Text(
+                    text = endTime,
+                    style = MaterialTheme.typography.body1,
+                    color = Color(0xFF333333)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "Duration:",
+                    style = MaterialTheme.typography.body1,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF333333),
+                    modifier = Modifier.width(100.dp)
+                )
+                
+                // Calculate and display duration
+                val duration = calculateDuration(startTime, endTime)
+                Text(
+                    text = duration,
+                    style = MaterialTheme.typography.body1,
+                    color = Color(0xFF333333)
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun AvailabilityDialog(
     date: LocalDate,
     onDismiss: () -> Unit,
-    onSetAvailability: (String, String) -> Unit
+    onSetAvailability: (String, String) -> Unit,
+    initialStartTime: String = "",
+    initialEndTime: String = ""
 ) {
-    var startTime by remember { mutableStateOf("") }
-    var endTime by remember { mutableStateOf("") }
+    var startTime by remember { mutableStateOf(initialStartTime) }
+    var endTime by remember { mutableStateOf(initialEndTime) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
             Text(
-                text = "Set Availability for ${formatDate(date)}",
+                text = if (initialStartTime.isEmpty()) 
+                    "Set Availability for ${formatDate(date)}" 
+                else 
+                    "Edit Availability for ${formatDate(date)}",
                 color = Color(0xFF4A2B8C)
             )
         },
@@ -299,7 +522,42 @@ private fun AvailabilityDialog(
                     onDismiss()
                 }
             ) {
-                Text("Set", color = Color(0xFF4A2B8C))
+                Text(if (initialStartTime.isEmpty()) "Set" else "Update", color = Color(0xFF4A2B8C))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel", color = Color(0xFF666666))
+            }
+        }
+    )
+}
+
+@Composable
+private fun DeleteConfirmationDialog(
+    date: LocalDate,
+    onDismiss: () -> Unit,
+    onConfirmDelete: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Delete Availability",
+                color = Color(0xFF4A2B8C)
+            )
+        },
+        text = {
+            Text(
+                text = "Are you sure you want to delete your availability for ${formatDate(date)}?",
+                style = MaterialTheme.typography.body1
+            )
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirmDelete
+            ) {
+                Text("Delete", color = Color(0xFFE53935))
             }
         },
         dismissButton = {
@@ -363,6 +621,46 @@ private fun getDaysInMonth(currentMonth: LocalDate): List<LocalDate> {
 //    return targetDate >= minDate && targetDate <= maxDate
 //}
 
+// Helper function to calculate the duration between two time strings (HH:mm format)
+private fun calculateDuration(startTime: String, endTime: String): String {
+    try {
+        // Parse the time strings
+        val startComponents = startTime.split(":")
+        val endComponents = endTime.split(":")
+        
+        if (startComponents.size < 2 || endComponents.size < 2) {
+            return "Unknown"
+        }
+        
+        val startHour = startComponents[0].toIntOrNull() ?: return "Unknown"
+        val startMinute = startComponents[1].toIntOrNull() ?: return "Unknown"
+        val endHour = endComponents[0].toIntOrNull() ?: return "Unknown"
+        val endMinute = endComponents[1].toIntOrNull() ?: return "Unknown"
+        
+        // Calculate total minutes
+        val startTotalMinutes = startHour * 60 + startMinute
+        val endTotalMinutes = endHour * 60 + endMinute
+        val durationMinutes = endTotalMinutes - startTotalMinutes
+        
+        if (durationMinutes <= 0) {
+            return "Invalid duration"
+        }
+        
+        // Convert to hours and minutes
+        val hours = durationMinutes / 60
+        val minutes = durationMinutes % 60
+        
+        // Format the result
+        return when {
+            hours > 0 && minutes > 0 -> "$hours hour${if (hours > 1) "s" else ""} $minutes minute${if (minutes > 1) "s" else ""}"
+            hours > 0 -> "$hours hour${if (hours > 1) "s" else ""}"
+            else -> "$minutes minute${if (minutes > 1) "s" else ""}"
+        }
+    } catch (e: Exception) {
+        return "Unknown"
+    }
+}
+
 sealed interface CalendarAction {
     object LoadMonthlySchedule : CalendarAction
     data class SelectDate(val date: LocalDate?) : CalendarAction
@@ -371,6 +669,14 @@ sealed interface CalendarAction {
         val startTime: String,
         val endTime: String
     ) : CalendarAction
+    data class EditAvailability(
+        val date: LocalDate,
+        val startTime: String,
+        val endTime: String
+    ) : CalendarAction
+    data class DeleteAvailability(val date: LocalDate) : CalendarAction
+    data class ShowDeleteConfirmation(val date: LocalDate) : CalendarAction
+    object HideDeleteConfirmation : CalendarAction
     object NavigateToNextMonth : CalendarAction
     object NavigateToPreviousMonth : CalendarAction
     object ShowAvailabilityDialog : CalendarAction
@@ -382,5 +688,7 @@ data class CalendarState(
     val selectedDate: LocalDate? = Clock.System.now().toLocalDateTime(TimeZone.UTC).date,
     val isLoading: Boolean = true,
     val currentMonth: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.UTC).date,
-    val showAvailabilityDialog: Boolean = false
+    val showAvailabilityDialog: Boolean = false,
+    val showDeleteConfirmationDialog: Boolean = false,
+    val availabilityIdMap: Map<LocalDate, String> = emptyMap() // Map to store availability IDs
 ) 

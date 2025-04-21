@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clockwise.service.UserService
 import com.clockwise.service.ShiftService
+import com.clockwise.service.AvailabilityService
 import com.clockwise.user.domain.UserRole
 import com.clockwise.user.domain.AccessControl
 import com.clockwise.user.presentation.home.calendar.CalendarAction
@@ -51,7 +52,8 @@ fun getWeekStartDate(date: LocalDate): LocalDate {
 
 class HomeViewModel(
     private val userService: UserService,
-    private val shiftService: ShiftService
+    private val shiftService: ShiftService,
+    private val availabilityService: AvailabilityService
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeState())
@@ -82,47 +84,95 @@ class HomeViewModel(
         when (action) {
             is WelcomeAction.LoadUpcomingShifts -> {
                 viewModelScope.launch {
-                    val now = Clock.System.now()
-                    val nowLocal = now.toLocalDateTime(TimeZone.UTC)
-                    
-                    // Today's shift
-                    val todayShift = com.clockwise.user.presentation.home.welcome.Shift(
-                        id = 1,
-                        date = nowLocal,
-                        startTime = nowLocal,
-                        endTime = now.plus(8, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC),
-                        location = "Main Office",
-                        status = ShiftStatus.SCHEDULED
-                    )
-                    
-                    // Upcoming shifts
-                    val upcomingShifts = listOf(
-                        com.clockwise.user.presentation.home.welcome.Shift(
-                            id = 2,
-                            date = now.plus(24, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC),
-                            startTime = now.plus(24, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC),
-                            endTime = now.plus(32, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC),
-                            location = "Branch Office",
-                            status = ShiftStatus.SCHEDULED
-                        ),
-                        com.clockwise.user.presentation.home.welcome.Shift(
-                            id = 3,
-                            date = now.plus(48, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC),
-                            startTime = now.plus(48, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC),
-                            endTime = now.plus(56, DateTimeUnit.HOUR, TimeZone.UTC).toLocalDateTime(TimeZone.UTC),
-                            location = "Remote Office",
-                            status = ShiftStatus.SCHEDULED
-                        )
-                    )
-                    
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             welcomeState = it.welcomeState.copy(
-                                todayShift = todayShift,
-                                upcomingShifts = upcomingShifts,
-                                isLoading = false
+                                isLoading = true
                             )
                         )
+                    }
+                    
+                    try {
+                        // Fetch upcoming shifts from the API
+                        val upcomingShiftsDto = shiftService.getUpcomingShiftsForCurrentUser()
+                        
+                        // Find the current day to determine today's shift
+                        val now = Clock.System.now()
+                        val today = now.toLocalDateTime(TimeZone.UTC).date
+                        
+                        // Convert DTOs to model objects
+                        val shifts = upcomingShiftsDto.map { shiftDto ->
+                            // Extract date and time components
+                            val year = shiftDto.startTime[0]
+                            val month = shiftDto.startTime[1]
+                            val day = shiftDto.startTime[2]
+                            val startHour = shiftDto.startTime[3]
+                            val startMinute = shiftDto.startTime[4]
+                            
+                            val endHour = shiftDto.endTime[3]
+                            val endMinute = shiftDto.endTime[4]
+                            
+                            // Create the start and end times
+                            val startTime = kotlinx.datetime.LocalDateTime(
+                                year = year,
+                                monthNumber = month,
+                                dayOfMonth = day,
+                                hour = startHour,
+                                minute = startMinute
+                            )
+                            
+                            val endTime = kotlinx.datetime.LocalDateTime(
+                                year = shiftDto.endTime[0],
+                                monthNumber = shiftDto.endTime[1],
+                                dayOfMonth = shiftDto.endTime[2],
+                                hour = endHour,
+                                minute = endMinute
+                            )
+                            
+                            // Create the shift
+                            com.clockwise.user.presentation.home.welcome.Shift(
+                                id = shiftDto.id.hashCode(),
+                                date = startTime,
+                                startTime = startTime,
+                                endTime = endTime,
+                                location = shiftDto.position ?: "General Staff",
+                                status = ShiftStatus.SCHEDULED
+                            )
+                        }
+                        
+                        // Separate today's shift from upcoming shifts
+                        val todayShift = shifts.find { shift -> 
+                            shift.date.date == today
+                        }
+                        
+                        val upcomingShifts = shifts.filter { shift ->
+                            shift.date.date > today
+                        }
+
+                        println("Today: $today, Today's shift: ${todayShift?.date?.date}, Upcoming shifts: ${upcomingShifts.size}")
+                        
+                        // Update state with the shifts
+                        _state.update {
+                            it.copy(
+                                welcomeState = it.welcomeState.copy(
+                                    todayShift = todayShift,
+                                    upcomingShifts = upcomingShifts,
+                                    isLoading = false
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        println("Error loading shifts: ${e.message}")
+                        e.printStackTrace()
+                        
+                        // Update state with error
+                        _state.update {
+                            it.copy(
+                                welcomeState = it.welcomeState.copy(
+                                    isLoading = false
+                                )
+                            )
+                        }
                     }
                 }
             }
@@ -308,14 +358,67 @@ class HomeViewModel(
         when (action) {
             is CalendarAction.LoadMonthlySchedule -> {
                 viewModelScope.launch {
-                    // TODO: Load monthly schedule from repository
                     _state.update {
                         it.copy(
                             calendarState = it.calendarState.copy(
-                                monthlySchedule = emptyMap(),
-                                isLoading = false
+                                isLoading = true
                             )
                         )
+                    }
+                    
+                    try {
+                        // Load availabilities from the API
+                        val availabilities = availabilityService.getUserAvailabilities()
+                        
+                        // Convert to a map of LocalDate -> Pair<StartTime, EndTime>
+                        val availabilityMap = mutableMapOf<LocalDate, Pair<String, String>>()
+                        val availabilityIdMap = mutableMapOf<LocalDate, String>()
+                        
+                        availabilities.forEach { availability ->
+                            // Extract date components from the startTime array
+                            val year = availability.startTime[0]
+                            val month = availability.startTime[1]
+                            val day = availability.startTime[2]
+                            val startHour = availability.startTime[3]
+                            val startMinute = availability.startTime[4]
+                            
+                            val endHour = availability.endTime[3]
+                            val endMinute = availability.endTime[4]
+                            
+                            // Create the date and format the times
+                            val date = kotlinx.datetime.LocalDate(year, month, day)
+                            val startTime = String.format("%02d:%02d", startHour, startMinute)
+                            val endTime = String.format("%02d:%02d", endHour, endMinute)
+                            
+                            availabilityMap[date] = Pair(startTime, endTime)
+                            
+                            // Store the availability ID
+                            availability.id?.let { id ->
+                                availabilityIdMap[date] = id
+                            }
+                        }
+                        
+                        _state.update {
+                            it.copy(
+                                calendarState = it.calendarState.copy(
+                                    monthlySchedule = availabilityMap,
+                                    availabilityIdMap = availabilityIdMap,
+                                    isLoading = false
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        println("Error loading availabilities: ${e.message}")
+                        e.printStackTrace()
+                        
+                        _state.update {
+                            it.copy(
+                                calendarState = it.calendarState.copy(
+                                    monthlySchedule = emptyMap(),
+                                    isLoading = false
+                                )
+                            )
+                        }
                     }
                 }
             }
@@ -331,14 +434,148 @@ class HomeViewModel(
             }
             is CalendarAction.SetAvailability -> {
                 viewModelScope.launch {
-                    // TODO: Save availability to repository
                     _state.update {
                         it.copy(
                             calendarState = it.calendarState.copy(
-                                isLoading = false,
-                                showAvailabilityDialog = false
+                                isLoading = true
                             )
                         )
+                    }
+                    
+                    try {
+                        // Check if we're updating an existing availability or creating a new one
+                        val existingAvailabilityId = _state.value.calendarState.availabilityIdMap[action.date]
+                        val availabilityDto = if (existingAvailabilityId != null) {
+                            // Update existing availability
+                            println("Updating existing availability with ID: $existingAvailabilityId")
+                            availabilityService.updateAvailability(
+                                id = existingAvailabilityId,
+                                date = action.date,
+                                startTimeString = action.startTime,
+                                endTimeString = action.endTime
+                            )
+                        } else {
+                            // Create new availability
+                            println("Creating new availability")
+                            availabilityService.createAvailability(
+                                date = action.date,
+                                startTimeString = action.startTime,
+                                endTimeString = action.endTime
+                            )
+                        }
+                        
+                        // Update local state
+                        _state.update { state ->
+                            val updatedSchedule = state.calendarState.monthlySchedule.toMutableMap()
+                            updatedSchedule[action.date] = Pair(action.startTime, action.endTime)
+                            
+                            val updatedIdMap = state.calendarState.availabilityIdMap.toMutableMap()
+                            availabilityDto.id?.let { id ->
+                                updatedIdMap[action.date] = id
+                            }
+                            
+                            state.copy(
+                                calendarState = state.calendarState.copy(
+                                    monthlySchedule = updatedSchedule,
+                                    availabilityIdMap = updatedIdMap,
+                                    isLoading = false,
+                                    showAvailabilityDialog = false
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        println("Error submitting availability: ${e.message}")
+                        e.printStackTrace()
+                        
+                        // Update state with error
+                        _state.update {
+                            it.copy(
+                                calendarState = it.calendarState.copy(
+                                    isLoading = false,
+                                    showAvailabilityDialog = false
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+            is CalendarAction.EditAvailability -> {
+                _state.update {
+                    it.copy(
+                        calendarState = it.calendarState.copy(
+                            showAvailabilityDialog = true
+                        )
+                    )
+                }
+                
+                // Handle the edit the same way as a new creation, the update happens when SetAvailability is called
+                // This relies on the fact that the date won't change between EditAvailability and SetAvailability
+            }
+            is CalendarAction.DeleteAvailability -> {
+                viewModelScope.launch {
+                    _state.update {
+                        it.copy(
+                            calendarState = it.calendarState.copy(
+                                isLoading = true
+                            )
+                        )
+                    }
+                    
+                    try {
+                        val availabilityId = _state.value.calendarState.availabilityIdMap[action.date]
+                        
+                        if (availabilityId != null) {
+                            // Delete availability from the backend
+                            val success = availabilityService.deleteAvailability(availabilityId)
+                            
+                            if (success) {
+                                // Update local state
+                                _state.update { state ->
+                                    val updatedSchedule = state.calendarState.monthlySchedule.toMutableMap()
+                                    updatedSchedule.remove(action.date)
+                                    
+                                    val updatedIdMap = state.calendarState.availabilityIdMap.toMutableMap()
+                                    updatedIdMap.remove(action.date)
+                                    
+                                    state.copy(
+                                        calendarState = state.calendarState.copy(
+                                            monthlySchedule = updatedSchedule,
+                                            availabilityIdMap = updatedIdMap,
+                                            isLoading = false
+                                        )
+                                    )
+                                }
+                            } else {
+                                println("Error deleting availability: Backend reported failure")
+                                _state.update {
+                                    it.copy(
+                                        calendarState = it.calendarState.copy(
+                                            isLoading = false
+                                        )
+                                    )
+                                }
+                            }
+                        } else {
+                            println("Error deleting availability: No ID found for date")
+                            _state.update {
+                                it.copy(
+                                    calendarState = it.calendarState.copy(
+                                        isLoading = false
+                                    )
+                                )
+                            }
+                        }
+                    } catch (e: Exception) {
+                        println("Error deleting availability: ${e.message}")
+                        e.printStackTrace()
+                        
+                        _state.update {
+                            it.copy(
+                                calendarState = it.calendarState.copy(
+                                    isLoading = false
+                                )
+                            )
+                        }
                     }
                 }
             }
@@ -356,6 +593,24 @@ class HomeViewModel(
                     it.copy(
                         calendarState = it.calendarState.copy(
                             showAvailabilityDialog = false
+                        )
+                    )
+                }
+            }
+            is CalendarAction.ShowDeleteConfirmation -> {
+                _state.update {
+                    it.copy(
+                        calendarState = it.calendarState.copy(
+                            showDeleteConfirmationDialog = true
+                        )
+                    )
+                }
+            }
+            is CalendarAction.HideDeleteConfirmation -> {
+                _state.update {
+                    it.copy(
+                        calendarState = it.calendarState.copy(
+                            showDeleteConfirmationDialog = false
                         )
                     )
                 }

@@ -3,6 +3,7 @@ package com.clockwise.core.di
 import com.clockwise.company.data.network.KtorRemoteCompanyDataSource
 import com.clockwise.company.data.network.RemoteCompanyDataSource
 import com.clockwise.company.presentation.CompanyViewModel
+import com.clockwise.service.AvailabilityService
 import com.clockwise.service.ShiftService
 import com.clockwise.service.UserService
 import com.clockwise.user.data.network.KtorRemoteUserDataSource
@@ -28,12 +29,13 @@ val sharedModule = module {
     single<RemoteUserDataSource> { KtorRemoteUserDataSource(get(), get()) }
     single { UserService() }
     single { ShiftService(get(), get()) }
+    single { AvailabilityService(get(), get()) }
     viewModel { AuthViewModel(get(), get()) }
     single<RemoteCompanyDataSource> { KtorRemoteCompanyDataSource(get(), get()) }
     viewModel { CompanyViewModel(get()) }
     single<SearchRepository> { SearchRepositoryImpl(get(), get()) }
     viewModel { SearchViewModel(get(), get()) }
     viewModel { BusinessViewModel(get()) }
-    viewModel { HomeViewModel(get(), get()) }
+    viewModel { HomeViewModel(get(), get(), get()) }
     viewModel { ProfileViewModel(get()) }
 }

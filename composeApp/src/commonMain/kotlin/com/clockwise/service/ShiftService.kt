@@ -27,6 +27,26 @@ class ShiftService(
     private val userService: UserService,
     private val apiBaseUrl: String = "http://10.0.2.2:8080/v1"  // Planning service URL
 ) {
+    suspend fun getUpcomingShiftsForCurrentUser(): List<ShiftDto> {
+        val userId = userService.currentUser.value?.id ?: return emptyList()
+        
+        return try {
+            val token = userService.authToken.value ?: return emptyList()
+            
+            val result = httpClient.get("$apiBaseUrl/users/$userId/shifts/upcoming") {
+                contentType(ContentType.Application.Json)
+                header("Authorization", "Bearer $token")
+            }.body<List<ShiftDto>>()
+            
+            println("Retrieved ${result.size} upcoming shifts for current user")
+            result
+        } catch (e: Exception) {
+            println("Error fetching upcoming shifts: ${e.message}")
+            e.printStackTrace()
+            emptyList()
+        }
+    }
+    
     suspend fun getShiftsForDay(date: LocalDate): List<ShiftDto> {
         val businessUnitId = userService.getCurrentUserBusinessUnitId() ?: return emptyList()
         
