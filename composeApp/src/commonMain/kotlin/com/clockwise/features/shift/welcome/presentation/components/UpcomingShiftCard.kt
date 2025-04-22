@@ -1,4 +1,4 @@
-package com.clockwise.features.welcome.presentation.components
+package com.clockwise.features.shift.welcome.presentation.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
@@ -8,14 +8,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.clockwise.features.welcome.domain.model.Shift
-import com.clockwise.features.welcome.domain.model.ShiftStatus
-import com.clockwise.features.welcome.presentation.WelcomeAction
-import com.clockwise.features.welcome.presentation.utils.formatDate
-import com.clockwise.features.welcome.presentation.utils.formatTime
+import com.clockwise.features.shift.core.domain.model.Shift
+import com.clockwise.features.shift.core.domain.model.ShiftStatus
+import com.clockwise.features.shift.welcome.presentation.WelcomeAction
+import com.clockwise.features.shift.core.utils.formatDate
+import com.clockwise.features.shift.core.utils.formatTime
 
 @Composable
-fun ShiftCard(
+fun UpcomingShiftCard(
     shift: Shift,
     onAction: (WelcomeAction) -> Unit,
     canClockInOut: Boolean
@@ -35,7 +35,7 @@ fun ShiftCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = formatDate(shift.date),
+                    text = formatDate(shift.startTime),
                     style = MaterialTheme.typography.subtitle1,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF4A2B8C)
@@ -125,10 +125,10 @@ fun ShiftCard(
                 }
             }
 
-            if (shift.location.isNotEmpty()) {
+            if (shift.position.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = shift.location,
+                    text = shift.position,
                     style = MaterialTheme.typography.body2,
                     color = Color(0xFF666666)
                 )

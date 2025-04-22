@@ -1,4 +1,4 @@
-package com.clockwise.features.welcome.domain.model
+package com.clockwise.features.shift.core.domain.model
 
 enum class ShiftStatus {
     SCHEDULED,

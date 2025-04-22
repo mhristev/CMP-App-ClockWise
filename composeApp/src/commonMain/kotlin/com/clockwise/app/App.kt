@@ -16,9 +16,8 @@ import com.clockwise.app.security.AccessControl
 
 import com.clockwise.features.auth.presentation.AuthScreenRoot
 import com.clockwise.features.auth.presentation.AuthViewModel
-import com.clockwise.features.welcome.presentation.WelcomeViewModel
-import com.clockwise.features.welcome.presentation.WelcomeScreenRoot
-import com.clockwise.features.profile.presentation.ProfileViewModel
+import com.clockwise.features.shift.welcome.presentation.WelcomeViewModel
+import com.clockwise.features.shift.welcome.presentation.WelcomeScreenRoot
 import com.clockwise.features.profile.presentation.ProfileScreenRoot
 import com.clockwise.features.shift.schedule.presentation.WeeklyScheduleViewModel
 import com.clockwise.features.shift.schedule.presentation.WeeklyScheduleScreenRoot
@@ -35,6 +34,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.clockwise.features.profile.presentation.ProfileViewModel
 
 private val LightPurple = Color(0xFF4A2B8C)
 private val White = Color(0xFFFFFFFF)

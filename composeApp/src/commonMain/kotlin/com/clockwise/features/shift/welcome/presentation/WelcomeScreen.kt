@@ -1,4 +1,4 @@
-package com.clockwise.features.welcome.presentation
+package com.clockwise.features.shift.welcome.presentation
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -11,7 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.clockwise.features.welcome.presentation.components.ShiftCard
+import com.clockwise.features.shift.welcome.presentation.components.UpcomingShiftCard
 
 @Composable
 fun WelcomeScreenRoot(
@@ -70,7 +70,7 @@ fun WelcomeScreen(
             }
         } else {
             state.todayShift?.let { shift ->
-                ShiftCard(
+                UpcomingShiftCard(
                     shift = shift,
                     onAction = onAction,
                     canClockInOut = true
@@ -123,7 +123,7 @@ fun WelcomeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(state.upcomingShifts) { shift ->
-                    ShiftCard(
+                    UpcomingShiftCard(
                         shift = shift,
                         onAction = onAction,
                         canClockInOut = false

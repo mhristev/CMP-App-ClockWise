@@ -1,4 +1,4 @@
-package com.clockwise.features.welcome.presentation.utils
+package com.clockwise.features.shift.core.utils
 
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.Month
