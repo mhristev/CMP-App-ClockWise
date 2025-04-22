@@ -1,10 +1,10 @@
 package com.clockwise.core.di
 
 import android.content.Context
-import com.clockwise.user.data.local.UserPreferences
-import com.clockwise.user.data.local.AuthData
-import com.clockwise.user.data.local.UserDto
-import com.clockwise.user.domain.UserRole
+import com.clockwise.features.auth.data.local.UserPreferences
+import com.clockwise.features.auth.data.local.AuthData
+import com.clockwise.features.auth.data.local.UserDto
+import com.clockwise.core.model.UserRole
 import com.russhwolf.settings.SharedPreferencesSettings
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
@@ -43,15 +43,15 @@ actual val platformModule: Module
             val settings = get<SharedPreferencesSettings>()
             object : UserPreferences() {
                 override suspend fun saveAuthData(
-                    token: String, 
-                    refreshToken: String, 
-                    tokenType: String, 
-                    expiresIn: Long, 
-                    userId: String?, 
-                    username: String, 
-                    email: String, 
-                    role: com.clockwise.user.domain.UserRole, 
-                    businessUnitId: String?, 
+                    token: String,
+                    refreshToken: String,
+                    tokenType: String,
+                    expiresIn: Long,
+                    userId: String?,
+                    username: String,
+                    email: String,
+                    role: UserRole,
+                    businessUnitId: String?,
                     businessUnitName: String?
                 ) {
                     settings.putString(TOKEN, token)
@@ -66,19 +66,19 @@ actual val platformModule: Module
                     settings.putString(BUSINESS_UNIT_NAME, businessUnitName ?: "")
                 }
 
-                override suspend fun getAuthData(): com.clockwise.user.data.local.AuthData? {
+                override suspend fun getAuthData(): AuthData? {
                     try {
                         val token = settings.getStringOrNull(TOKEN) ?: return null
-                        return com.clockwise.user.data.local.AuthData(
+                        return AuthData(
                             token = token,
                             refreshToken = settings.getStringOrNull(REFRESH_TOKEN) ?: return null,
                             tokenType = settings.getStringOrNull(TOKEN_TYPE) ?: return null,
                             expiresIn = settings.getLongOrNull(EXPIRES_IN) ?: return null,
-                            user = com.clockwise.user.data.local.UserDto(
+                            user = UserDto(
                                 id = settings.getStringOrNull(USER_ID)?.takeIf { it.isNotEmpty() },
                                 username = settings.getStringOrNull(USERNAME) ?: return null,
                                 email = settings.getStringOrNull(EMAIL) ?: return null,
-                                role = com.clockwise.user.domain.UserRole.valueOf(settings.getStringOrNull(ROLE) ?: return null),
+                                role = UserRole.valueOf(settings.getStringOrNull(ROLE) ?: return null),
                                 businessUnitId = settings.getStringOrNull(BUSINESS_UNIT_ID)?.takeIf { it.isNotEmpty() },
                                 businessUnitName = settings.getStringOrNull(BUSINESS_UNIT_NAME)?.takeIf { it.isNotEmpty() }
                             )

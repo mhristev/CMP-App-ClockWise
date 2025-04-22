@@ -1,53 +1,22 @@
 package com.clockwise.app
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextField
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
-import kotlinx.coroutines.IO
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.navigation.NavController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import kotlinx.serialization.Serializable
+import com.clockwise.app.navigation.NavigationRoutes
 import org.koin.compose.viewmodel.koinViewModel
-import androidx.compose.foundation.lazy.items
-import com.clockwise.company.presentation.CompanyScreen
-import com.clockwise.company.presentation.CompanyViewModel
-import com.clockwise.user.presentation.home.HomeScreen
-import com.clockwise.user.presentation.home.HomeScreenRoot
-import com.clockwise.user.presentation.home.HomeViewModel
-import com.clockwise.service.UserService
+import com.clockwise.features.welcome.presentation.HomeScreenRoot
+import com.clockwise.features.welcome.presentation.HomeViewModel
+import com.clockwise.core.UserService
 import org.koin.compose.koinInject
-import com.clockwise.navigation.NavigationRoutes
-import com.clockwise.user.presentation.home.HomeAction
+import com.clockwise.features.welcome.presentation.HomeAction
 
-import com.clockwise.user.presentation.user_auth.AuthScreen
-import com.clockwise.user.presentation.user_auth.AuthScreenRoot
-import com.clockwise.user.presentation.user_auth.AuthViewModel
+import com.clockwise.features.auth.presentation.AuthScreenRoot
+import com.clockwise.features.auth.presentation.AuthViewModel
 
 @Composable
 @Preview

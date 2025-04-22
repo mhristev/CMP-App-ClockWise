@@ -1,9 +1,9 @@
 package com.clockwise.core.di
 
-import com.clockwise.user.data.local.AuthData
-import com.clockwise.user.data.local.UserDto
-import com.clockwise.user.data.local.UserPreferences
-import com.clockwise.user.domain.UserRole
+import com.clockwise.features.auth.data.local.AuthData
+import com.clockwise.features.auth.data.local.UserDto
+import com.clockwise.features.auth.data.local.UserPreferences
+import com.clockwise.core.model.UserRole
 import com.russhwolf.settings.NSUserDefaultsSettings
 import com.russhwolf.settings.Settings
 import io.ktor.client.engine.HttpClientEngine
@@ -40,15 +40,15 @@ actual val platformModule: Module = module {
         val settings = get<Settings>()
         object : UserPreferences() {
             override suspend fun saveAuthData(
-                token: String, 
-                refreshToken: String, 
-                tokenType: String, 
-                expiresIn: Long, 
-                userId: String?, 
-                username: String, 
-                email: String, 
-                role: UserRole, 
-                businessUnitId: String?, 
+                token: String,
+                refreshToken: String,
+                tokenType: String,
+                expiresIn: Long,
+                userId: String?,
+                username: String,
+                email: String,
+                role: UserRole,
+                businessUnitId: String?,
                 businessUnitName: String?
             ) {
                 settings.putString(TOKEN, token)
