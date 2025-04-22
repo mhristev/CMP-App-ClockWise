@@ -10,7 +10,6 @@ import com.clockwise.features.auth.data.network.KtorRemoteUserDataSource
 import com.clockwise.features.auth.data.network.RemoteUserDataSource
 import com.clockwise.features.business.domain.repository.SearchRepositoryImpl
 import com.clockwise.features.business.data.repository.SearchRepository
-import com.clockwise.features.welcome.presentation.HomeViewModel
 import com.clockwise.features.profile.presentation.ProfileViewModel
 import com.clockwise.features.business.presentation.add_employee.SearchViewModel
 import com.plcoding.bookpedia.core.data.HttpClientFactory
@@ -27,8 +26,8 @@ val sharedModule = module {
     single { HttpClientFactory.create(get()) }
     single<RemoteUserDataSource> { KtorRemoteUserDataSource(get(), get()) }
     single { UserService() }
-    single { ShiftRepository(get(), get()) }
-    single { AvailabilityRepository(get(), get()) }
+    single { ShiftRepository(get(), get(), get()) }
+    single { AvailabilityRepository(get(), get(), get()) }
     single<RemoteCompanyDataSource> { KtorRemoteCompanyDataSource(get(), get()) }
     single<SearchRepository> { SearchRepositoryImpl(get(), get()) }
     

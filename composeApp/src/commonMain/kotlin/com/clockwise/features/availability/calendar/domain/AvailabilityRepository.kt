@@ -1,6 +1,7 @@
 package com.clockwise.features.availability.calendar.domain
 
 import com.clockwise.core.UserService
+import com.clockwise.core.di.ApiConfig
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
@@ -31,7 +32,7 @@ data class AvailabilityRequest(
 class AvailabilityRepository(
     private val httpClient: HttpClient,
     private val userService: UserService,
-    private val apiBaseUrl: String = "http://10.0.2.2:8080/v1"
+    private val apiConfig: ApiConfig
 ) {
     suspend fun createAvailability(date: LocalDate, startTimeString: String, endTimeString: String): AvailabilityDto {
         val currentUserId = userService.currentUser.value?.id 
@@ -58,7 +59,7 @@ class AvailabilityRepository(
             businessUnitId = businessUnitId
         )
         
-        val response = httpClient.post("$apiBaseUrl/availabilities") {
+        val response = httpClient.post("${apiConfig.baseAvailabilityUrl}/availabilities") {
             contentType(ContentType.Application.Json)
             setBody(Json.encodeToString(AvailabilityRequest.serializer(), request))
             
@@ -81,7 +82,7 @@ class AvailabilityRepository(
         val currentUserId = userService.currentUser.value?.id
         
         // Use the current user endpoint with userId parameter
-        val response = httpClient.get("$apiBaseUrl/users/me/availabilities") {
+        val response = httpClient.get("${apiConfig.baseAvailabilityUrl}/users/me/availabilities") {
             // Add the userId as a parameter if available
             currentUserId?.let {
                 parameter("userId", it)
@@ -125,7 +126,7 @@ class AvailabilityRepository(
             businessUnitId = businessUnitId
         )
         
-        val response = httpClient.put("$apiBaseUrl/availabilities/$id") {
+        val response = httpClient.put("${apiConfig.baseAvailabilityUrl}/availabilities/$id") {
             contentType(ContentType.Application.Json)
             setBody(Json.encodeToString(AvailabilityRequest.serializer(), request))
             
@@ -143,7 +144,7 @@ class AvailabilityRepository(
     }
 
     suspend fun deleteAvailability(id: String): Boolean {
-        val response = httpClient.delete("$apiBaseUrl/availabilities/$id") {
+        val response = httpClient.delete("${apiConfig.baseAvailabilityUrl}/availabilities/$id") {
             userService.authToken.value?.let { token ->
                 header("Authorization", "Bearer $token")
             }

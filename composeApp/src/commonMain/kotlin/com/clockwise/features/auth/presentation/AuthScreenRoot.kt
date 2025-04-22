@@ -16,7 +16,7 @@ fun AuthScreenRoot(
 
     LaunchedEffect(state.isAuthenticated, state.hasBusinessUnit) {
         if (state.isAuthenticated && state.hasBusinessUnit) {
-            navController.navigate(NavigationRoutes.Home.route) {
+            navController.navigate(NavigationRoutes.Welcome.route) {
                 popUpTo(NavigationRoutes.Auth.route)
             }
         }

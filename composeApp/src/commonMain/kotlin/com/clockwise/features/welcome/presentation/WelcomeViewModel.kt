@@ -2,17 +2,17 @@ package com.clockwise.features.welcome.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clockwise.core.TimeProvider
 import com.clockwise.features.shift.schedule.domain.ShiftRepository
-import com.clockwise.features.shift.schedule.presentation.Shift
+import com.clockwise.features.welcome.domain.model.Shift
+import com.clockwise.features.welcome.domain.model.ShiftStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.LocalDateTime
 
 class WelcomeViewModel(
     private val shiftRepository: ShiftRepository
@@ -41,8 +41,7 @@ class WelcomeViewModel(
                         val upcomingShiftsDto = shiftRepository.getUpcomingShiftsForCurrentUser()
                         
                         // Find the current day to determine today's shift
-                        val now = Clock.System.now()
-                        val today = now.toLocalDateTime(TimeZone.UTC).date
+                        val today = TimeProvider.getCurrentLocalDate()
                         
                         // Convert DTOs to model objects
                         val shifts = upcomingShiftsDto.map { shiftDto ->
@@ -57,7 +56,7 @@ class WelcomeViewModel(
                             val endMinute = shiftDto.endTime[4]
                             
                             // Create the start and end times
-                            val startTime = kotlinx.datetime.LocalDateTime(
+                            val startTime = LocalDateTime(
                                 year = year,
                                 monthNumber = month,
                                 dayOfMonth = day,
@@ -65,7 +64,7 @@ class WelcomeViewModel(
                                 minute = startMinute
                             )
                             
-                            val endTime = kotlinx.datetime.LocalDateTime(
+                            val endTime = LocalDateTime(
                                 year = shiftDto.endTime[0],
                                 monthNumber = shiftDto.endTime[1],
                                 dayOfMonth = shiftDto.endTime[2],
@@ -125,7 +124,7 @@ class WelcomeViewModel(
                                 if (shift.id == action.shiftId) {
                                     shift.copy(
                                         status = ShiftStatus.CLOCKED_IN,
-                                        clockInTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+                                        clockInTime = TimeProvider.getCurrentLocalDateTime()
                                     )
                                 } else shift
                             }
@@ -142,7 +141,7 @@ class WelcomeViewModel(
                                 if (shift.id == action.shiftId) {
                                     shift.copy(
                                         status = ShiftStatus.COMPLETED,
-                                        clockOutTime = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+                                        clockOutTime = TimeProvider.getCurrentLocalDateTime()
                                     )
                                 } else shift
                             }

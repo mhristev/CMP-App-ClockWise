@@ -2,6 +2,8 @@ package com.clockwise.features.availability.calendar.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clockwise.core.TimeProvider
+import com.clockwise.core.util.formatTimeString
 import com.clockwise.features.availability.calendar.domain.AvailabilityRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -9,20 +11,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 import kotlinx.datetime.DatePeriod
 import kotlinx.datetime.LocalDate
-import kotlinx.datetime.TimeZone
 import kotlinx.datetime.plus
 import kotlinx.datetime.minus
-import kotlinx.datetime.toLocalDateTime
 
 class CalendarViewModel(
     private val availabilityRepository: AvailabilityRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CalendarState(
-        currentMonth = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+        currentMonth = TimeProvider.getCurrentLocalDate()
     ))
     val state: StateFlow<CalendarState> = _state
         .stateIn(
@@ -62,8 +61,8 @@ class CalendarViewModel(
                             
                             // Create the date and format the times
                             val date = kotlinx.datetime.LocalDate(year, month, day)
-                            val startTime = String.format("%02d:%02d", startHour, startMinute)
-                            val endTime = String.format("%02d:%02d", endHour, endMinute)
+                            val startTime = formatTimeString(startHour, startMinute)
+                            val endTime = formatTimeString(endHour, endMinute)
                             
                             availabilityMap[date] = Pair(startTime, endTime)
                             
@@ -256,7 +255,7 @@ class CalendarViewModel(
                 }
             }
             is CalendarAction.NavigateToNextMonth -> {
-                val currentDate = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+                val currentDate = TimeProvider.getCurrentLocalDate()
                 val targetDate = _state.value.currentMonth.plus(DatePeriod(months = 1))
                 val maxDate = currentDate.plus(DatePeriod(months = 3))
                 
@@ -273,7 +272,7 @@ class CalendarViewModel(
                 }
             }
             is CalendarAction.NavigateToPreviousMonth -> {
-                val currentDate = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+                val currentDate = TimeProvider.getCurrentLocalDate()
                 val targetDate = _state.value.currentMonth.minus(DatePeriod(months = 1))
                 val minDate = currentDate.minus(DatePeriod(months = 3))
                 

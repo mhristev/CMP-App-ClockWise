@@ -30,6 +30,7 @@ import kotlinx.datetime.Clock
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import androidx.compose.material.Divider
+import com.clockwise.core.TimeProvider
 
 private fun formatCurrentMonth(date: LocalDate): String {
     val monthName = when (date.month) {
@@ -683,9 +684,9 @@ sealed interface CalendarAction {
 
 data class CalendarState(
     val monthlySchedule: Map<LocalDate, Pair<String, String>> = emptyMap(),
-    val selectedDate: LocalDate? = Clock.System.now().toLocalDateTime(TimeZone.UTC).date,
+    val selectedDate: LocalDate? = TimeProvider.getCurrentLocalDate(),
     val isLoading: Boolean = true,
-    val currentMonth: LocalDate = Clock.System.now().toLocalDateTime(TimeZone.UTC).date,
+    val currentMonth: LocalDate = TimeProvider.getCurrentLocalDate(),
     val showAvailabilityDialog: Boolean = false,
     val showDeleteConfirmationDialog: Boolean = false,
     val availabilityIdMap: Map<LocalDate, String> = emptyMap() // Map to store availability IDs

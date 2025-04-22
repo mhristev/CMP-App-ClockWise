@@ -2,6 +2,8 @@ package com.clockwise.features.shift.schedule.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.clockwise.core.TimeProvider
+import com.clockwise.core.util.formatTimeString
 import com.clockwise.features.shift.schedule.domain.ShiftRepository
 import com.clockwise.features.shift.schedule.presentation.Shift
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,7 +36,7 @@ class WeeklyScheduleViewModel(
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WeeklyScheduleState(
-        currentWeekStart = getWeekStartDate(Clock.System.now().toLocalDateTime(TimeZone.UTC).date)
+        currentWeekStart = getWeekStartDate(TimeProvider.getCurrentLocalDate())
     ))
     val state: StateFlow<WeeklyScheduleState> = _state
         .stateIn(
@@ -79,12 +81,12 @@ class WeeklyScheduleViewModel(
                             val date = LocalDate(year, month, day)
                             
                             // Format time as HH:MM
-                            val startTime = String.format("%02d:%02d", hour, minute)
+                            val startTime = formatTimeString(hour, minute)
                             
                             // Get end time components and format
                             val endHour = shiftDto.endTime[3]
                             val endMinute = shiftDto.endTime[4]
-                            val endTime = String.format("%02d:%02d", endHour, endMinute)
+                            val endTime = formatTimeString(endHour, endMinute)
                             
                             // Get day of week
                             val dayOfWeek = date.dayOfWeek
@@ -155,7 +157,7 @@ class WeeklyScheduleViewModel(
                 onAction(WeeklyScheduleAction.LoadWeeklySchedule)
             }
             is WeeklyScheduleAction.NavigateToCurrentWeek -> {
-                val today = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+                val today = TimeProvider.getCurrentLocalDate()
                 _state.update { currentState ->
                     currentState.copy(
                         currentWeekStart = getWeekStartDate(today),

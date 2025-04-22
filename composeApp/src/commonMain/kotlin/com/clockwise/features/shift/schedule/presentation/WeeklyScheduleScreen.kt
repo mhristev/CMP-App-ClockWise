@@ -22,6 +22,7 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.plus
 import kotlinx.datetime.minus
 import kotlinx.datetime.isoDayNumber
+import com.clockwise.core.TimeProvider
 
 private fun formatDate(date: LocalDate): String {
     val monthName = when (date.month) {
@@ -50,7 +51,7 @@ fun WeeklyScheduleScreen(
     LaunchedEffect(Unit) {
         onAction(WeeklyScheduleAction.LoadWeeklySchedule)
         if (state.selectedDay == null) {
-            val today = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+            val today = TimeProvider.getCurrentLocalDate()
             onAction(WeeklyScheduleAction.SelectDay(today.dayOfWeek))
         }
     }
@@ -125,7 +126,7 @@ fun WeeklyScheduleScreen(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 var currentDate = state.currentWeekStart
-                val today = Clock.System.now().toLocalDateTime(TimeZone.UTC).date
+                val today = TimeProvider.getCurrentLocalDate()
                 
                 DayOfWeek.values().forEach { day ->
                     val isToday = currentDate == today
@@ -309,7 +310,7 @@ sealed interface WeeklyScheduleAction {
 
 data class WeeklyScheduleState(
     val weeklySchedule: Map<DayOfWeek, List<Shift>> = emptyMap(),
-    val selectedDay: DayOfWeek? = Clock.System.now().toLocalDateTime(TimeZone.UTC).date.dayOfWeek,
-    val currentWeekStart: LocalDate = getWeekStartDate(Clock.System.now().toLocalDateTime(TimeZone.UTC).date),
+    val selectedDay: DayOfWeek? = TimeProvider.getCurrentLocalDate().dayOfWeek,
+    val currentWeekStart: LocalDate = getWeekStartDate(TimeProvider.getCurrentLocalDate()),
     val isLoading: Boolean = true
 ) 

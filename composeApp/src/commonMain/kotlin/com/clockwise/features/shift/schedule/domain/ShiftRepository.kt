@@ -1,6 +1,7 @@
 package com.clockwise.features.shift.schedule.domain
 
 import com.clockwise.core.UserService
+import com.clockwise.core.di.ApiConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.get
@@ -25,7 +26,7 @@ data class ShiftDto(
 class ShiftRepository(
     private val httpClient: HttpClient,
     private val userService: UserService,
-    private val apiBaseUrl: String = "http://10.0.2.2:8080/v1"  // Planning service URL
+    private val apiConfig: ApiConfig
 ) {
     suspend fun getUpcomingShiftsForCurrentUser(): List<ShiftDto> {
         val userId = userService.currentUser.value?.id ?: return emptyList()
@@ -33,7 +34,7 @@ class ShiftRepository(
         return try {
             val token = userService.authToken.value ?: return emptyList()
             
-            val result = httpClient.get("$apiBaseUrl/users/$userId/shifts/upcoming") {
+            val result = httpClient.get("${apiConfig.baseShiftUrl}/users/$userId/shifts/upcoming") {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
             }.body<List<ShiftDto>>()
@@ -56,7 +57,7 @@ class ShiftRepository(
         return try {
             val token = userService.authToken.value ?: return emptyList()
             
-            val result = httpClient.get("$apiBaseUrl/business-units/$businessUnitId/shifts/day?date=$dateTime") {
+            val result = httpClient.get("${apiConfig.baseShiftUrl}/business-units/$businessUnitId/shifts/day?date=$dateTime") {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
             }.body<List<ShiftDto>>()
@@ -80,7 +81,7 @@ class ShiftRepository(
         return try {
             val token = userService.authToken.value ?: return emptyList()
             
-            val result = httpClient.get("$apiBaseUrl/business-units/$businessUnitId/shifts/week?weekStart=$dateTime") {
+            val result = httpClient.get("${apiConfig.baseShiftUrl}/business-units/$businessUnitId/shifts/week?weekStart=$dateTime") {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
             }.body<List<ShiftDto>>()
