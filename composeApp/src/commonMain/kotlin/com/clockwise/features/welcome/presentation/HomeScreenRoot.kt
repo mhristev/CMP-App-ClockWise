@@ -5,6 +5,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.clockwise.core.UserService
+import com.clockwise.features.shift.schedule.presentation.getWeekStartDate
 
 @Composable
 fun HomeScreenRoot(
@@ -17,7 +18,9 @@ fun HomeScreenRoot(
 
     HomeScreenContent(
         state = state,
-        onAction = viewModel::onAction,
+        onAction = { action -> 
+            viewModel.onAction(action)
+        },
         onNavigate = onNavigate,
         navController = navController,
         userService = userService

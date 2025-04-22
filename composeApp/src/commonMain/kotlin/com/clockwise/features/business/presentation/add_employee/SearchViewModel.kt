@@ -1,80 +1,90 @@
 package com.clockwise.features.business.presentation.add_employee
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.clockwise.core.UserService
 import com.clockwise.features.business.data.repository.SearchRepository
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 
 class SearchViewModel(
     private val searchRepository: SearchRepository,
     private val userService: UserService
 ) : ViewModel() {
-    private val viewModelScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
-    private var searchJob: Job? = null
-
     private val _state = MutableStateFlow(SearchState())
-    val state: StateFlow<SearchState> = _state.asStateFlow()
+    val state: StateFlow<SearchState> = _state
+        .stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            _state.value
+        )
 
     fun onAction(action: SearchAction) {
         when (action) {
             is SearchAction.UpdateSearchQuery -> {
                 handleSearch(action.query)
             }
-            
             is SearchAction.Search -> {
-                handleSearch(action.query)
+                viewModelScope.launch {
+                    _state.update {
+                        it.copy(
+                            isLoading = true,
+                            error = null
+                        )
+                    }
+                    
+                    searchUsers(action.query)
+                }
             }
-
             is SearchAction.SearchSuccess -> {
-                _state.update { currentState ->
-                    currentState.copy(
-                        isLoading = false,
+                _state.update {
+                    it.copy(
                         searchResults = action.users,
+                        isLoading = false,
                         error = null
                     )
                 }
             }
-
             is SearchAction.SearchError -> {
-                _state.update { currentState ->
-                    currentState.copy(
-                        isLoading = false,
-                        error = action.error
+                _state.update {
+                    it.copy(
+                        error = action.error,
+                        isLoading = false
                     )
                 }
             }
-
             is SearchAction.AddUserToBusinessUnit -> {
                 addUserToBusinessUnit(action.user)
             }
-
             is SearchAction.AddUserSuccess -> {
-                _state.update { currentState ->
-                    currentState.copy(
-                        successMessage = action.message
-                    )
-                }
-            }
-
-            is SearchAction.AddUserError -> {
-                _state.update { currentState ->
-                    currentState.copy(
-                        error = action.error
-                    )
-                }
-            }
-
-            is SearchAction.ClearMessages -> {
-                _state.update { currentState ->
-                    currentState.copy(
-                        successMessage = null,
+                _state.update {
+                    it.copy(
+                        successMessage = action.message,
+                        isLoading = false,
                         error = null
+                    )
+                }
+            }
+            is SearchAction.AddUserError -> {
+                _state.update {
+                    it.copy(
+                        error = action.error,
+                        isLoading = false
+                    )
+                }
+            }
+            is SearchAction.ClearMessages -> {
+                _state.update {
+                    it.copy(
+                        error = null,
+                        successMessage = null
                     )
                 }
             }
@@ -83,15 +93,12 @@ class SearchViewModel(
 
     private fun handleSearch(query: String) {
         // Cancel any existing search job
-        searchJob?.cancel()
+        viewModelScope.launch {
+            if (query.isBlank()) {
+                _state.update { it.copy(searchResults = emptyList()) }
+                return@launch
+            }
 
-        if (query.isBlank()) {
-            _state.update { it.copy(searchResults = emptyList()) }
-            return
-        }
-
-        // Create a new search job with delay
-        searchJob = viewModelScope.launch {
             delay(500) // Wait for 500ms after the last keystroke
             searchUsers(query)
         }
@@ -176,10 +183,5 @@ class SearchViewModel(
                 }
             }
         }
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        searchJob?.cancel()
     }
 }

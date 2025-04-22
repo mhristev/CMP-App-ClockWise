@@ -19,6 +19,7 @@ import org.koin.dsl.module
 import com.clockwise.features.auth.presentation.AuthViewModel
 import org.koin.core.module.dsl.viewModel
 import com.clockwise.features.business.presentation.BusinessViewModel
+import com.clockwise.di.viewModelModule
 
 expect val platformModule: Module
 
@@ -28,12 +29,13 @@ val sharedModule = module {
     single { UserService() }
     single { ShiftRepository(get(), get()) }
     single { AvailabilityRepository(get(), get()) }
-    viewModel { AuthViewModel(get(), get()) }
     single<RemoteCompanyDataSource> { KtorRemoteCompanyDataSource(get(), get()) }
-    viewModel { CompanyViewModel(get()) }
     single<SearchRepository> { SearchRepositoryImpl(get(), get()) }
-    viewModel { SearchViewModel(get(), get()) }
-    viewModel { BusinessViewModel(get()) }
-    viewModel { HomeViewModel(get(), get(), get()) }
-    viewModel { ProfileViewModel(get()) }
+    
+    // Add view models from viewModelModule
+    includes(viewModelModule)
+    
+    // Auth view model is still defined here since it's not part of our refactoring
+    viewModel { AuthViewModel(get(), get()) }
+    viewModel { CompanyViewModel(get()) }
 }

@@ -42,15 +42,6 @@ private fun formatDate(date: LocalDate): String {
     return "$monthName ${date.dayOfMonth}"
 }
 
-// Helper function to calculate the first day (Monday) of the week containing the given date
-private fun getWeekStartDate(date: LocalDate): LocalDate {
-    // In ISO-8601, Monday is 1 and Sunday is 7
-    val dayOfWeek = date.dayOfWeek.isoDayNumber
-    // Calculate how many days to go back to reach Monday
-    val daysToSubtract = dayOfWeek - 1
-    return date.minus(daysToSubtract, DateTimeUnit.DAY)
-}
-
 @Composable
 fun WeeklyScheduleScreen(
     state: WeeklyScheduleState,

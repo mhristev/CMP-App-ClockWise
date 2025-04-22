@@ -9,16 +9,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.clockwise.core.UserService
 import com.clockwise.app.security.AccessControl
-import com.clockwise.features.profile.presentation.ProfileScreen
-import com.clockwise.features.shift.schedule.presentation.WeeklyScheduleScreen
-import com.clockwise.features.availability.calendar.presentation.CalendarScreen
+import com.clockwise.features.profile.presentation.ProfileScreenRoot
 import com.clockwise.features.profile.presentation.ProfileViewModel
-import com.clockwise.features.business.presentation.add_employee.SearchScreen
-import com.clockwise.features.business.presentation.BusinessScreen
+import com.clockwise.features.shift.schedule.presentation.WeeklyScheduleScreenRoot
+import com.clockwise.features.shift.schedule.presentation.WeeklyScheduleViewModel
+import com.clockwise.features.availability.calendar.presentation.CalendarScreenRoot
+import com.clockwise.features.availability.calendar.presentation.CalendarViewModel
+import com.clockwise.features.business.presentation.add_employee.SearchScreenRoot
+import com.clockwise.features.business.presentation.add_employee.SearchViewModel
+import com.clockwise.features.business.presentation.BusinessScreenRoot
+import com.clockwise.features.business.presentation.BusinessViewModel
 import org.koin.compose.viewmodel.koinViewModel
 
 
@@ -37,13 +40,8 @@ fun HomeScreenContent(
     navController: NavController? = null,
     userService: UserService
 ) {
-    val profileViewModel = koinViewModel<ProfileViewModel>()
-    val profileState by profileViewModel.state.collectAsStateWithLifecycle()
-    
-    // Use the AccessControl utility to check if the user has access to the Search screen
+    // Use the AccessControl utility to check if the user has access to screens
     val showSearchTab = AccessControl.hasAccessToScreen("search", userService)
-    
-    // Use the AccessControl utility to check if the user has access to the Business screen
     val showBusinessTab = AccessControl.hasAccessToScreen("business", userService)
     
     // Track the previous screen for back navigation
@@ -110,31 +108,23 @@ fun HomeScreenContent(
     ) { paddingValues ->
         Box(modifier = Modifier.padding(paddingValues)) {
             when (state.currentScreen) {
-                HomeScreen.Welcome -> WelcomeScreen(
-                    state = state.welcomeState,
-                    onAction = { action ->
-                        onAction(HomeAction.WelcomeScreenAction(action))
-                    }
-                )
-                HomeScreen.WeeklySchedule -> WeeklyScheduleScreen(
-                    state = state.weeklyScheduleState,
-                    onAction = { action ->
-                        onAction(HomeAction.WeeklyScheduleScreenAction(action))
-                    }
-                )
-                HomeScreen.Calendar -> CalendarScreen(
-                    state = state.calendarState,
-                    onAction = { action ->
-                        onAction(HomeAction.CalendarScreenAction(action))
-                    }
-                )
+                HomeScreen.Welcome -> {
+                    val welcomeViewModel = koinViewModel<WelcomeViewModel>()
+                    WelcomeScreenRoot(viewModel = welcomeViewModel)
+                }
+                HomeScreen.WeeklySchedule -> {
+                    val weeklyScheduleViewModel = koinViewModel<WeeklyScheduleViewModel>()
+                    WeeklyScheduleScreenRoot(viewModel = weeklyScheduleViewModel)
+                }
+                HomeScreen.Calendar -> {
+                    val calendarViewModel = koinViewModel<CalendarViewModel>()
+                    CalendarScreenRoot(viewModel = calendarViewModel)
+                }
                 HomeScreen.Search -> {
                     if (AccessControl.hasAccessToScreen("search", userService)) {
-                        SearchScreen(
-                            state = state.searchState,
-                            onAction = { action ->
-                                onAction(HomeAction.SearchScreenAction(action))
-                            },
+                        val searchViewModel = koinViewModel<SearchViewModel>()
+                        SearchScreenRoot(
+                            viewModel = searchViewModel,
                             onNavigateBack = { 
                                 // Navigate back to the previous screen or Business screen
                                 onAction(
@@ -153,11 +143,9 @@ fun HomeScreenContent(
                 }
                 HomeScreen.Business -> {
                     if (AccessControl.hasAccessToScreen("business", userService)) {
-                        BusinessScreen(
-                            state = state.businessState,
-                            onAction = { action ->
-                                onAction(HomeAction.BusinessScreenAction(action))
-                            },
+                        val businessViewModel = koinViewModel<BusinessViewModel>()
+                        BusinessScreenRoot(
+                            viewModel = businessViewModel,
                             onNavigateToSearch = {
                                 onAction(HomeAction.NavigateToScreen(HomeScreen.Search))
                             }
@@ -169,13 +157,13 @@ fun HomeScreenContent(
                         }
                     }
                 }
-                HomeScreen.Profile -> ProfileScreen(
-                    state = profileState,
-                    onAction = { action ->
-                        profileViewModel.onAction(action)
-                    },
-                    navController = navController
-                )
+                HomeScreen.Profile -> {
+                    val profileViewModel = koinViewModel<ProfileViewModel>()
+                    ProfileScreenRoot(
+                        viewModel = profileViewModel,
+                        navController = navController
+                    )
+                }
             }
         }
     }
