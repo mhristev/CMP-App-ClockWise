@@ -1,6 +1,6 @@
 package com.clockwise.features.shift.domain.network
 
-import com.clockwise.core.UserService
+import com.clockwise.features.auth.UserService
 import com.clockwise.core.di.ApiConfig
 import com.clockwise.features.shift.data.dto.ShiftDto
 import com.clockwise.features.shift.data.network.RemoteShiftDataSource

@@ -2,7 +2,8 @@ package com.clockwise.features.business.presentation.add_employee
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.clockwise.core.UserService
+import com.clockwise.features.auth.UserService
+import com.clockwise.core.model.User
 import com.clockwise.features.business.data.repository.UserRepository
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess

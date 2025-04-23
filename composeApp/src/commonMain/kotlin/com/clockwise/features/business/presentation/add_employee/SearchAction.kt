@@ -1,5 +1,7 @@
 package com.clockwise.features.business.presentation.add_employee
 
+import com.clockwise.core.model.User
+
 sealed interface SearchAction {
     data class UpdateSearchQuery(val query: String) : SearchAction
     data class Search(val query: String) : SearchAction

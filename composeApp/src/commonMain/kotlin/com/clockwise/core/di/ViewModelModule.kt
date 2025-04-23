@@ -1,4 +1,4 @@
-package com.clockwise.di
+package com.clockwise.core.di
 
 import com.clockwise.features.availability.presentation.calendar.CalendarViewModel
 import com.clockwise.features.business.presentation.BusinessViewModel

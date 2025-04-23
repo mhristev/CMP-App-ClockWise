@@ -1,6 +1,6 @@
 package com.clockwise.features.profile.domain.repository
 
-import com.clockwise.core.UserService
+import com.clockwise.features.auth.UserService
 import com.clockwise.features.profile.data.repository.ProfileRepository
 import com.clockwise.features.profile.domain.model.UserProfile
 

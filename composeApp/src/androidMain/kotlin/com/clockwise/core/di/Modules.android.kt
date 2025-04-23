@@ -5,6 +5,7 @@ import com.clockwise.features.auth.data.local.UserPreferences
 import com.clockwise.features.auth.data.local.AuthData
 import com.clockwise.features.auth.data.local.UserDto
 import com.clockwise.core.model.UserRole
+import com.liftric.kvault.KVault
 import com.russhwolf.settings.SharedPreferencesSettings
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
@@ -28,6 +29,12 @@ actual val platformModule: Module
         
         // Provide Api configuration
         single<ApiConfig> { AndroidApiConfig() }
+        
+        // Provide KVault initialization for Android platform
+        single {
+            val context = get<Context>()
+            KVault(context, "clockwise_secure_storage")
+        }
         
         // Provide SharedPreferencesSettings implementation
         single { 

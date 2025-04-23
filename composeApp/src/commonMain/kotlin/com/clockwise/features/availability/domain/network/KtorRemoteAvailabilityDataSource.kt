@@ -1,6 +1,6 @@
 package com.clockwise.features.availability.domain.network
 
-import com.clockwise.core.UserService
+import com.clockwise.features.auth.UserService
 import com.clockwise.core.di.ApiConfig
 import com.clockwise.features.availability.data.dto.AvailabilityDto
 import com.clockwise.features.availability.data.dto.AvailabilityRequest

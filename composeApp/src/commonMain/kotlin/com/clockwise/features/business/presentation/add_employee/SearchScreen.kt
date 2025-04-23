@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.clockwise.core.model.User
 import kotlinx.serialization.Serializable
 
 @Composable
@@ -272,12 +273,12 @@ private fun UserCard(user: User, onAddToBusinessUnit: (User) -> Unit) {
     }
 }
 
-@Serializable
-data class User(
-    val id: String,
-    val username: String,
-    val email: String,
-    val role: String,
-    val businessUnitId: String?,
-    val businessUnitName: String?
-) 
+//@Serializable
+//data class User(
+//    val id: String,
+//    val username: String,
+//    val email: String,
+//    val role: String,
+//    val businessUnitId: String?,
+//    val businessUnitName: String?
+//)

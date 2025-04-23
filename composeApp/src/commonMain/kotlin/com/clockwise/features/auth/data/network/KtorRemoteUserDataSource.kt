@@ -13,12 +13,19 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.plcoding.bookpedia.core.domain.Result
 
+/**
+ * Implementation of RemoteUserDataSource that uses Ktor HTTP client
+ */
 class KtorRemoteUserDataSource(
     private val httpClient: HttpClient,
     private val apiConfig: ApiConfig
 ): RemoteUserDataSource {
-    override suspend fun register(username: String, email: String, password: String): Result<AuthResponse, DataError.Remote> {
-        return safeCall<AuthResponse> {
+    override suspend fun register(
+        username: String, 
+        email: String, 
+        password: String
+    ): Result<AuthResponse, DataError.Remote> {
+        return safeCall {
             httpClient.post("${apiConfig.baseAuthUrl}/register") {
                 contentType(ContentType.Application.Json)
                 setBody(RegisterRequestDto(username, email, password))
@@ -26,8 +33,11 @@ class KtorRemoteUserDataSource(
         }
     }
 
-    override suspend fun login(email: String, password: String): Result<AuthResponse, DataError.Remote> {
-        return safeCall<AuthResponse> {
+    override suspend fun login(
+        email: String, 
+        password: String
+    ): Result<AuthResponse, DataError.Remote> {
+        return safeCall {
             httpClient.post("${apiConfig.baseAuthUrl}/login") {
                 contentType(ContentType.Application.Json)
                 setBody(LoginRequestDto(email, password))
@@ -36,13 +46,19 @@ class KtorRemoteUserDataSource(
     }
 }
 
+/**
+ * Data transfer object for registration request
+ */
 @Serializable
 data class RegisterRequestDto(
     @SerialName("username") val username: String,
     @SerialName("email") val email: String,
-    @SerialName("password") val password: String,
+    @SerialName("password") val password: String
 )
 
+/**
+ * Data transfer object for login request
+ */
 @Serializable
 data class LoginRequestDto(
     @SerialName("username") val username: String,

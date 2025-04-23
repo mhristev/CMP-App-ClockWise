@@ -59,6 +59,9 @@ kotlin {
             // Android-specific implementation of multiplatform-settings
             implementation("com.russhwolf:multiplatform-settings:1.3.0")
             implementation("com.russhwolf:multiplatform-settings-datastore:1.3.0")
+            
+            // Android specific KVault implementation
+            implementation("com.liftric:kvault:1.12.0")
         }
         commonMain.dependencies {
             implementation(libs.jetbrains.compose.navigation)
@@ -81,6 +84,9 @@ kotlin {
             // Multiplatform Settings for cross-platform data storage
             implementation("com.russhwolf:multiplatform-settings:1.3.0")
             implementation("com.russhwolf:multiplatform-settings-coroutines:1.3.0")
+            
+            // KVault for secure key-value storage
+            implementation("com.liftric:kvault:1.12.0")
         }
         nativeMain.dependencies {
             implementation(libs.ktor.client.darwin)
@@ -88,6 +94,9 @@ kotlin {
             // iOS-specific implementation of multiplatform-settings
             implementation("com.russhwolf:multiplatform-settings:1.3.0")
             implementation("com.russhwolf:multiplatform-settings-no-arg:1.3.0")
+            
+            // iOS specific KVault implementation
+            implementation("com.liftric:kvault:1.12.0")
         }
     }
 }

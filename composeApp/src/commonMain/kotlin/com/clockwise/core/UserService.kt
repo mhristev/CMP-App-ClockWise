@@ -1,39 +1,41 @@
 package com.clockwise.core
 
-import com.clockwise.features.auth.domain.model.AuthResponse
-import com.clockwise.features.auth.domain.model.UserDto
+import com.clockwise.core.data.SecureStorage
+import com.clockwise.core.model.User
 import com.clockwise.core.model.UserRole
-import kotlinx.coroutines.flow.MutableStateFlow
+import com.clockwise.features.auth.UserService as AuthUserService
+import com.clockwise.features.auth.data.local.UserDto
+import com.clockwise.features.auth.domain.model.AuthResponse
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 
-class UserService {
-    private val _currentUser = MutableStateFlow<UserDto?>(null)
-    val currentUser: StateFlow<UserDto?> = _currentUser.asStateFlow()
-
-    private val _authToken = MutableStateFlow<String?>(null)
-    val authToken: StateFlow<String?> = _authToken.asStateFlow()
-
+/**
+ * Core UserService that delegates to the auth feature's UserService
+ * This allows gradual migration from the old implementation to the new one
+ */
+class UserService(secureStorage: SecureStorage) {
+    
+    private val authUserService = AuthUserService(secureStorage)
+    
+    val currentUser: StateFlow<User?> = authUserService.currentUser
+    val authToken: StateFlow<String?> = authUserService.authToken
+    
     fun saveAuthResponse(response: AuthResponse) {
-        _currentUser.value = response.user
-        _authToken.value = response.token
+        authUserService.saveAuthResponse(response)
     }
-
+    
     fun clearAuthData() {
-        _currentUser.value = null
-        _authToken.value = null
+        authUserService.clearAuthData()
     }
-
+    
     fun isUserAuthorized(): Boolean {
-        return _currentUser.value != null && _authToken.value != null
+        return authUserService.isUserAuthorized()
     }
-
+    
     fun hasManagerAccess(): Boolean {
-        val role = _currentUser.value?.role
-        return role == UserRole.MANAGER || role == UserRole.ADMIN
+        return authUserService.hasManagerAccess()
     }
-
+    
     fun getCurrentUserBusinessUnitId(): String? {
-        return _currentUser.value?.businessUnitId
+        return authUserService.getCurrentUserBusinessUnitId()
     }
 } 

@@ -1,5 +1,6 @@
 package com.clockwise.core.model
 
+import kotlinx.serialization.Serializable
 
 enum class UserRole {
     ADMIN,
@@ -7,11 +8,12 @@ enum class UserRole {
     EMPLOYEE
 }
 
+@Serializable
 data class User(
-    val id: String? = null,
+    val id: String,
     val username: String,
     val email: String,
-    val password: String,
     val role: UserRole,
-    val restaurantId: String? = null
+    val businessUnitId: String?,
+    val businessUnitName: String?
 )

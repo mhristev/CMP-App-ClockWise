@@ -1,6 +1,6 @@
 package com.clockwise.app.security
 
-import com.clockwise.core.UserService
+import com.clockwise.features.auth.UserService
 import com.clockwise.core.model.UserRole
 
 /**

@@ -3,7 +3,7 @@ package com.clockwise.features.auth.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 //import co.touchlab.skie.configuration.annotations.FlowInterop
-import com.clockwise.core.UserService
+import com.clockwise.features.auth.UserService
 import com.clockwise.features.auth.data.network.RemoteUserDataSource
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess
@@ -26,9 +26,9 @@ class AuthViewModel(
         viewModelScope.launch {
             _state.value = _state.value.copy(
                 isLoading = false,
-                isAuthenticated = false,
+                isAuthenticated = userService.isUserAuthorized(),
                 resultMessage = null,
-                hasBusinessUnit = false
+                hasBusinessUnit = userService.getCurrentUserBusinessUnitId() != null
             )
         }
     }
@@ -66,7 +66,7 @@ class AuthViewModel(
                 .onError { error ->
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        resultMessage = "Login failed:"
+                        resultMessage = "Login failed: ${error.name}"
                     )
                 }
         }
@@ -92,7 +92,7 @@ class AuthViewModel(
                 return@launch
             }
 
-            remoteUserDataSource.register(email, username, password)
+            remoteUserDataSource.register(username, email, password)
                 .onSuccess { response ->
                     userService.saveAuthResponse(response)
                     _state.value = _state.value.copy(
@@ -105,7 +105,7 @@ class AuthViewModel(
                 .onError { error ->
                     _state.value = _state.value.copy(
                         isLoading = false,
-                        resultMessage = "Registration failed:"
+                        resultMessage = "Registration failed: ${error.name}"
                     )
                 }
         }

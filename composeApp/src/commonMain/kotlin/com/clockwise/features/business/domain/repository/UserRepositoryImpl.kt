@@ -1,8 +1,9 @@
 package com.clockwise.features.business.domain.repository
 
 import com.clockwise.core.di.ApiConfig
+import com.clockwise.core.model.User
 import com.clockwise.features.business.data.repository.UserRepository
-import com.clockwise.features.business.presentation.add_employee.User
+
 import com.plcoding.bookpedia.core.data.safeCall
 import com.plcoding.bookpedia.core.domain.DataError
 import com.plcoding.bookpedia.core.domain.Result

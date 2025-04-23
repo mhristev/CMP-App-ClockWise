@@ -4,6 +4,7 @@ import com.clockwise.features.auth.data.local.AuthData
 import com.clockwise.features.auth.data.local.UserDto
 import com.clockwise.features.auth.data.local.UserPreferences
 import com.clockwise.core.model.UserRole
+import com.liftric.kvault.KVault
 import com.russhwolf.settings.NSUserDefaultsSettings
 import com.russhwolf.settings.Settings
 import io.ktor.client.engine.HttpClientEngine
@@ -28,6 +29,11 @@ actual val platformModule: Module = module {
     
     // Provide iOS-specific API configuration
     single<ApiConfig> { IosApiConfig() }
+    
+    // Provide KVault for iOS platform
+    single { 
+        KVault("clockwise_secure_storage") 
+    }
     
     // Provide NSUserDefaultsSettings implementation
     single<Settings> { 

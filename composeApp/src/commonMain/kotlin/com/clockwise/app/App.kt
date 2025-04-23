@@ -10,7 +10,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.clockwise.app.navigation.NavigationRoutes
 import org.koin.compose.viewmodel.koinViewModel
-import com.clockwise.core.UserService
+import com.clockwise.features.auth.UserService
 import org.koin.compose.koinInject
 import com.clockwise.app.security.AccessControl
 
