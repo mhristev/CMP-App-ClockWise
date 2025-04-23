@@ -1,4 +1,4 @@
-package com.clockwise.features.availability.calendar.presentation
+package com.clockwise.features.availability.presentation.calendar
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue

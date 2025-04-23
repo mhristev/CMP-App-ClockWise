@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.clockwise.core.TimeProvider
 import com.clockwise.features.shift.data.repository.ShiftRepository
 import com.clockwise.features.shift.domain.model.Shift
-import com.clockwise.features.shift.domain.utils.getWeekStartDate
+import com.clockwise.core.util.getWeekStartDate
 import com.clockwise.features.shift.data.dto.ShiftDto
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess

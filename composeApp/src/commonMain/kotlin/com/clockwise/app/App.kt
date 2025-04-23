@@ -21,8 +21,8 @@ import com.clockwise.features.shift.presentation.welcome_shifts.WelcomeScreenRoo
 import com.clockwise.features.profile.presentation.ProfileScreenRoot
 import com.clockwise.features.shift.presentation.week_schedule.WeeklyScheduleViewModel
 import com.clockwise.features.shift.presentation.week_schedule.WeeklyScheduleScreenRoot
-import com.clockwise.features.availability.calendar.presentation.CalendarViewModel
-import com.clockwise.features.availability.calendar.presentation.CalendarScreenRoot
+import com.clockwise.features.availability.presentation.calendar.CalendarViewModel
+import com.clockwise.features.availability.presentation.calendar.CalendarScreenRoot
 import com.clockwise.features.business.presentation.BusinessViewModel
 import com.clockwise.features.business.presentation.BusinessScreenRoot
 import com.clockwise.features.business.presentation.add_employee.SearchViewModel

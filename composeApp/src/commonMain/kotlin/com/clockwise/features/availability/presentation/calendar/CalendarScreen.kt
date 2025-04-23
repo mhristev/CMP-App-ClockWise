@@ -1,4 +1,4 @@
-package com.clockwise.features.availability.calendar.presentation
+package com.clockwise.features.availability.presentation.calendar
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,11 +26,7 @@ import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import androidx.compose.material.Divider
-import com.clockwise.core.TimeProvider
 
 private fun formatCurrentMonth(date: LocalDate): String {
     val monthName = when (date.month) {
@@ -659,35 +655,3 @@ private fun calculateDuration(startTime: String, endTime: String): String {
         return "Unknown"
     }
 }
-
-sealed interface CalendarAction {
-    object LoadMonthlySchedule : CalendarAction
-    data class SelectDate(val date: LocalDate?) : CalendarAction
-    data class SetAvailability(
-        val date: LocalDate,
-        val startTime: String,
-        val endTime: String
-    ) : CalendarAction
-    data class EditAvailability(
-        val date: LocalDate,
-        val startTime: String,
-        val endTime: String
-    ) : CalendarAction
-    data class DeleteAvailability(val date: LocalDate) : CalendarAction
-    data class ShowDeleteConfirmation(val date: LocalDate) : CalendarAction
-    object HideDeleteConfirmation : CalendarAction
-    object NavigateToNextMonth : CalendarAction
-    object NavigateToPreviousMonth : CalendarAction
-    object ShowAvailabilityDialog : CalendarAction
-    object HideAvailabilityDialog : CalendarAction
-}
-
-data class CalendarState(
-    val monthlySchedule: Map<LocalDate, Pair<String, String>> = emptyMap(),
-    val selectedDate: LocalDate? = TimeProvider.getCurrentLocalDate(),
-    val isLoading: Boolean = true,
-    val currentMonth: LocalDate = TimeProvider.getCurrentLocalDate(),
-    val showAvailabilityDialog: Boolean = false,
-    val showDeleteConfirmationDialog: Boolean = false,
-    val availabilityIdMap: Map<LocalDate, String> = emptyMap() // Map to store availability IDs
-) 

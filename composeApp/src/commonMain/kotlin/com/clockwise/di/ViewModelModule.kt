@@ -1,6 +1,6 @@
 package com.clockwise.di
 
-import com.clockwise.features.availability.calendar.presentation.CalendarViewModel
+import com.clockwise.features.availability.presentation.calendar.CalendarViewModel
 import com.clockwise.features.business.presentation.BusinessViewModel
 import com.clockwise.features.business.presentation.add_employee.SearchViewModel
 import com.clockwise.features.profile.presentation.ProfileViewModel

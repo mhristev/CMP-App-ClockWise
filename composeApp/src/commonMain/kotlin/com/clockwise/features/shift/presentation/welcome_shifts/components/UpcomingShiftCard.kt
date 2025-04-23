@@ -11,8 +11,8 @@ import androidx.compose.ui.unit.dp
 import com.clockwise.features.shift.domain.model.Shift
 import com.clockwise.features.shift.domain.model.ShiftStatus
 import com.clockwise.features.shift.presentation.welcome_shifts.WelcomeAction
-import com.clockwise.features.shift.domain.utils.formatDate
-import com.clockwise.features.shift.domain.utils.formatTime
+import com.clockwise.core.util.formatDate
+import com.clockwise.core.util.formatTime
 
 @Composable
 fun UpcomingShiftCard(

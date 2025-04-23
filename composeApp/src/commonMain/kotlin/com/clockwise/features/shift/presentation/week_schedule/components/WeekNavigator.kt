@@ -19,7 +19,7 @@ import com.clockwise.core.TimeProvider
 import com.clockwise.features.shift.presentation.theme.ShiftColors
 import com.clockwise.features.shift.presentation.week_schedule.WeeklyScheduleAction
 import com.clockwise.features.shift.presentation.week_schedule.WeeklyScheduleState
-import com.clockwise.features.shift.domain.utils.formatDate
+import com.clockwise.core.util.formatDate
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.DayOfWeek
 import kotlinx.datetime.plus
