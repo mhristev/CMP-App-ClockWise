@@ -16,11 +16,11 @@ import com.clockwise.app.security.AccessControl
 
 import com.clockwise.features.auth.presentation.AuthScreenRoot
 import com.clockwise.features.auth.presentation.AuthViewModel
-import com.clockwise.features.shift.welcome.presentation.WelcomeViewModel
-import com.clockwise.features.shift.welcome.presentation.WelcomeScreenRoot
+import com.clockwise.features.shift.presentation.welcome_shifts.WelcomeViewModel
+import com.clockwise.features.shift.presentation.welcome_shifts.WelcomeScreenRoot
 import com.clockwise.features.profile.presentation.ProfileScreenRoot
-import com.clockwise.features.shift.schedule.presentation.WeeklyScheduleViewModel
-import com.clockwise.features.shift.schedule.presentation.WeeklyScheduleScreenRoot
+import com.clockwise.features.shift.presentation.week_schedule.WeeklyScheduleViewModel
+import com.clockwise.features.shift.presentation.week_schedule.WeeklyScheduleScreenRoot
 import com.clockwise.features.availability.calendar.presentation.CalendarViewModel
 import com.clockwise.features.availability.calendar.presentation.CalendarScreenRoot
 import com.clockwise.features.business.presentation.BusinessViewModel

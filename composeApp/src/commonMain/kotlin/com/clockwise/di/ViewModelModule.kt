@@ -4,8 +4,8 @@ import com.clockwise.features.availability.calendar.presentation.CalendarViewMod
 import com.clockwise.features.business.presentation.BusinessViewModel
 import com.clockwise.features.business.presentation.add_employee.SearchViewModel
 import com.clockwise.features.profile.presentation.ProfileViewModel
-import com.clockwise.features.shift.schedule.presentation.WeeklyScheduleViewModel
-import com.clockwise.features.shift.welcome.presentation.WelcomeViewModel
+import com.clockwise.features.shift.presentation.week_schedule.WeeklyScheduleViewModel
+import com.clockwise.features.shift.presentation.welcome_shifts.WelcomeViewModel
 import org.koin.dsl.module
 
 val viewModelModule = module {
@@ -14,6 +14,6 @@ val viewModelModule = module {
     factory { WeeklyScheduleViewModel(get()) }
     factory { CalendarViewModel(get()) }
     factory { BusinessViewModel(get()) }
-    factory { ProfileViewModel(get()) }
     factory { SearchViewModel(get(), get()) }
+    factory { ProfileViewModel(get()) }
 } 
