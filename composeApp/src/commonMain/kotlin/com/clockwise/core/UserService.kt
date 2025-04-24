@@ -4,7 +4,6 @@ import com.clockwise.core.data.SecureStorage
 import com.clockwise.core.model.User
 import com.clockwise.core.model.UserRole
 import com.clockwise.features.auth.UserService as AuthUserService
-import com.clockwise.features.auth.data.local.UserDto
 import com.clockwise.features.auth.domain.model.AuthResponse
 import kotlinx.coroutines.flow.StateFlow
 

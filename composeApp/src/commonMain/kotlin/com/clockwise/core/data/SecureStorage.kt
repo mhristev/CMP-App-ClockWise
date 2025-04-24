@@ -1,7 +1,6 @@
 package com.clockwise.core.data
 
 import com.clockwise.core.model.User
-import com.clockwise.features.auth.data.local.UserDto
 import com.clockwise.features.auth.domain.model.AuthResponse
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
