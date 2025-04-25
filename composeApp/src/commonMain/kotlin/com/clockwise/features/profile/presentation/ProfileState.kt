@@ -8,5 +8,7 @@ import com.clockwise.features.profile.domain.model.UserProfile
 data class ProfileState(
     val userProfile: UserProfile? = null,
     val isLoading: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val showAnonymizeConfirmation: Boolean = false,
+    val redirectToAuth: Boolean = false
 ) 

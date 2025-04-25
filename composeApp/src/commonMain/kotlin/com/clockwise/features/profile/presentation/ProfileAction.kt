@@ -20,4 +20,9 @@ sealed class ProfileAction {
      * Log the user out
      */
     data object Logout : ProfileAction()
+    
+    /**
+     * Anonymize the user's account (GDPR right to be forgotten)
+     */
+    data object AnonymizeAccount : ProfileAction()
 } 

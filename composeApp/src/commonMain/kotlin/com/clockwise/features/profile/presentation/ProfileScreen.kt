@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -21,7 +22,8 @@ import com.clockwise.features.profile.presentation.theme.ProfileColors
 fun ProfileScreen(
     state: ProfileState,
     onAction: (ProfileAction) -> Unit,
-    navController: NavController? = null
+    navController: NavController? = null,
+    viewModel: ProfileViewModel? = null
 ) {
     LaunchedEffect(Unit) {
         onAction(ProfileAction.LoadUserProfile)
@@ -47,6 +49,11 @@ fun ProfileScreen(
             // Settings Section
             SettingsSection()
         }
+        
+        item {
+            // GDPR Section
+            GdprSection(onAction = onAction)
+        }
 
         item {
             // Logout Button
@@ -60,6 +67,17 @@ fun ProfileScreen(
                 }
             )
         }
+    }
+    
+    // Confirmation Dialog
+    if (state.showAnonymizeConfirmation && viewModel != null) {
+        AnonymizeAccountConfirmationDialog(
+            onConfirm = {
+                viewModel.confirmAnonymizeAccount()
+                // Navigation is now handled via the redirectToAuth state in ProfileScreenRoot
+            },
+            onDismiss = { viewModel.hideAnonymizeConfirmation() }
+        )
     }
 }
 
@@ -163,6 +181,82 @@ private fun SettingsSection() {
             )
         }
     }
+}
+
+@Composable
+private fun GdprSection(onAction: (ProfileAction) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        elevation = 4.dp
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Privacy & GDPR",
+                style = MaterialTheme.typography.h6,
+                color = ProfileColors.Primary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            
+            Text(
+                text = "Your data privacy rights under GDPR",
+                style = MaterialTheme.typography.body2,
+                color = Color.Gray,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+            
+            Button(
+                onClick = { onAction(ProfileAction.AnonymizeAccount) },
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Red, contentColor = Color.White),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Delete My Account")
+            }
+        }
+    }
+}
+
+@Composable
+private fun AnonymizeAccountConfirmationDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Delete Account") },
+        text = { 
+            Column {
+                Text("Are you sure you want to delete your account?")
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "This will anonymize your personal data in accordance with GDPR requirements. This action cannot be undone.",
+                    style = MaterialTheme.typography.body2
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(backgroundColor = Color.Red)
+            ) {
+                Text("Yes, Delete My Account", color = Color.White)
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable

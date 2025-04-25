@@ -1,14 +1,20 @@
 package com.clockwise.features.profile.domain.repository
 
+import com.clockwise.core.di.ApiConfig
 import com.clockwise.features.auth.UserService
 import com.clockwise.features.profile.data.repository.ProfileRepository
 import com.clockwise.features.profile.domain.model.UserProfile
+import io.ktor.client.*
+import io.ktor.client.request.*
+import io.ktor.http.*
 
 /**
  * Implementation of the ProfileRepository that uses UserService for data operations
  */
 class ProfileRepositoryImpl(
-    private val userService: UserService
+    private val userService: UserService,
+    private val httpClient: HttpClient,
+    private val apiConfig: ApiConfig
 ) : ProfileRepository {
     
     override suspend fun getUserProfile(): UserProfile? {
@@ -33,6 +39,23 @@ class ProfileRepositoryImpl(
     override suspend fun logout(): Result<Unit> {
         return try {
             userService.clearAuthData()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun anonymizeUserAccount(): Result<Unit> {
+        return try {
+            val token = userService.authToken.value ?: throw IllegalStateException("No auth token available")
+            
+            httpClient.delete("${apiConfig.gdprUrl}/erase-me") {
+                header(HttpHeaders.Authorization, "Bearer $token")
+            }
+            
+            // After successful anonymization, log the user out
+            userService.clearAuthData()
+            
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

@@ -66,7 +66,7 @@ val sharedModule = module {
     single<AvailabilityRepository> { AvailabilityRepositoryImpl(get()) }
     single<RemoteCompanyDataSource> { KtorRemoteCompanyDataSource(get(), get()) }
     single<UserRepository> { UserRepositoryImpl(get(), get()) }
-    single<ProfileRepository> { ProfileRepositoryImpl(get()) }
+    single<ProfileRepository> { ProfileRepositoryImpl(get(), get(), get()) }
 
     // Add view models from viewModelModule
     includes(viewModelModule)

@@ -21,4 +21,9 @@ interface ProfileRepository {
      * Log the user out and clear authentication data
      */
     suspend fun logout(): Result<Unit>
+    
+    /**
+     * Anonymize the current user's account as per GDPR requirements
+     */
+    suspend fun anonymizeUserAccount(): Result<Unit>
 } 

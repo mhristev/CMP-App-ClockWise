@@ -31,6 +31,7 @@ class ProfileViewModel(
             is ProfileAction.LoadUserProfile -> loadUserProfile()
             is ProfileAction.UpdateProfile -> updateProfile(action.profile)
             is ProfileAction.Logout -> logout()
+            is ProfileAction.AnonymizeAccount -> showAnonymizeConfirmation()
         }
     }
 
@@ -88,6 +89,41 @@ class ProfileViewModel(
         viewModelScope.launch {
             repository.logout()
             // Navigation is handled by the UI
+        }
+    }
+    
+    private fun showAnonymizeConfirmation() {
+        _state.update { it.copy(showAnonymizeConfirmation = true) }
+    }
+    
+    fun hideAnonymizeConfirmation() {
+        _state.update { it.copy(showAnonymizeConfirmation = false) }
+    }
+    
+    fun confirmAnonymizeAccount() {
+        viewModelScope.launch {
+            _state.update { it.copy(isLoading = true, showAnonymizeConfirmation = false) }
+            
+            repository.anonymizeUserAccount().fold(
+                onSuccess = {
+                    // Account anonymized successfully - user will be logged out automatically
+                    // Set redirectToAuth flag to trigger navigation in the UI
+                    _state.update { state ->
+                        state.copy(
+                            isLoading = false,
+                            redirectToAuth = true
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _state.update { state ->
+                        state.copy(
+                            isLoading = false,
+                            error = "Failed to anonymize account: ${error.message}"
+                        )
+                    }
+                }
+            )
         }
     }
 } 
