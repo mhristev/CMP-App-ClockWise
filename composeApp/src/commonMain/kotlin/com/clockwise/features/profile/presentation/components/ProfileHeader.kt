@@ -47,7 +47,7 @@ fun ProfileHeader(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = userProfile?.name ?: "Loading...",
+            text = if (userProfile != null) "${userProfile.firstName} ${userProfile.lastName}" else "Loading...",
             style = MaterialTheme.typography.h5,
             fontWeight = FontWeight.Bold,
             color = ProfileColors.Primary

@@ -177,7 +177,7 @@ fun SearchScreen(
             onDismissRequest = { showConfirmationDialog = null },
             title = { Text("Add User to Business Unit") },
             text = { 
-                Text("Are you sure you want to add ${user.username} to your business unit?") 
+                Text("Are you sure you want to add ${user.firstName} ${user.lastName} to your business unit?") 
             },
             confirmButton = {
                 Button(
@@ -221,7 +221,7 @@ private fun UserCard(user: User, onAddToBusinessUnit: (User) -> Unit) {
             ) {
                 Column {
                     Text(
-                        text = user.username,
+                        text = "${user.firstName} ${user.lastName}",
                         style = MaterialTheme.typography.subtitle1,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF4A2B8C)

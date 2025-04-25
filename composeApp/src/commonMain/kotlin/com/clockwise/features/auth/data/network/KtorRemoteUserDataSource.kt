@@ -1,6 +1,7 @@
 package com.clockwise.features.auth.data.network
 
 import com.clockwise.core.di.ApiConfig
+import com.clockwise.core.model.PrivacyConsent
 import com.clockwise.features.auth.domain.model.AuthResponse
 import com.plcoding.bookpedia.core.data.safeCall
 import com.plcoding.bookpedia.core.domain.DataError
@@ -21,14 +22,24 @@ class KtorRemoteUserDataSource(
     private val apiConfig: ApiConfig
 ): RemoteUserDataSource {
     override suspend fun register(
-        username: String, 
         email: String, 
-        password: String
+        password: String,
+        firstName: String,
+        lastName: String,
+        phoneNumber: String,
+        privacyConsent: PrivacyConsent
     ): Result<AuthResponse, DataError.Remote> {
         return safeCall {
             httpClient.post("${apiConfig.baseAuthUrl}/register") {
                 contentType(ContentType.Application.Json)
-                setBody(RegisterRequestDto(username, email, password))
+                setBody(RegisterRequestDto(
+                    email = email,
+                    password = password,
+                    firstName = firstName,
+                    lastName = lastName,
+                    phoneNumber = phoneNumber,
+                    privacyConsent = privacyConsent
+                ))
             }
         }
     }
@@ -51,9 +62,12 @@ class KtorRemoteUserDataSource(
  */
 @Serializable
 data class RegisterRequestDto(
-    @SerialName("username") val username: String,
     @SerialName("email") val email: String,
-    @SerialName("password") val password: String
+    @SerialName("password") val password: String,
+    @SerialName("firstName") val firstName: String,
+    @SerialName("lastName") val lastName: String,
+    @SerialName("phoneNumber") val phoneNumber: String,
+    @SerialName("privacyConsent") val privacyConsent: PrivacyConsent
 )
 
 /**
@@ -61,17 +75,19 @@ data class RegisterRequestDto(
  */
 @Serializable
 data class LoginRequestDto(
-    @SerialName("username") val username: String,
+    @SerialName("email") val email: String,
     @SerialName("password") val password: String
 )
 
 @Serializable
 data class RegisterResponseDto(
     val id: String,
-    val username: String,
     val email: String,
+    val firstName: String,
+    val lastName: String,
+    val phoneNumber: String?,
     val role: String,
-    val restaurantId: String
+    val businessUnitId: String?
 )
 
 @Serializable

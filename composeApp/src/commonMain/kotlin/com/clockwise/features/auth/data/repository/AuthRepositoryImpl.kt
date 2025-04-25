@@ -1,5 +1,6 @@
 package com.clockwise.features.auth.data.repository
 
+import com.clockwise.core.model.PrivacyConsent
 import com.clockwise.features.auth.UserService
 import com.clockwise.features.auth.data.network.RemoteUserDataSource
 import com.clockwise.features.auth.domain.model.AuthResponse
@@ -18,11 +19,21 @@ class AuthRepositoryImpl(
 ) : AuthRepository {
 
     override suspend fun register(
-        username: String, 
         email: String, 
-        password: String
+        password: String,
+        firstName: String,
+        lastName: String,
+        phoneNumber: String,
+        privacyConsent: PrivacyConsent
     ): Flow<Result<AuthResponse, DataError.Remote>> = flow {
-        val result = remoteDataSource.register(username, email, password)
+        val result = remoteDataSource.register(
+            email = email,
+            password = password,
+            firstName = firstName,
+            lastName = lastName,
+            phoneNumber = phoneNumber,
+            privacyConsent = privacyConsent
+        )
         
         if (result is Result.Success) {
             userService.saveAuthResponse(result.data)

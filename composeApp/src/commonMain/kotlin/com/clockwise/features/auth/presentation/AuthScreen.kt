@@ -4,7 +4,9 @@ import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Phone
@@ -14,7 +16,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.clockwise.core.model.PrivacyConsent
 
 private val DarkPurple = Color(0xFF2D1B4E)
 private val LightPurple = Color(0xFF4A2B8C)
@@ -27,10 +31,19 @@ fun AuthScreen(
     onAction: (AuthAction) -> Unit
 ) {
     var email by remember { mutableStateOf("") }
-    var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var firstName by remember { mutableStateOf("") }
+    var lastName by remember { mutableStateOf("") }
+    var phoneNumber by remember { mutableStateOf("") }
+    
+    // GDPR consent variables
+    var marketingConsent by remember { mutableStateOf(false) }
+    var analyticsConsent by remember { mutableStateOf(false) }
+    var thirdPartyConsent by remember { mutableStateOf(false) }
+    
     var isLoginMode by remember { mutableStateOf(true) }
+    val scrollState = rememberScrollState()
 
     Box(
         modifier = Modifier
@@ -86,7 +99,8 @@ fun AuthScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(24.dp)
+                    .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
@@ -145,17 +159,18 @@ fun AuthScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
-                // Form Fields
+                // Form Fields for Registration
                 AnimatedVisibility(
                     visible = !isLoginMode,
                     enter = fadeIn() + expandVertically(),
                     exit = fadeOut() + shrinkVertically()
                 ) {
                     Column {
+                        // First Name
                         OutlinedTextField(
-                            value = username,
-                            onValueChange = { username = it },
-                            label = { Text("Username", color = White) },
+                            value = firstName,
+                            onValueChange = { firstName = it },
+                            label = { Text("First Name", color = White) },
                             colors = TextFieldDefaults.outlinedTextFieldColors(
                                 textColor = White,
                                 cursorColor = LightPurple,
@@ -164,10 +179,44 @@ fun AuthScreen(
                             ),
                             modifier = Modifier.fillMaxWidth()
                         )
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        // Last Name
+                        OutlinedTextField(
+                            value = lastName,
+                            onValueChange = { lastName = it },
+                            label = { Text("Last Name", color = White) },
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                textColor = White,
+                                cursorColor = LightPurple,
+                                focusedBorderColor = LightPurple,
+                                unfocusedBorderColor = DarkPurple
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        // Phone Number
+                        OutlinedTextField(
+                            value = phoneNumber,
+                            onValueChange = { phoneNumber = it },
+                            label = { Text("Phone Number", color = White) },
+                            colors = TextFieldDefaults.outlinedTextFieldColors(
+                                textColor = White,
+                                cursorColor = LightPurple,
+                                focusedBorderColor = LightPurple,
+                                unfocusedBorderColor = DarkPurple
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        
                         Spacer(modifier = Modifier.height(16.dp))
                     }
                 }
 
+                // Email field (for both login and register)
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
@@ -216,6 +265,81 @@ fun AuthScreen(
                             ),
                             modifier = Modifier.fillMaxWidth()
                         )
+                        
+                        // GDPR Consent Checkboxes
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            text = "Privacy Consent",
+                            color = White,
+                            style = MaterialTheme.typography.subtitle1,
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Start
+                        )
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // Data Sharing Consent (Required)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Checkbox(
+                                checked = thirdPartyConsent,
+                                onCheckedChange = { thirdPartyConsent = it },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = LightPurple,
+                                    uncheckedColor = White
+                                )
+                            )
+                            Text(
+                                text = "I agree to the processing of my personal data as required by GDPR (required)",
+                                color = White,
+                                style = MaterialTheme.typography.body2,
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+                        
+                        // Marketing Consent (Optional)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Checkbox(
+                                checked = marketingConsent,
+                                onCheckedChange = { marketingConsent = it },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = LightPurple,
+                                    uncheckedColor = White
+                                )
+                            )
+                            Text(
+                                text = "I agree to receive marketing communications",
+                                color = White,
+                                style = MaterialTheme.typography.body2,
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
+                        
+                        // Analytics Consent (Optional)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Checkbox(
+                                checked = analyticsConsent,
+                                onCheckedChange = { analyticsConsent = it },
+                                colors = CheckboxDefaults.colors(
+                                    checkedColor = LightPurple,
+                                    uncheckedColor = White
+                                )
+                            )
+                            Text(
+                                text = "I agree to the use of analytics to improve the service",
+                                color = White,
+                                style = MaterialTheme.typography.body2,
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                        }
                     }
                 }
 
@@ -229,10 +353,17 @@ fun AuthScreen(
                         } else {
                             onAction(
                                 AuthAction.Register(
-                                    email,
-                                    username,
-                                    password,
-                                    confirmPassword
+                                    email = email,
+                                    password = password,
+                                    confirmPassword = confirmPassword,
+                                    firstName = firstName,
+                                    lastName = lastName,
+                                    phoneNumber = phoneNumber,
+                                    privacyConsent = PrivacyConsent(
+                                        marketingConsent = marketingConsent,
+                                        analyticsConsent = analyticsConsent,
+                                        thirdPartyDataSharingConsent = thirdPartyConsent
+                                    )
                                 )
                             )
                         }
@@ -265,7 +396,9 @@ fun AuthScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = message,
-                        color = if (message.contains("error", ignoreCase = true)) Color.Red else LightPurple
+                        color = if (message.contains("error", ignoreCase = true) || 
+                                   message.contains("failed", ignoreCase = true)) 
+                                Color.Red else LightPurple
                     )
                 }
             }

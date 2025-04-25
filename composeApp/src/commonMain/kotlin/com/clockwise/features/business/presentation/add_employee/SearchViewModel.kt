@@ -152,7 +152,7 @@ class SearchViewModel(
                                 _state.update { currentState ->
                                     currentState.copy(
                                         isLoading = false,
-                                        successMessage = "User ${user.username} added to your business unit successfully",
+                                        successMessage = "User ${user.firstName} ${user.lastName} added to your business unit successfully",
                                         error = null,
                                         searchResults = currentState.searchResults.filter { it.id != user.id }
                                     )

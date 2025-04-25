@@ -15,11 +15,12 @@ class ProfileRepositoryImpl(
         val currentUser = userService.currentUser.value ?: return null
         
         return UserProfile(
-            name = currentUser.username,
+            firstName = currentUser.firstName,
+            lastName = currentUser.lastName,
             email = currentUser.email,
             role = currentUser.role.name,
             company = currentUser.businessUnitName ?: "Not assigned",
-            phone = null // Assuming phone is not available from the UserService
+            phoneNumber = currentUser.phoneNumber
         )
     }
     

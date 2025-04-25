@@ -82,21 +82,39 @@ private fun ProfileInformationSection(state: ProfileState) {
             )
 
             ProfileInfoRow(
-                icon = Icons.Default.Build,
+                icon = Icons.Default.Person,
+                label = "First Name",
+                value = state.userProfile?.firstName ?: "Loading..."
+            )
+
+            ProfileInfoRow(
+                icon = Icons.Default.Person,
+                label = "Last Name",
+                value = state.userProfile?.lastName ?: "Loading..."
+            )
+
+            ProfileInfoRow(
+                icon = Icons.Default.Email,
+                label = "Email",
+                value = state.userProfile?.email ?: "Loading..."
+            )
+
+            ProfileInfoRow(
+                icon = Icons.Default.Phone,
                 label = "Role",
                 value = state.userProfile?.role ?: "Loading..."
             )
 
             ProfileInfoRow(
-                icon = Icons.Default.Build,
+                icon = Icons.Default.Email,
                 label = "Company",
                 value = state.userProfile?.company ?: "Loading..."
             )
 
             ProfileInfoRow(
                 icon = Icons.Default.Phone,
-                label = "Phone",
-                value = state.userProfile?.phone ?: "Not set"
+                label = "Phone Number",
+                value = state.userProfile?.phoneNumber ?: "Not set"
             )
         }
     }

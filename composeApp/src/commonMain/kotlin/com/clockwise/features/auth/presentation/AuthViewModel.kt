@@ -3,6 +3,7 @@ package com.clockwise.features.auth.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 //import co.touchlab.skie.configuration.annotations.FlowInterop
+import com.clockwise.core.model.PrivacyConsent
 import com.clockwise.features.auth.UserService
 import com.clockwise.features.auth.data.network.RemoteUserDataSource
 import com.plcoding.bookpedia.core.domain.onError
@@ -36,7 +37,15 @@ class AuthViewModel(
     fun onAction(action: AuthAction) {
         when (action) {
             is AuthAction.Login -> login(action.email, action.password)
-            is AuthAction.Register -> register(action.email, action.username, action.password, action.confirmPassword)
+            is AuthAction.Register -> register(
+                action.email,
+                action.password,
+                action.confirmPassword,
+                action.firstName,
+                action.lastName,
+                action.phoneNumber,
+                action.privacyConsent
+            )
             is AuthAction.Logout -> logout()
         }
     }
@@ -72,14 +81,23 @@ class AuthViewModel(
         }
     }
 
-    private fun register(email: String, username: String, password: String, confirmPassword: String) {
+    private fun register(
+        email: String,
+        password: String,
+        confirmPassword: String,
+        firstName: String,
+        lastName: String,
+        phoneNumber: String,
+        privacyConsent: PrivacyConsent
+    ) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, resultMessage = null)
             
-            if (email.isBlank() || username.isBlank() || password.isBlank() || confirmPassword.isBlank()) {
+            if (email.isBlank() || password.isBlank() || confirmPassword.isBlank() || 
+                firstName.isBlank() || lastName.isBlank() || phoneNumber.isBlank()) {
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    resultMessage = "Please fill in all fields"
+                    resultMessage = "Please fill in all required fields"
                 )
                 return@launch
             }
@@ -91,8 +109,24 @@ class AuthViewModel(
                 )
                 return@launch
             }
+            
+            // Validate that at least GDPR consent is provided
+            if (!privacyConsent.thirdPartyDataSharingConsent) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    resultMessage = "You must accept the privacy policy to register"
+                )
+                return@launch
+            }
 
-            remoteUserDataSource.register(username, email, password)
+            remoteUserDataSource.register(
+                email = email,
+                password = password,
+                firstName = firstName,
+                lastName = lastName,
+                phoneNumber = phoneNumber,
+                privacyConsent = privacyConsent
+            )
                 .onSuccess { response ->
                     userService.saveAuthResponse(response)
                     _state.value = _state.value.copy(
@@ -123,9 +157,12 @@ sealed class AuthAction {
     data class Login(val email: String, val password: String) : AuthAction()
     data class Register(
         val email: String,
-        val username: String,
         val password: String,
-        val confirmPassword: String
+        val confirmPassword: String,
+        val firstName: String,
+        val lastName: String,
+        val phoneNumber: String,
+        val privacyConsent: PrivacyConsent
     ) : AuthAction()
     object Logout : AuthAction()
 }
