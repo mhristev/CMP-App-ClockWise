@@ -10,7 +10,7 @@ import org.koin.dsl.module
 
 val viewModelModule = module {
     // Feature-specific viewModels
-    factory { WelcomeViewModel(get()) }
+    factory { WelcomeViewModel(get(), get()) }
     factory { WeeklyScheduleViewModel(get()) }
     factory { CalendarViewModel(get()) }
     factory { BusinessViewModel(get()) }

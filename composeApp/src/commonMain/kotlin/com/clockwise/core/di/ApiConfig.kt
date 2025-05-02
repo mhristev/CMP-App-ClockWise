@@ -7,4 +7,5 @@ interface ApiConfig {
     val baseAvailabilityUrl: String
     val baseShiftUrl: String
     val gdprUrl: String
+    val baseWorkSessionUrl: String
 } 

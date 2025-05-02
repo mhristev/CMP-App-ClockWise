@@ -25,6 +25,10 @@ import kotlinx.serialization.json.Json
 import org.koin.core.module.Module
 import org.koin.dsl.module
 import com.clockwise.features.auth.presentation.AuthViewModel
+import com.clockwise.features.shift.data.network.RemoteWorkSessionDataSource
+import com.clockwise.features.shift.data.network.RemoteWorkSessionDataSourceImpl
+import com.clockwise.features.shift.data.repository.WorkSessionRepository
+import com.clockwise.features.shift.data.repository.WorkSessionRepositoryImpl
 import org.koin.core.module.dsl.viewModel
 import com.clockwise.features.auth.UserService as AuthUserService
 
@@ -67,6 +71,11 @@ val sharedModule = module {
     single<RemoteCompanyDataSource> { KtorRemoteCompanyDataSource(get(), get()) }
     single<UserRepository> { UserRepositoryImpl(get(), get()) }
     single<ProfileRepository> { ProfileRepositoryImpl(get(), get(), get()) }
+
+    single<WorkSessionRepository> { WorkSessionRepositoryImpl(get()) }
+    single<RemoteWorkSessionDataSource> {
+        RemoteWorkSessionDataSourceImpl(get(), get())
+    }
 
     // Add view models from viewModelModule
     includes(viewModelModule)
