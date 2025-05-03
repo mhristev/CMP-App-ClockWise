@@ -33,4 +33,62 @@ object TimeProvider {
     fun toInstant(localDateTime: LocalDateTime): Instant {
         return localDateTime.toInstant(TimeZone.currentSystemDefault())
     }
+    
+    /**
+     * Parses an ISO-8601 date-time string with timezone information into a LocalDateTime
+     */
+    fun parseIsoDateTime(isoString: String): LocalDateTime {
+        // First parse to Instant which handles timezone offsets
+        val instant = Instant.parse(isoString)
+        // Then convert to LocalDateTime in the user's timezone
+        return instant.toLocalDateTime(TimeZone.currentSystemDefault())
+    }
+    
+    /**
+     * Formats a LocalDateTime to ISO-8601 string with timezone information
+     */
+    fun formatIsoDateTime(localDateTime: LocalDateTime): String {
+        val instant = localDateTime.toInstant(TimeZone.currentSystemDefault())
+        return instant.toString()
+    }
+    
+    /**
+     * Extracts the date part from an ISO-8601 date-time string
+     */
+    fun extractDateFromIsoString(isoString: String): LocalDate {
+        return parseIsoDateTime(isoString).date
+    }
+    
+    /**
+     * Converts epoch seconds (with optional fractional part) to LocalDateTime
+     */
+    fun epochSecondsToLocalDateTime(epochSeconds: Double): LocalDateTime {
+        val seconds = epochSeconds.toLong()
+        val nanos = ((epochSeconds - seconds) * 1_000_000_000).toLong()
+        val instant = Instant.fromEpochSeconds(seconds, nanos)
+        return instant.toLocalDateTime(TimeZone.currentSystemDefault())
+    }
+    
+    /**
+     * Converts LocalDateTime to epoch seconds
+     */
+    fun localDateTimeToEpochSeconds(localDateTime: LocalDateTime): Double {
+        val instant = localDateTime.toInstant(TimeZone.currentSystemDefault())
+        return instant.epochSeconds + (instant.nanosecondsOfSecond / 1_000_000_000.0)
+    }
+    
+    /**
+     * Returns the local timezone offset in ISO format (e.g., +03:00 or -05:00)
+     */
+    fun getLocalTimezoneOffset(): String {
+        val now = Clock.System.now()
+        val offsetSeconds = TimeZone.currentSystemDefault().offsetAt(now).totalSeconds
+        
+        // Convert to hours and minutes
+        val hours = offsetSeconds / 3600
+        val minutes = (kotlin.math.abs(offsetSeconds) % 3600) / 60
+        
+        val sign = if (hours >= 0) "+" else "-"
+        return "$sign${kotlin.math.abs(hours).toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}"
+    }
 } 

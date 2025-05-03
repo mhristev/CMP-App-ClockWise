@@ -50,32 +50,9 @@ class WelcomeViewModel(
                             
                             // Convert DTOs to model objects
                             val shifts = shiftDtos.map { shiftDto ->
-                                // Extract date and time components
-                                val year = shiftDto.startTime[0]
-                                val month = shiftDto.startTime[1]
-                                val day = shiftDto.startTime[2]
-                                val startHour = shiftDto.startTime[3]
-                                val startMinute = shiftDto.startTime[4]
-                                
-                                val endHour = shiftDto.endTime[3]
-                                val endMinute = shiftDto.endTime[4]
-                                
-                                // Create the start and end times
-                                val startTime = LocalDateTime(
-                                    year = year,
-                                    monthNumber = month,
-                                    dayOfMonth = day,
-                                    hour = startHour,
-                                    minute = startMinute
-                                )
-                                
-                                val endTime = LocalDateTime(
-                                    year = shiftDto.endTime[0],
-                                    monthNumber = shiftDto.endTime[1],
-                                    dayOfMonth = shiftDto.endTime[2],
-                                    hour = endHour,
-                                    minute = endMinute
-                                )
+                                // Convert timestamps to LocalDateTime
+                                val startTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.startTime)
+                                val endTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.endTime)
                                 
                                 // Create the shift
                                 Shift(

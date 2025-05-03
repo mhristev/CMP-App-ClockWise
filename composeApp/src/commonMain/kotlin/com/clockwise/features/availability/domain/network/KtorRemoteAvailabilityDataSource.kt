@@ -2,6 +2,7 @@ package com.clockwise.features.availability.domain.network
 
 import com.clockwise.features.auth.UserService
 import com.clockwise.core.di.ApiConfig
+import com.clockwise.core.TimeProvider
 import com.clockwise.features.availability.data.dto.AvailabilityDto
 import com.clockwise.features.availability.data.dto.AvailabilityRequest
 import com.clockwise.features.availability.data.network.RemoteAvailabilityDataSource
@@ -19,6 +20,8 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
 import kotlinx.serialization.json.Json
 
 class KtorRemoteAvailabilityDataSource(
@@ -63,9 +66,19 @@ class KtorRemoteAvailabilityDataSource(
             return Result.Error(DataError.Remote.UNKNOWN)
         }
         
-        // Convert to ISO-8601 format (yyyy-MM-ddTHH:mm:ss)
-        val startTimeIso = "${date.year}-${date.monthNumber.toString().padStart(2, '0')}-${date.dayOfMonth.toString().padStart(2, '0')}T${startComponents[0].toString().padStart(2, '0')}:${startComponents[1].toString().padStart(2, '0')}:00"
-        val endTimeIso = "${date.year}-${date.monthNumber.toString().padStart(2, '0')}-${date.dayOfMonth.toString().padStart(2, '0')}T${endComponents[0].toString().padStart(2, '0')}:${endComponents[1].toString().padStart(2, '0')}:00"
+        // Create LocalDateTime objects for start and end times
+        val startDateTime = LocalDateTime(
+            date.year, date.monthNumber, date.dayOfMonth,
+            startComponents[0], startComponents[1], 0, 0
+        )
+        val endDateTime = LocalDateTime(
+            date.year, date.monthNumber, date.dayOfMonth,
+            endComponents[0], endComponents[1], 0, 0
+        )
+        
+        // Convert to ISO-8601 format with timezone for API request
+        val startTimeIso = TimeProvider.formatIsoDateTime(startDateTime)
+        val endTimeIso = TimeProvider.formatIsoDateTime(endDateTime)
         
         val request = AvailabilityRequest(
             employeeId = currentUserId,
@@ -105,9 +118,19 @@ class KtorRemoteAvailabilityDataSource(
             return Result.Error(DataError.Remote.UNKNOWN)
         }
         
-        // Convert to ISO-8601 format (yyyy-MM-ddTHH:mm:ss)
-        val startTimeIso = "${date.year}-${date.monthNumber.toString().padStart(2, '0')}-${date.dayOfMonth.toString().padStart(2, '0')}T${startComponents[0].toString().padStart(2, '0')}:${startComponents[1].toString().padStart(2, '0')}:00"
-        val endTimeIso = "${date.year}-${date.monthNumber.toString().padStart(2, '0')}-${date.dayOfMonth.toString().padStart(2, '0')}T${endComponents[0].toString().padStart(2, '0')}:${endComponents[1].toString().padStart(2, '0')}:00"
+        // Create LocalDateTime objects for start and end times
+        val startDateTime = LocalDateTime(
+            date.year, date.monthNumber, date.dayOfMonth,
+            startComponents[0], startComponents[1], 0, 0
+        )
+        val endDateTime = LocalDateTime(
+            date.year, date.monthNumber, date.dayOfMonth,
+            endComponents[0], endComponents[1], 0, 0
+        )
+        
+        // Convert to ISO-8601 format with timezone for API request
+        val startTimeIso = TimeProvider.formatIsoDateTime(startDateTime)
+        val endTimeIso = TimeProvider.formatIsoDateTime(endDateTime)
         
         val request = AvailabilityRequest(
             employeeId = currentUserId,

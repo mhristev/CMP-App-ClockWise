@@ -2,6 +2,7 @@ package com.clockwise.features.shift.domain.network
 
 import com.clockwise.features.auth.UserService
 import com.clockwise.core.di.ApiConfig
+import com.clockwise.core.TimeProvider
 import com.clockwise.features.shift.data.dto.ShiftDto
 import com.clockwise.features.shift.data.network.RemoteShiftDataSource
 import com.plcoding.bookpedia.core.data.safeCall
@@ -10,6 +11,7 @@ import com.plcoding.bookpedia.core.domain.Result
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
+import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.datetime.LocalDate
@@ -42,14 +44,24 @@ class KtorRemoteShiftDataSource(
         val token = userService.authToken.value
             ?: return Result.Error(DataError.Remote.UNKNOWN)
         
-        // Convert LocalDate to ISO string format
-        val dateTime = "$weekStart" + "T00:00:00"
+        // Convert LocalDate to ISO string format with timezone offset
+        // Format: 2023-01-01T00:00:00+03:00
+        val timezone = TimeProvider.getLocalTimezoneOffset()
+        val dateTime = "$weekStart" + "T00:00:00" + timezone
         
-        return safeCall {
-            httpClient.get("${apiConfig.baseShiftUrl}/business-units/$businessUnitId/shifts/week?weekStart=$dateTime") {
-                contentType(ContentType.Application.Json)
-                header("Authorization", "Bearer $token")
+        println("Requesting shifts for week starting at: $dateTime")
+        
+        try {
+            return safeCall {
+                httpClient.get("${apiConfig.baseShiftUrl}/business-units/$businessUnitId/shifts/week") {
+                    contentType(ContentType.Application.Json)
+                    header("Authorization", "Bearer $token")
+                    parameter("weekStart", dateTime) // Ktor will handle URL encoding for us
+                }
             }
+        } catch (e: Exception) {
+            println("Error fetching weekly shifts: ${e.message}")
+            return Result.Error(DataError.Remote.UNKNOWN)
         }
     }
 } 

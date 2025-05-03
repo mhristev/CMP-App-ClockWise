@@ -40,8 +40,10 @@ val sharedModule = module {
     single { 
         Json {
             ignoreUnknownKeys = true
-            isLenient = true
+            isLenient = true          // Allow flexible parsing of JSON
+            coerceInputValues = true  // Handle null values more gracefully
             prettyPrint = false
+            explicitNulls = false     // Make serialization more forgiving
         }
     }
     

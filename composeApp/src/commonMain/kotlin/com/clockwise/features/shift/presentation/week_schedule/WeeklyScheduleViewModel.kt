@@ -87,38 +87,12 @@ class WeeklyScheduleViewModel(
         // Organize shifts by day
         shiftDtos.forEach { shiftDto ->
             try {
-                // Extract date components from the array
-                val year = shiftDto.startTime[0]
-                val month = shiftDto.startTime[1]
-                val day = shiftDto.startTime[2]
-                val startHour = shiftDto.startTime[3]
-                val startMinute = shiftDto.startTime[4]
-                
-                // Create LocalDate from components
-                val date = LocalDate(year, month, day)
-                
-                // Get end time components
-                val endHour = shiftDto.endTime[3]
-                val endMinute = shiftDto.endTime[4]
+                // Convert epoch seconds to LocalDateTime
+                val startTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.startTime)
+                val endTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.endTime)
                 
                 // Get day of week
-                val dayOfWeek = date.dayOfWeek
-
-                val startTime = LocalDateTime(
-                    year = year,
-                    monthNumber = month,
-                    dayOfMonth = day,
-                    hour = startHour,
-                    minute = startMinute
-                )
-
-                val endTime = LocalDateTime(
-                    year = shiftDto.endTime[0],
-                    monthNumber = shiftDto.endTime[1],
-                    dayOfMonth = shiftDto.endTime[2],
-                    hour = endHour,
-                    minute = endMinute
-                )
+                val dayOfWeek = startTime.date.dayOfWeek
                 
                 // Create shift object
                 val shift = Shift(
@@ -126,12 +100,11 @@ class WeeklyScheduleViewModel(
                     startTime = startTime,
                     endTime = endTime,
                     position = shiftDto.position ?: "General Staff",
-                    employeeId = shiftDto.employeeId,
+                    employeeId = shiftDto.employeeId
                 )
                 
                 // Add to the appropriate day
                 shiftsByDay[dayOfWeek]?.add(shift)
-                
             } catch (e: Exception) {
                 println("Error processing shift: ${e.message}")
             }

@@ -67,26 +67,24 @@ class CalendarViewModel(
                     val availabilityIdMap = mutableMapOf<LocalDate, String>()
                     
                     availabilities.forEach { availability ->
-                        // Extract date components from the startTime array
-                        val year = availability.startTime[0]
-                        val month = availability.startTime[1]
-                        val day = availability.startTime[2]
-                        val startHour = availability.startTime[3]
-                        val startMinute = availability.startTime[4]
-                        
-                        val endHour = availability.endTime[3]
-                        val endMinute = availability.endTime[4]
-                        
-                        // Create the date and format the times
-                        val date = kotlinx.datetime.LocalDate(year, month, day)
-                        val startTime = formatTimeString(startHour, startMinute)
-                        val endTime = formatTimeString(endHour, endMinute)
-                        
-                        availabilityMap[date] = Pair(startTime, endTime)
-                        
-                        // Store the availability ID
-                        availability.id?.let { id ->
-                            availabilityIdMap[date] = id
+                        try {
+                            // Parse epoch seconds to LocalDateTime
+                            val startDateTime = TimeProvider.epochSecondsToLocalDateTime(availability.startTime)
+                            val endDateTime = TimeProvider.epochSecondsToLocalDateTime(availability.endTime)
+                            
+                            // Extract date and format the times
+                            val date = startDateTime.date
+                            val startTime = formatTimeString(startDateTime.hour, startDateTime.minute)
+                            val endTime = formatTimeString(endDateTime.hour, endDateTime.minute)
+                            
+                            availabilityMap[date] = Pair(startTime, endTime)
+                            
+                            // Store the availability ID
+                            availability.id?.let { id ->
+                                availabilityIdMap[date] = id
+                            }
+                        } catch (e: Exception) {
+                            println("Error parsing availability: ${e.message}")
                         }
                     }
                     
