@@ -20,15 +20,15 @@ interface AuthRepository {
         lastName: String,
         phoneNumber: String,
         privacyConsent: PrivacyConsent
-    ): Flow<Result<AuthResponse, DataError.Remote>>
+    ): Result<AuthResponse, DataError.Remote>
     
     /**
      * Login existing user
      */
-    suspend fun login(email: String, password: String): Flow<Result<AuthResponse, DataError.Remote>>
+    suspend fun login(email: String, password: String): Result<AuthResponse, DataError.Remote>
     
     /**
      * Logout current user
      */
-    suspend fun logout(): Flow<Result<Unit, DataError.Remote>>
+    suspend fun logout(): Result<Unit, DataError.Remote>
 } 

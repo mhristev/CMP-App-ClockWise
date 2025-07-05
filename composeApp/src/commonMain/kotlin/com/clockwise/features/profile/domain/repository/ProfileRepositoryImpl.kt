@@ -1,7 +1,7 @@
 package com.clockwise.features.profile.domain.repository
 
-import com.clockwise.core.di.ApiConfig
 import com.clockwise.features.auth.UserService
+import com.clockwise.core.di.ApiConfig
 import com.clockwise.features.profile.data.repository.ProfileRepository
 import com.clockwise.features.profile.domain.model.UserProfile
 import io.ktor.client.*
@@ -18,7 +18,11 @@ class ProfileRepositoryImpl(
 ) : ProfileRepository {
     
     override suspend fun getUserProfile(): UserProfile? {
-        val currentUser = userService.currentUser.value ?: return null
+        val currentUser = userService.currentUser.value
+        
+        if (currentUser == null) {
+            return null
+        }
         
         return UserProfile(
             firstName = currentUser.firstName,
@@ -61,4 +65,4 @@ class ProfileRepositoryImpl(
             Result.failure(e)
         }
     }
-} 
+}

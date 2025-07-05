@@ -1,6 +1,5 @@
 package com.clockwise.core.di
 
-import com.clockwise.core.UserService
 import com.clockwise.core.data.KVaultSecureStorage
 import com.clockwise.core.data.SecureStorage
 import com.clockwise.features.company.data.network.KtorRemoteCompanyDataSource
@@ -18,8 +17,12 @@ import com.clockwise.features.auth.data.network.KtorRemoteUserDataSource
 import com.clockwise.features.auth.data.network.RemoteUserDataSource
 import com.clockwise.features.business.domain.repository.UserRepositoryImpl
 import com.clockwise.features.business.data.repository.UserRepository
+import com.clockwise.features.profile.data.network.KtorRemoteUserProfileDataSource
+import com.clockwise.features.profile.data.network.RemoteUserProfileDataSource
 import com.clockwise.features.profile.data.repository.ProfileRepository
+import com.clockwise.features.profile.data.repository.UserProfileRepositoryImpl
 import com.clockwise.features.profile.domain.repository.ProfileRepositoryImpl
+import com.clockwise.features.profile.domain.repository.UserProfileRepository
 import com.plcoding.bookpedia.core.data.HttpClientFactory
 import kotlinx.serialization.json.Json
 import org.koin.core.module.Module
@@ -29,8 +32,8 @@ import com.clockwise.features.shift.data.network.RemoteWorkSessionDataSource
 import com.clockwise.features.shift.data.network.RemoteWorkSessionDataSourceImpl
 import com.clockwise.features.shift.data.repository.WorkSessionRepository
 import com.clockwise.features.shift.data.repository.WorkSessionRepositoryImpl
+import com.clockwise.features.auth.UserService
 import org.koin.core.module.dsl.viewModel
-import com.clockwise.features.auth.UserService as AuthUserService
 
 // For KVault we need platform-specific initialization
 expect val platformModule: Module
@@ -54,11 +57,6 @@ val sharedModule = module {
         KVaultSecureStorage(get(), get()) 
     }
     
-    // Provide AuthUserService
-    single { 
-        AuthUserService(get())
-    }
-    
     // Provide core UserService with SecureStorage
     single { 
         UserService(get()) 
@@ -73,16 +71,18 @@ val sharedModule = module {
     single<RemoteCompanyDataSource> { KtorRemoteCompanyDataSource(get(), get()) }
     single<UserRepository> { UserRepositoryImpl(get(), get()) }
     single<ProfileRepository> { ProfileRepositoryImpl(get(), get(), get()) }
+    single<RemoteUserProfileDataSource> { KtorRemoteUserProfileDataSource(get(), get(), get()) }
+    single<UserProfileRepository> { UserProfileRepositoryImpl(get()) }
 
     single<WorkSessionRepository> { WorkSessionRepositoryImpl(get()) }
     single<RemoteWorkSessionDataSource> {
-        RemoteWorkSessionDataSourceImpl(get(), get())
+        RemoteWorkSessionDataSourceImpl(get(), get(), get())
     }
 
     // Add view models from viewModelModule
     includes(viewModelModule)
     
     // Auth view model is still defined here since it's not part of our refactoring
-    viewModel { AuthViewModel(get(), get()) }
+    viewModel { AuthViewModel(get(), get(), get()) }
     viewModel { CompanyViewModel(get()) }
 }

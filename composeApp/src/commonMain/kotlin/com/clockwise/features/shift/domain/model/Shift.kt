@@ -6,10 +6,10 @@ data class Shift(
     val id: String,
     val startTime: LocalDateTime,
     val endTime: LocalDateTime,
-    val position: String = "",
+    val position: String,
+    val employeeId: String,
+    val status: ShiftStatus = ShiftStatus.SCHEDULED,
     val clockInTime: LocalDateTime? = null,
     val clockOutTime: LocalDateTime? = null,
-    val status: ShiftStatus = ShiftStatus.SCHEDULED,
-    val employeeId: String
-
+    val workSession: WorkSession? = null
 ) 

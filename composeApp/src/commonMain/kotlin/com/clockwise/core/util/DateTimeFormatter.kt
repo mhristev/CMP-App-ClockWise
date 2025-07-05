@@ -41,14 +41,14 @@ fun formatDate(dateTime: LocalDateTime): String {
 
 /**
  * Formats a LocalDateTime into a readable time string
- * Example: "9:30 AM"
+ * Example: "09:30"
  */
 fun formatTime(dateTime: LocalDateTime): String {
     val hour = dateTime.hour
     val minute = dateTime.minute
-    val amPm = if (hour < 12) "AM" else "PM"
-    val displayHour = if (hour == 0) 12 else if (hour > 12) hour - 12 else hour
     
+    val paddedHour = if (hour < 10) "0$hour" else hour.toString()
     val paddedMinute = if (minute < 10) "0$minute" else minute.toString()
-    return "$displayHour:$paddedMinute $amPm"
+    
+    return "$paddedHour:$paddedMinute"
 } 

@@ -3,6 +3,8 @@ package com.clockwise.features.business.presentation
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clockwise.features.auth.UserService
+import com.clockwise.features.business.data.repository.UserRepository
+import com.clockwise.core.model.User
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -10,6 +12,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class BusinessViewModel(
+    private val userRepository: UserRepository,
     private val userService: UserService
 ) : ViewModel() {
     
@@ -91,4 +94,4 @@ class BusinessViewModel(
             isLoading = false
         ) }
     }
-} 
+}

@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDateTime
+import com.clockwise.features.shift.domain.model.WorkSession
 
 class WelcomeViewModel(
     private val shiftRepository: ShiftRepository,
@@ -51,9 +52,21 @@ class WelcomeViewModel(
                             // Convert DTOs to model objects
                             val shifts = shiftDtos.map { shiftDto ->
                                 // Convert timestamps to LocalDateTime
-                                val startTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.startTime)
-                                val endTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.endTime)
+                                val startTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.startTime.toDouble())
+                                val endTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.endTime.toDouble())
                                 
+                                val workSession = shiftDto.workSession?.let { wsDto ->
+                                    WorkSession(
+                                        id = wsDto.id,
+                                        userId = wsDto.userId,
+                                        shiftId = wsDto.shiftId,
+                                        clockInTime = TimeProvider.epochSecondsToLocalDateTime(wsDto.clockInTime),
+                                        clockOutTime = wsDto.clockOutTime?.let { TimeProvider.epochSecondsToLocalDateTime(it) },
+                                        totalMinutes = wsDto.totalMinutes,
+                                        status = WorkSessionStatus.fromString(wsDto.status)
+                                    )
+                                }
+
                                 // Create the shift
                                 Shift(
                                     id = shiftDto.id,
@@ -61,6 +74,16 @@ class WelcomeViewModel(
                                     endTime = endTime,
                                     position = shiftDto.position ?: "General Staff",
                                     employeeId = shiftDto.employeeId,
+                                    workSession = workSession,
+                                    status = workSession?.let {
+                                        when(it.status) {
+                                            WorkSessionStatus.ACTIVE -> ShiftStatus.CLOCKED_IN
+                                            WorkSessionStatus.COMPLETED -> ShiftStatus.COMPLETED
+                                            else -> ShiftStatus.SCHEDULED
+                                        }
+                                    } ?: ShiftStatus.SCHEDULED,
+                                    clockInTime = workSession?.clockInTime,
+                                    clockOutTime = workSession?.clockOutTime
                                 )
                             }
                             
@@ -121,7 +144,8 @@ class WelcomeViewModel(
                                         }
                                         shift.copy(
                                             status = newStatus,
-                                            clockInTime = workSession.clockInTime
+                                            clockInTime = workSession.clockInTime,
+                                            workSession = workSession
                                         )
                                     } else shift
                                 }

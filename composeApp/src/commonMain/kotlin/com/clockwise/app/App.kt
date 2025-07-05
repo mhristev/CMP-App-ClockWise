@@ -1,19 +1,15 @@
 package com.clockwise.app
 
-import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
-import org.jetbrains.compose.ui.tooling.preview.Preview
-
+import com.clockwise.features.auth.UserService
+import org.koin.compose.koinInject
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.clockwise.app.navigation.NavigationRoutes
 import org.koin.compose.viewmodel.koinViewModel
-import com.clockwise.features.auth.UserService
-import org.koin.compose.koinInject
 import com.clockwise.app.security.AccessControl
-
 import com.clockwise.features.auth.presentation.AuthScreenRoot
 import com.clockwise.features.auth.presentation.AuthViewModel
 import com.clockwise.features.shift.presentation.welcome_shifts.WelcomeViewModel
@@ -35,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.clockwise.features.profile.presentation.ProfileViewModel
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 private val LightPurple = Color(0xFF4A2B8C)
 private val White = Color(0xFFFFFFFF)
@@ -46,7 +43,8 @@ fun App() {
         val navController = rememberNavController()
         val userService = koinInject<UserService>()
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
-        
+        val currentUserRole by userService.currentUserRole.collectAsState()
+
         Scaffold(
             bottomBar = {
                 if (currentRoute != NavigationRoutes.Auth.route) {
@@ -73,7 +71,7 @@ fun App() {
                             selected = currentRoute == NavigationRoutes.Calendar.route,
                             onClick = { navController.navigate(NavigationRoutes.Calendar.route) }
                         )
-                        if (AccessControl.hasAccessToScreen("business", userService)) {
+                        if (AccessControl.hasAccessToScreen("business", currentUserRole)) {
                             BottomNavigationItem(
                                 icon = { Icon(Icons.Default.Lock, contentDescription = "Business") },
                                 label = { Text("Business") },
@@ -92,7 +90,7 @@ fun App() {
             }
         ) { paddingValues ->
             NavHost(
-                navController = navController, 
+                navController = navController,
                 startDestination = NavigationRoutes.Auth.route,
                 modifier = Modifier.padding(paddingValues)
             ) {
@@ -103,22 +101,22 @@ fun App() {
                         navController = navController
                     )
                 }
-                
+
                 composable(NavigationRoutes.Welcome.route) {
                     val viewModel = koinViewModel<WelcomeViewModel>()
                     WelcomeScreenRoot(viewModel = viewModel)
                 }
-                
+
                 composable(NavigationRoutes.WeeklySchedule.route) {
                     val viewModel = koinViewModel<WeeklyScheduleViewModel>()
                     WeeklyScheduleScreenRoot(viewModel = viewModel)
                 }
-                
+
                 composable(NavigationRoutes.Calendar.route) {
                     val viewModel = koinViewModel<CalendarViewModel>()
                     CalendarScreenRoot(viewModel = viewModel)
                 }
-                
+
                 composable(NavigationRoutes.Profile.route) {
                     val viewModel = koinViewModel<ProfileViewModel>()
                     ProfileScreenRoot(
@@ -126,9 +124,9 @@ fun App() {
                         navController = navController
                     )
                 }
-                
+
                 composable(NavigationRoutes.Business.route) {
-                    if (AccessControl.hasAccessToScreen("business", userService)) {
+                    if (AccessControl.hasAccessToScreen("business", currentUserRole)) {
                         val viewModel = koinViewModel<BusinessViewModel>()
                         BusinessScreenRoot(
                             viewModel = viewModel,
@@ -142,13 +140,13 @@ fun App() {
                         }
                     }
                 }
-                
+
                 composable(NavigationRoutes.Search.route) {
-                    if (AccessControl.hasAccessToScreen("search", userService)) {
+                    if (AccessControl.hasAccessToScreen("search", currentUserRole)) {
                         val viewModel = koinViewModel<SearchViewModel>()
                         SearchScreenRoot(
                             viewModel = viewModel,
-                            onNavigateBack = { 
+                            onNavigateBack = {
                                 navController.popBackStack()
                             }
                         )

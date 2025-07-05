@@ -15,6 +15,7 @@ import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import kotlinx.datetime.LocalDate
+import io.ktor.client.statement.bodyAsText
 
 class KtorRemoteShiftDataSource(
     private val httpClient: HttpClient,
@@ -29,16 +30,24 @@ class KtorRemoteShiftDataSource(
         val token = userService.authToken.value
             ?: return Result.Error(DataError.Remote.UNKNOWN)
         
+        println("DEBUG: getUpcomingShiftsForCurrentUser - Requesting shifts for user: $userId")
+        val url = "${apiConfig.baseShiftUrl}/users/$userId/shifts/upcoming"
+        println("DEBUG: getUpcomingShiftsForCurrentUser - URL: $url")
+        println("DEBUG: getUpcomingShiftsForCurrentUser - Authorization: Bearer $token")
+
         return safeCall {
-            httpClient.get("${apiConfig.baseShiftUrl}/users/$userId/shifts/upcoming") {
+            val response = httpClient.get(url) {
                 contentType(ContentType.Application.Json)
                 header("Authorization", "Bearer $token")
             }
+            val responseBody = response.bodyAsText()
+            println("DEBUG: getUpcomingShiftsForCurrentUser - Raw Response: $responseBody")
+            response
         }
     }
 
     override suspend fun getShiftsForWeek(weekStart: LocalDate): Result<List<ShiftDto>, DataError.Remote> {
-        val businessUnitId = userService.getCurrentUserBusinessUnitId()
+        val businessUnitId = userService.currentUser.value?.businessUnitId
             ?: return Result.Error(DataError.Remote.UNKNOWN)
         
         val token = userService.authToken.value
@@ -49,19 +58,26 @@ class KtorRemoteShiftDataSource(
         val timezone = TimeProvider.getLocalTimezoneOffset()
         val dateTime = "$weekStart" + "T00:00:00" + timezone
         
-        println("Requesting shifts for week starting at: $dateTime")
-        
+        println("DEBUG: getShiftsForWeek - Requesting shifts for week starting at: $dateTime")
+        val url = "${apiConfig.baseShiftUrl}/business-units/$businessUnitId/shifts/week"
+        println("DEBUG: getShiftsForWeek - URL: $url")
+        println("DEBUG: getShiftsForWeek - Authorization: Bearer $token")
+        println("DEBUG: getShiftsForWeek - Parameter weekStart: $dateTime")
+
         try {
             return safeCall {
-                httpClient.get("${apiConfig.baseShiftUrl}/business-units/$businessUnitId/shifts/week") {
+                val response = httpClient.get(url) {
                     contentType(ContentType.Application.Json)
                     header("Authorization", "Bearer $token")
-                    parameter("weekStart", dateTime) // Ktor will handle URL encoding for us
+                    parameter("weekStart", dateTime)
                 }
+                val responseBody = response.bodyAsText()
+                println("DEBUG: getShiftsForWeek - Raw Response: $responseBody")
+                response
             }
         } catch (e: Exception) {
-            println("Error fetching weekly shifts: ${e.message}")
+            println("DEBUG: getShiftsForWeek - Error fetching weekly shifts: ${e.message}")
             return Result.Error(DataError.Remote.UNKNOWN)
         }
     }
-} 
+}

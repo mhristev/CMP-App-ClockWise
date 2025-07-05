@@ -16,11 +16,14 @@ class UserService(
     private val secureStorage: SecureStorage
 ) {
     // State flows for reactive UI updates
+    private val _authToken = MutableStateFlow<String?>(secureStorage.getAuthToken())
+    val authToken: StateFlow<String?> = _authToken.asStateFlow()
+
     private val _currentUser = MutableStateFlow<User?>(secureStorage.getUser())
     val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
 
-    private val _authToken = MutableStateFlow<String?>(secureStorage.getAuthToken())
-    val authToken: StateFlow<String?> = _authToken.asStateFlow()
+    private val _currentUserRole = MutableStateFlow<UserRole?>(secureStorage.getUserRole())
+    val currentUserRole: StateFlow<UserRole?> = _currentUserRole.asStateFlow()
 
     init {
         // Check if token is expired and clear if necessary
@@ -34,8 +37,16 @@ class UserService(
      */
     fun saveAuthResponse(response: AuthResponse) {
         secureStorage.saveAuthData(response)
-        _currentUser.value = response.user
-        _authToken.value = response.token
+        _authToken.value = secureStorage.getAuthToken()
+        _currentUserRole.value = secureStorage.getUserRole()
+    }
+
+    /**
+     * Save full User object to secure storage
+     */
+    fun saveUser(user: User) {
+        secureStorage.saveUser(user)
+        _currentUser.value = user
     }
 
     /**
@@ -43,29 +54,23 @@ class UserService(
      */
     fun clearAuthData() {
         secureStorage.clearAuthData()
-        _currentUser.value = null
         _authToken.value = null
+        _currentUser.value = null
+        _currentUserRole.value = null
     }
 
     /**
      * Check if user is currently authorized
      */
     fun isUserAuthorized(): Boolean {
-        return _currentUser.value != null && _authToken.value != null && !secureStorage.isTokenExpired()
+        return _authToken.value != null && _currentUserRole.value != null && !secureStorage.isTokenExpired()
     }
 
     /**
      * Check if current user has manager-level access
      */
     fun hasManagerAccess(): Boolean {
-        val role = _currentUser.value?.role
+        val role = _currentUserRole.value
         return role == UserRole.MANAGER || role == UserRole.ADMIN
     }
-
-    /**
-     * Get the business unit ID for the current user
-     */
-    fun getCurrentUserBusinessUnitId(): String? {
-        return _currentUser.value?.businessUnitId
-    }
-} 
+}

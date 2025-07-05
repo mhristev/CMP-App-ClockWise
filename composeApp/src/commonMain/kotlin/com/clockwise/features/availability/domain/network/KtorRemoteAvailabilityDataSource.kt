@@ -26,7 +26,7 @@ import kotlinx.serialization.json.Json
 
 class KtorRemoteAvailabilityDataSource(
     private val httpClient: HttpClient,
-    private val userService: UserService,
+    private val userService: com.clockwise.features.auth.UserService,
     private val apiConfig: ApiConfig
 ) : RemoteAvailabilityDataSource {
     
@@ -56,7 +56,7 @@ class KtorRemoteAvailabilityDataSource(
         val token = userService.authToken.value
             ?: return Result.Error(DataError.Remote.UNKNOWN)
             
-        val businessUnitId = userService.getCurrentUserBusinessUnitId()
+        val businessUnitId = userService.currentUser.value?.businessUnitId
         
         // Parse the time strings (HH:mm format)
         val startComponents = startTimeString.split(":").map { it.toInt() }
@@ -108,7 +108,7 @@ class KtorRemoteAvailabilityDataSource(
         val token = userService.authToken.value
             ?: return Result.Error(DataError.Remote.UNKNOWN)
             
-        val businessUnitId = userService.getCurrentUserBusinessUnitId()
+        val businessUnitId = userService.currentUser.value?.businessUnitId
         
         // Parse the time strings (HH:mm format)
         val startComponents = startTimeString.split(":").map { it.toInt() }
@@ -158,4 +158,4 @@ class KtorRemoteAvailabilityDataSource(
             }
         }
     }
-} 
+}

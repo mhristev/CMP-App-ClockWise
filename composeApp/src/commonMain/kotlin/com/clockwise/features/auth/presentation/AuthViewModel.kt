@@ -2,21 +2,25 @@ package com.clockwise.features.auth.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-//import co.touchlab.skie.configuration.annotations.FlowInterop
 import com.clockwise.core.model.PrivacyConsent
-import com.clockwise.features.auth.UserService
-import com.clockwise.features.auth.data.network.RemoteUserDataSource
+import com.clockwise.features.auth.domain.repository.AuthRepository
+import com.clockwise.features.profile.domain.repository.UserProfileRepository
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.update
+import com.clockwise.features.auth.data.repository.AuthRepositoryImpl
+import com.clockwise.features.auth.UserService
 
 
 class AuthViewModel(
     private val userService: UserService,
-    private val remoteUserDataSource: RemoteUserDataSource
+    private val authRepository: AuthRepository,
+    private val userProfileRepository: UserProfileRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -25,12 +29,14 @@ class AuthViewModel(
     init {
         // Initialize state
         viewModelScope.launch {
-            _state.value = _state.value.copy(
-                isLoading = false,
-                isAuthenticated = userService.isUserAuthorized(),
-                resultMessage = null,
-                hasBusinessUnit = userService.getCurrentUserBusinessUnitId() != null
-            )
+            userService.currentUser.collectLatest {
+                _state.update { currentState ->
+                    currentState.copy(
+                        isAuthenticated = userService.isUserAuthorized(),
+                        hasBusinessUnit = it?.businessUnitId != null
+                    )
+                }
+            }
         }
     }
 
@@ -62,15 +68,31 @@ class AuthViewModel(
                 return@launch
             }
 
-            remoteUserDataSource.login(email, password)
-                .onSuccess { response ->
-                    userService.saveAuthResponse(response)
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        isAuthenticated = true,
-                        hasBusinessUnit = response.user.businessUnitId != null,
-                        resultMessage = "Login successful"
-                    )
+            val result = authRepository.login(email, password)
+            result.onSuccess { authResponse ->
+                    userService.saveAuthResponse(authResponse)
+                    
+                    // Fetch full user profile after successful authentication
+                    userProfileRepository.getUserProfile()
+                        .onSuccess { user ->
+                            // Update UserService with the full User object
+                            userService.saveUser(user)
+                            _state.value = _state.value.copy(
+                                isLoading = false,
+                                isAuthenticated = true,
+                                hasBusinessUnit = user.businessUnitId != null,
+                                resultMessage = "Login successful"
+                            )
+                        }
+                        .onError { error ->
+                            _state.value = _state.value.copy(
+                                isLoading = false,
+                                isAuthenticated = true, // Still authenticated, but profile fetch failed
+                                hasBusinessUnit = false,
+                                resultMessage = "Login successful, but failed to fetch user profile: ${error.name}"
+                            )
+                        }
+
                 }
                 .onError { error ->
                     _state.value = _state.value.copy(
@@ -119,7 +141,7 @@ class AuthViewModel(
                 return@launch
             }
 
-            remoteUserDataSource.register(
+            val result = authRepository.register(
                 email = email,
                 password = password,
                 firstName = firstName,
@@ -127,14 +149,30 @@ class AuthViewModel(
                 phoneNumber = phoneNumber,
                 privacyConsent = privacyConsent
             )
-                .onSuccess { response ->
-                    userService.saveAuthResponse(response)
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        isAuthenticated = true,
-                        hasBusinessUnit = response.user.businessUnitId != null,
-                        resultMessage = "Registration successful"
-                    )
+            result.onSuccess { authResponse ->
+                    userService.saveAuthResponse(authResponse)
+                    
+                    // Fetch full user profile after successful registration
+                    userProfileRepository.getUserProfile()
+                        .onSuccess { user ->
+                            // Update UserService with the full User object
+                            userService.saveUser(user)
+                            _state.value = _state.value.copy(
+                                isLoading = false,
+                                isAuthenticated = true,
+                                hasBusinessUnit = user.businessUnitId != null,
+                                resultMessage = "Registration successful"
+                            )
+                        }
+                        .onError { error ->
+                            _state.value = _state.value.copy(
+                                isLoading = false,
+                                isAuthenticated = true, // Still authenticated, but profile fetch failed
+                                hasBusinessUnit = false,
+                                resultMessage = "Registration successful, but failed to fetch user profile: ${error.name}"
+                            )
+                        }
+
                 }
                 .onError { error ->
                     _state.value = _state.value.copy(

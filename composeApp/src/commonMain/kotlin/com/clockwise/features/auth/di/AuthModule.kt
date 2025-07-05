@@ -20,5 +20,5 @@ val authModule: Module = module {
     single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
     
     // ViewModels
-    viewModel { AuthViewModel(get(), get()) }
-} 
+    viewModel { AuthViewModel(get(), get(), get()) }
+}

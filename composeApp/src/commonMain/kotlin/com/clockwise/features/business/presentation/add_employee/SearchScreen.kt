@@ -243,10 +243,10 @@ private fun UserCard(user: User, onAddToBusinessUnit: (User) -> Unit) {
                         color = Color(0xFF666666)
                     )
                     
-                    user.businessUnitName?.let {
+                    user.businessUnitName?.let { businessUnitName ->
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Business Unit: $it",
+                            text = "Business Unit: $businessUnitName",
                             style = MaterialTheme.typography.body2,
                             color = Color(0xFF666666)
                         )
@@ -272,13 +272,3 @@ private fun UserCard(user: User, onAddToBusinessUnit: (User) -> Unit) {
         }
     }
 }
-
-//@Serializable
-//data class User(
-//    val id: String,
-//    val username: String,
-//    val email: String,
-//    val role: String,
-//    val businessUnitId: String?,
-//    val businessUnitName: String?
-//)

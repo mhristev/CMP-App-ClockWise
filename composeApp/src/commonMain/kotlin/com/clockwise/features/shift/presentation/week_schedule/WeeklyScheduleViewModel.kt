@@ -21,6 +21,9 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
+import com.clockwise.features.shift.domain.model.WorkSession
+import com.clockwise.features.shift.domain.model.ShiftStatus
+import com.clockwise.features.shift.domain.model.WorkSessionStatus
 
 class WeeklyScheduleViewModel(
     private val shiftRepository: ShiftRepository
@@ -88,11 +91,23 @@ class WeeklyScheduleViewModel(
         shiftDtos.forEach { shiftDto ->
             try {
                 // Convert epoch seconds to LocalDateTime
-                val startTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.startTime)
-                val endTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.endTime)
+                val startTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.startTime.toDouble())
+                val endTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.endTime.toDouble())
                 
                 // Get day of week
-                val dayOfWeek = startTime.date.dayOfWeek
+                val dayOfWeek = startTime.dayOfWeek
+
+                val workSession = shiftDto.workSession?.let { wsDto ->
+                    WorkSession(
+                        id = wsDto.id,
+                        userId = wsDto.userId,
+                        shiftId = wsDto.shiftId,
+                        clockInTime = TimeProvider.epochSecondsToLocalDateTime(wsDto.clockInTime),
+                        clockOutTime = wsDto.clockOutTime?.let { TimeProvider.epochSecondsToLocalDateTime(it) },
+                        totalMinutes = wsDto.totalMinutes,
+                        status = WorkSessionStatus.fromString(wsDto.status)
+                    )
+                }
                 
                 // Create shift object
                 val shift = Shift(
@@ -100,7 +115,17 @@ class WeeklyScheduleViewModel(
                     startTime = startTime,
                     endTime = endTime,
                     position = shiftDto.position ?: "General Staff",
-                    employeeId = shiftDto.employeeId
+                    employeeId = shiftDto.employeeId,
+                    workSession = workSession,
+                    status = workSession?.let {
+                        when(it.status) {
+                            WorkSessionStatus.ACTIVE -> ShiftStatus.CLOCKED_IN
+                            WorkSessionStatus.COMPLETED -> ShiftStatus.COMPLETED
+                            else -> ShiftStatus.SCHEDULED
+                        }
+                    } ?: ShiftStatus.SCHEDULED,
+                    clockInTime = workSession?.clockInTime,
+                    clockOutTime = workSession?.clockOutTime
                 )
                 
                 // Add to the appropriate day

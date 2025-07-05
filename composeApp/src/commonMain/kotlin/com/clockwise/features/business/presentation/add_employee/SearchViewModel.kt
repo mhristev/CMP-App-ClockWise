@@ -3,8 +3,8 @@ package com.clockwise.features.business.presentation.add_employee
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clockwise.features.auth.UserService
-import com.clockwise.core.model.User
 import com.clockwise.features.business.data.repository.UserRepository
+import com.clockwise.core.model.User
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess
 import kotlinx.coroutines.*
@@ -14,10 +14,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import androidx.lifecycle.SavedStateHandle
 
 class SearchViewModel(
     private val userRepository: UserRepository,
-    private val userService: UserService
+    private val userService: UserService,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     private val _state = MutableStateFlow(SearchState())
     val state: StateFlow<SearchState> = _state
@@ -143,7 +145,7 @@ class SearchViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true) }
             
-            val businessUnitId = userService.getCurrentUserBusinessUnitId()
+            val businessUnitId = userService.currentUser.value?.businessUnitId
             if (businessUnitId != null) {
                 try {
                     userRepository.addUserToBusinessUnit(user.id, businessUnitId)

@@ -68,7 +68,14 @@ object TimeProvider {
         val instant = Instant.fromEpochSeconds(seconds, nanos)
         return instant.toLocalDateTime(TimeZone.currentSystemDefault())
     }
-    
+
+    /**
+     * Overloaded function to handle epoch seconds as a String.
+     */
+    fun epochSecondsToLocalDateTime(epochSeconds: String): LocalDateTime {
+        return epochSecondsToLocalDateTime(epochSeconds.toDouble())
+    }
+
     /**
      * Converts LocalDateTime to epoch seconds
      */
@@ -91,4 +98,18 @@ object TimeProvider {
         val sign = if (hours >= 0) "+" else "-"
         return "$sign${kotlin.math.abs(hours).toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}"
     }
-} 
+
+    /**
+     * Converts a ZonedDateTime string to LocalDateTime.
+     */
+    fun zonedDateTimeStringToLocalDateTime(zonedDateTimeString: String): LocalDateTime {
+        return Instant.parse(zonedDateTimeString).toLocalDateTime(TimeZone.currentSystemDefault())
+    }
+
+    /**
+     * Converts a LocalDateTime to ZonedDateTime string.
+     */
+    fun localDateTimeToZonedDateTimeString(localDateTime: LocalDateTime): String {
+        return localDateTime.toInstant(TimeZone.currentSystemDefault()).toString()
+    }
+}

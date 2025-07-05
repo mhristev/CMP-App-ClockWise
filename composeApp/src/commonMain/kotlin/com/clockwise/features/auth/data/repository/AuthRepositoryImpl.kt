@@ -25,7 +25,7 @@ class AuthRepositoryImpl(
         lastName: String,
         phoneNumber: String,
         privacyConsent: PrivacyConsent
-    ): Flow<Result<AuthResponse, DataError.Remote>> = flow {
+    ): Result<AuthResponse, DataError.Remote> {
         val result = remoteDataSource.register(
             email = email,
             password = password,
@@ -39,24 +39,24 @@ class AuthRepositoryImpl(
             userService.saveAuthResponse(result.data)
         }
         
-        emit(result)
+        return result
     }
 
     override suspend fun login(
         email: String, 
         password: String
-    ): Flow<Result<AuthResponse, DataError.Remote>> = flow {
+    ): Result<AuthResponse, DataError.Remote> {
         val result = remoteDataSource.login(email, password)
         
         if (result is Result.Success) {
             userService.saveAuthResponse(result.data)
         }
         
-        emit(result)
+        return result
     }
 
-    override suspend fun logout(): Flow<Result<Unit, DataError.Remote>> = flow {
+    override suspend fun logout(): Result<Unit, DataError.Remote> {
         userService.clearAuthData()
-        emit(Result.Success(Unit))
+        return Result.Success(Unit)
     }
 } 
