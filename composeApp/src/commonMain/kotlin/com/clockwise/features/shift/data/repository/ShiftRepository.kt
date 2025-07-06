@@ -9,4 +9,5 @@ import kotlinx.datetime.LocalDate
 interface ShiftRepository {
     suspend fun getUpcomingShiftsForCurrentUser(): Flow<Result<List<ShiftDto>, DataError.Remote>>
     suspend fun getShiftsForWeek(weekStart: LocalDate): Flow<Result<List<ShiftDto>, DataError.Remote>>
+    suspend fun saveSessionNote(workSessionId: String, note: String): Flow<Result<Unit, DataError.Remote>>
 } 

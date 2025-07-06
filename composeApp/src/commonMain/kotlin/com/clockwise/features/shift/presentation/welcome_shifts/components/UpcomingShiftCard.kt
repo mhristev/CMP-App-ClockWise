@@ -2,7 +2,7 @@ package com.clockwise.features.shift.presentation.welcome_shifts.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -20,6 +20,8 @@ fun UpcomingShiftCard(
     onAction: (WelcomeAction) -> Unit,
     canClockInOut: Boolean
 ) {
+    var sessionNote by remember { mutableStateOf("") }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = 4.dp
@@ -133,6 +135,29 @@ fun UpcomingShiftCard(
                     color = Color(0xFF666666)
                 )
             }
+
+            if (shift.status == ShiftStatus.CLOCKED_IN) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = sessionNote,
+                    onValueChange = { sessionNote = it },
+                    label = { Text("Session Note") },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = {
+                        shift.workSession?.id?.let { workSessionId ->
+                            onAction(WelcomeAction.SaveNote(workSessionId, sessionNote))
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = sessionNote.isNotBlank()
+                ) {
+                    Text("Save Note")
+                }
+            }
+
 
             if (canClockInOut) {
                 Spacer(modifier = Modifier.height(12.dp))

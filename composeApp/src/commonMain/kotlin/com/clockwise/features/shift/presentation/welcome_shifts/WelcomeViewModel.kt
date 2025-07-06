@@ -3,11 +3,11 @@ package com.clockwise.features.shift.presentation.welcome_shifts
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clockwise.core.TimeProvider
-import com.clockwise.features.shift.data.repository.ShiftRepository
-import com.clockwise.features.shift.data.repository.WorkSessionRepository
 import com.clockwise.features.shift.domain.model.Shift
 import com.clockwise.features.shift.domain.model.ShiftStatus
+import com.clockwise.features.shift.domain.model.WorkSession
 import com.clockwise.features.shift.domain.model.WorkSessionStatus
+import com.clockwise.features.shift.domain.repositories.ShiftRepository
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,12 +16,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.datetime.LocalDateTime
-import com.clockwise.features.shift.domain.model.WorkSession
 
 class WelcomeViewModel(
-    private val shiftRepository: ShiftRepository,
-    private val workSessionRepository: WorkSessionRepository
+    private val shiftRepository: ShiftRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WelcomeState())
@@ -42,19 +39,19 @@ class WelcomeViewModel(
                             error = null
                         )
                     }
-                    
+
                     // Fetch upcoming shifts from the API
-                    shiftRepository.getUpcomingShiftsForCurrentUser().collect { result ->
+                    shiftRepository.getUpcomingShifts().collect { result ->
                         result.onSuccess { shiftDtos ->
                             // Find the current day to determine today's shift
                             val today = TimeProvider.getCurrentLocalDate()
-                            
+
                             // Convert DTOs to model objects
                             val shifts = shiftDtos.map { shiftDto ->
                                 // Convert timestamps to LocalDateTime
                                 val startTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.startTime.toDouble())
                                 val endTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.endTime.toDouble())
-                                
+
                                 val workSession = shiftDto.workSession?.let { wsDto ->
                                     WorkSession(
                                         id = wsDto.id,
@@ -86,18 +83,18 @@ class WelcomeViewModel(
                                     clockOutTime = workSession?.clockOutTime
                                 )
                             }
-                            
+
                             // Separate today's shift from upcoming shifts
-                            val todayShift = shifts.find { shift -> 
+                            val todayShift = shifts.find { shift ->
                                 shift.startTime.date == today
                             }
-                            
+
                             val upcomingShifts = shifts.filter { shift ->
                                 shift.startTime.date > today
                             }
 
                             println("Today: $today, Today's shift: ${todayShift?.startTime?.date}, Upcoming shifts: ${upcomingShifts.size}")
-                            
+
                             // Update state with the shifts
                             _state.update {
                                 it.copy(
@@ -119,91 +116,57 @@ class WelcomeViewModel(
             }
             is WelcomeAction.ClockIn -> {
                 viewModelScope.launch {
-                    // Get the current shift
-                    val currentShift = _state.value.todayShift ?: return@launch
-                    
                     // Show loading indicator
                     _state.update { it.copy(isLoading = true) }
-                    
+
                     // Call the repository to perform clock-in
-                    workSessionRepository.clockIn(
-                        userId = currentShift.employeeId,
+                    shiftRepository.clockIn(
                         shiftId = action.shiftId
-                    ).onSuccess { workSession ->
-                        // Update the shift status with data from the response
-                        _state.update { currentState ->
-                            currentState.copy(
-                                isLoading = false,
-                                todayShift = currentState.todayShift?.let { shift ->
-                                    if (shift.id == action.shiftId) {
-                                        // Make sure to properly set the CLOCKED_IN status based on workSession.status
-                                        val newStatus = when (workSession.status) {
-                                            WorkSessionStatus.ACTIVE -> ShiftStatus.CLOCKED_IN
-                                            WorkSessionStatus.COMPLETED -> ShiftStatus.COMPLETED
-                                            WorkSessionStatus.CANCELLED -> ShiftStatus.SCHEDULED
-                                        }
-                                        shift.copy(
-                                            status = newStatus,
-                                            clockInTime = workSession.clockInTime,
-                                            workSession = workSession
-                                        )
-                                    } else shift
-                                }
-                            )
-                        }
-                    }.onError { error ->
-                        _state.update {
-                            it.copy(
-                                isLoading = false,
-                                error = "Failed to clock in: ${error.name}"
-                            )
+                    ).collect { result ->
+                        result.onSuccess {
+                            // Reload shifts to get updated status
+                            onAction(WelcomeAction.LoadUpcomingShifts)
+                        }.onError { error ->
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error = "Failed to clock in: ${error.name}"
+                                )
+                            }
                         }
                     }
                 }
             }
             is WelcomeAction.ClockOut -> {
                 viewModelScope.launch {
-                    // Get the current shift
-                    val currentShift = _state.value.todayShift ?: return@launch
-                    
                     // Show loading indicator
                     _state.update { it.copy(isLoading = true) }
-                    
+
                     // Call the repository to perform clock-out
-                    workSessionRepository.clockOut(
-                        userId = currentShift.employeeId,
+                    shiftRepository.clockOut(
                         shiftId = action.shiftId
-                    ).onSuccess { workSession ->
-                        // Update the shift status with data from the response
-                        _state.update { currentState ->
-                            currentState.copy(
-                                isLoading = false,
-                                todayShift = currentState.todayShift?.let { shift ->
-                                    if (shift.id == action.shiftId) {
-                                        // Map the work session status to shift status
-                                        val newStatus = when (workSession.status) {
-                                            WorkSessionStatus.ACTIVE -> ShiftStatus.CLOCKED_IN
-                                            WorkSessionStatus.COMPLETED -> ShiftStatus.COMPLETED
-                                            WorkSessionStatus.CANCELLED -> ShiftStatus.SCHEDULED
-                                        }
-                                        shift.copy(
-                                            status = newStatus,
-                                            clockOutTime = workSession.clockOutTime
-                                        )
-                                    } else shift
-                                }
-                            )
-                        }
-                    }.onError { error ->
-                        _state.update {
-                            it.copy(
-                                isLoading = false,
-                                error = "Failed to clock out: ${error.name}"
-                            )
+                    ).collect { result ->
+                        result.onSuccess {
+                            // Reload shifts to get updated status
+                            onAction(WelcomeAction.LoadUpcomingShifts)
+                        }.onError { error ->
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error = "Failed to clock out: ${error.name}"
+                                )
+                            }
                         }
                     }
                 }
             }
+            is WelcomeAction.SaveNote -> saveNote(action.workSessionId, action.note)
+        }
+    }
+
+    private fun saveNote(workSessionId: String, note: String) {
+        viewModelScope.launch {
+            shiftRepository.saveSessionNote(workSessionId, note)
         }
     }
 } 

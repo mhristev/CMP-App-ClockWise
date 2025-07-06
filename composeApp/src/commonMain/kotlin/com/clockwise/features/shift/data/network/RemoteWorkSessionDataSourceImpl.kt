@@ -2,20 +2,27 @@ package com.clockwise.features.shift.data.network
 
 import com.clockwise.core.di.ApiConfig
 import com.clockwise.features.shift.data.dto.WorkSessionDto
-import io.ktor.client.HttpClient
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
 import com.plcoding.bookpedia.core.data.safeCall
 import com.plcoding.bookpedia.core.domain.DataError
 import com.plcoding.bookpedia.core.domain.Result
+import io.ktor.client.HttpClient
+import io.ktor.client.request.post
+import io.ktor.client.request.put
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
+import io.ktor.http.contentType
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ClockInOutRequest(
     val userId: String,
     val shiftId: String
+)
+
+@Serializable
+data class SessionNoteRequest(
+    val workSessionId: String,
+    val content: String
 )
 
 class RemoteWorkSessionDataSourceImpl(
@@ -37,6 +44,15 @@ class RemoteWorkSessionDataSourceImpl(
             client.post("${apiConfig.baseWorkSessionUrl}/clock-out") {
                 contentType(ContentType.Application.Json)
                 setBody(ClockInOutRequest(userId, shiftId))
+            }
+        }
+    }
+
+    override suspend fun saveSessionNote(workSessionId: String, note: String): Result<Unit, DataError.Remote> {
+        return safeCall {
+            client.put("${apiConfig.baseWorkSessionUrl}/management/session-note") {
+                contentType(ContentType.Application.Json)
+                setBody(SessionNoteRequest(workSessionId, note))
             }
         }
     }

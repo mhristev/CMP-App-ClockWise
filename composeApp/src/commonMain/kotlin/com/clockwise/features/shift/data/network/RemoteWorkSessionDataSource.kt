@@ -7,4 +7,5 @@ import com.plcoding.bookpedia.core.domain.Result
 interface RemoteWorkSessionDataSource {
     suspend fun clockIn(userId: String, shiftId: String): Result<WorkSessionDto, DataError.Remote>
     suspend fun clockOut(userId: String, shiftId: String): Result<WorkSessionDto, DataError.Remote>
+    suspend fun saveSessionNote(workSessionId: String, note: String): Result<Unit, DataError.Remote>
 } 
