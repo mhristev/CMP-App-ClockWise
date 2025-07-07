@@ -10,6 +10,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.clockwise.features.shift.domain.model.Shift
 import com.clockwise.features.shift.domain.model.ShiftStatus
+import com.clockwise.features.shift.domain.model.WorkSessionStatus
 import com.clockwise.features.shift.presentation.welcome_shifts.WelcomeAction
 import com.clockwise.core.util.formatDate
 import com.clockwise.core.util.formatTime
@@ -17,11 +18,11 @@ import com.clockwise.core.util.formatTime
 @Composable
 fun UpcomingShiftCard(
     shift: Shift,
-    onAction: (WelcomeAction) -> Unit,
-    canClockInOut: Boolean
+    canClockInOut: Boolean = true,
+    sessionNote: String = "",
+    isSavingNote: Boolean = false,
+    onAction: (WelcomeAction) -> Unit
 ) {
-    var sessionNote by remember { mutableStateOf("") }
-
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = 4.dp
@@ -46,7 +47,7 @@ fun UpcomingShiftCard(
                 // Status chip
                 Surface(
                     color = when (shift.status) {
-                        ShiftStatus.SCHEDULED -> Color(0xFFE8E0F3)
+                        ShiftStatus.SCHEDULED -> if (shift.workSession?.status == WorkSessionStatus.CREATED) Color(0xFFFFF3E0) else Color(0xFFE8E0F3)
                         ShiftStatus.CLOCKED_IN -> Color(0xFFE3F2FD)
                         ShiftStatus.COMPLETED -> Color(0xFFE8F5E9)
                     },
@@ -54,29 +55,30 @@ fun UpcomingShiftCard(
                 ) {
                     Text(
                         text = when (shift.status) {
-                            ShiftStatus.SCHEDULED -> "Scheduled"
-                            ShiftStatus.CLOCKED_IN -> "In Progress"
+                            ShiftStatus.SCHEDULED -> if (shift.workSession?.status == WorkSessionStatus.CREATED) "Scheduled" else "Scheduled"
+                            ShiftStatus.CLOCKED_IN -> "Clocked In"
                             ShiftStatus.COMPLETED -> "Completed"
                         },
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.caption,
                         color = when (shift.status) {
-                            ShiftStatus.SCHEDULED -> Color(0xFF4A2B8C)
+                            ShiftStatus.SCHEDULED -> Color(0xFF8D6E63)
                             ShiftStatus.CLOCKED_IN -> Color(0xFF1976D2)
                             ShiftStatus.COMPLETED -> Color(0xFF43A047)
-                        }
+                        },
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                     )
                 }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Scheduled time
+            // Time range
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Scheduled:",
+                    text = "Time:",
                     style = MaterialTheme.typography.body2,
                     color = Color(0xFF666666)
                 )
@@ -136,56 +138,40 @@ fun UpcomingShiftCard(
                 )
             }
 
-            if (shift.status == ShiftStatus.CLOCKED_IN) {
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = sessionNote,
-                    onValueChange = { sessionNote = it },
-                    label = { Text("Session Note") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = {
-                        shift.workSession?.id?.let { workSessionId ->
-                            onAction(WelcomeAction.SaveNote(workSessionId, sessionNote))
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = sessionNote.isNotBlank()
-                ) {
-                    Text("Save Note")
-                }
-            }
-
-
+            // Clock in/out button section
             if (canClockInOut) {
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Clock In/Out Button
                 Button(
                     onClick = { 
-                        when (shift.status) {
-                            ShiftStatus.SCHEDULED -> onAction(WelcomeAction.ClockIn(shift.id))
-                            ShiftStatus.CLOCKED_IN -> onAction(WelcomeAction.ClockOut(shift.id))
-                            ShiftStatus.COMPLETED -> { /* Already completed */ }
+                        when {
+                            shift.workSession?.status == WorkSessionStatus.CREATED || shift.status == ShiftStatus.SCHEDULED -> {
+                                onAction(WelcomeAction.ClockIn(shift.id))
+                            }
+                            shift.status == ShiftStatus.CLOCKED_IN -> {
+                                // Show modal instead of direct clock out
+                                onAction(WelcomeAction.ShowClockOutModal(shift.id, shift.workSession?.id))
+                            }
+                            else -> { /* Already completed */ }
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(
-                        backgroundColor = when (shift.status) {
-                            ShiftStatus.SCHEDULED -> Color(0xFF4A2B8C)
-                            ShiftStatus.CLOCKED_IN -> Color(0xFF1976D2)
-                            ShiftStatus.COMPLETED -> Color(0xFF43A047)
+                        backgroundColor = when {
+                            shift.workSession?.status == WorkSessionStatus.CREATED || shift.status == ShiftStatus.SCHEDULED -> Color(0xFF4A2B8C)
+                            shift.status == ShiftStatus.CLOCKED_IN -> Color(0xFF1976D2)
+                            shift.status == ShiftStatus.COMPLETED -> Color(0xFF43A047)
+                            else -> Color(0xFF4A2B8C)
                         }
                     ),
                     enabled = shift.status != ShiftStatus.COMPLETED
                 ) {
                     Text(
-                        text = when (shift.status) {
-                            ShiftStatus.SCHEDULED -> "Clock In"
-                            ShiftStatus.CLOCKED_IN -> "Clock Out"
-                            ShiftStatus.COMPLETED -> "Completed"
+                        text = when {
+                            shift.workSession?.status == WorkSessionStatus.CREATED || shift.status == ShiftStatus.SCHEDULED -> "Clock In"
+                            shift.status == ShiftStatus.CLOCKED_IN -> "Clock Out"
+                            shift.status == ShiftStatus.COMPLETED -> "Completed"
+                            else -> "Clock In"
                         },
                         color = Color.White
                     )

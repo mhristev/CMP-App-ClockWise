@@ -63,7 +63,7 @@ val sharedModule = module {
         UserService(get())
     }
 
-    single { HttpClientFactory.create(get()) }
+    single { HttpClientFactory.create(get(), get()) }
     single<RemoteUserDataSource> { KtorRemoteUserDataSource(get(), get()) }
     single<RemoteShiftDataSource> { KtorRemoteShiftDataSource(get(), get(), get()) }
     single<ShiftRepository> { ShiftRepositoryImpl(get(), get(), get()) }
@@ -77,7 +77,7 @@ val sharedModule = module {
 
     single<WorkSessionRepository> { WorkSessionRepositoryImpl(get()) }
     single<RemoteWorkSessionDataSource> {
-        RemoteWorkSessionDataSourceImpl(get(), get())
+        RemoteWorkSessionDataSourceImpl(get(), get(), get())
     }
 
     // Add view models from viewModelModule

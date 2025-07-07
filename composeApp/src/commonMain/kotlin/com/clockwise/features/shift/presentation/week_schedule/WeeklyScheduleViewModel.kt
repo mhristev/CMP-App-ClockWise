@@ -24,6 +24,7 @@ import kotlinx.datetime.plus
 import com.clockwise.features.shift.domain.model.WorkSession
 import com.clockwise.features.shift.domain.model.ShiftStatus
 import com.clockwise.features.shift.domain.model.WorkSessionStatus
+import com.clockwise.features.shift.domain.model.SessionNote
 
 class WeeklyScheduleViewModel(
     private val shiftRepository: ShiftRepository
@@ -98,14 +99,24 @@ class WeeklyScheduleViewModel(
                 val dayOfWeek = startTime.dayOfWeek
 
                 val workSession = shiftDto.workSession?.let { wsDto ->
+                    val sessionNote = wsDto.sessionNote?.let { noteDto ->
+                        SessionNote(
+                            id = noteDto.id,
+                            workSessionId = noteDto.workSessionId,
+                            content = noteDto.content,
+                            createdAt = TimeProvider.epochSecondsToLocalDateTime(noteDto.createdAt)
+                        )
+                    }
+                    
                     WorkSession(
                         id = wsDto.id,
                         userId = wsDto.userId,
                         shiftId = wsDto.shiftId,
-                        clockInTime = TimeProvider.epochSecondsToLocalDateTime(wsDto.clockInTime),
+                        clockInTime = wsDto.clockInTime?.let { TimeProvider.epochSecondsToLocalDateTime(it) },
                         clockOutTime = wsDto.clockOutTime?.let { TimeProvider.epochSecondsToLocalDateTime(it) },
                         totalMinutes = wsDto.totalMinutes,
-                        status = WorkSessionStatus.fromString(wsDto.status)
+                        status = WorkSessionStatus.fromString(wsDto.status),
+                        sessionNote = sessionNote
                     )
                 }
                 
@@ -119,6 +130,7 @@ class WeeklyScheduleViewModel(
                     workSession = workSession,
                     status = workSession?.let {
                         when(it.status) {
+                            WorkSessionStatus.CREATED -> ShiftStatus.SCHEDULED
                             WorkSessionStatus.ACTIVE -> ShiftStatus.CLOCKED_IN
                             WorkSessionStatus.COMPLETED -> ShiftStatus.COMPLETED
                             else -> ShiftStatus.SCHEDULED
@@ -169,11 +181,9 @@ class WeeklyScheduleViewModel(
     }
     
     private fun navigateToCurrentWeek() {
-        val today = TimeProvider.getCurrentLocalDate()
-        _state.update { currentState ->
-            currentState.copy(
-                currentWeekStart = getWeekStartDate(today),
-                selectedDay = today.dayOfWeek
+        _state.update {
+            it.copy(
+                currentWeekStart = getWeekStartDate(TimeProvider.getCurrentLocalDate())
             )
         }
         loadWeeklySchedule()

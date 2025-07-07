@@ -58,7 +58,7 @@ class WorkSessionRepositoryImpl(
             id = dto.id,
             userId = dto.userId,
             shiftId = dto.shiftId,
-            clockInTime = timestampToLocalDateTime(dto.clockInTime),
+            clockInTime = dto.clockInTime?.let { timestampToLocalDateTime(it) },
             clockOutTime = dto.clockOutTime?.let { timestampToLocalDateTime(it) },
             totalMinutes = dto.totalMinutes,
             status = WorkSessionStatus.fromString(dto.status)

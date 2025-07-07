@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clockwise.features.shift.presentation.welcome_shifts.components.UpcomingShiftCard
+import com.clockwise.features.shift.presentation.welcome_shifts.components.ClockOutModal
 
 @Composable
 fun WelcomeScreenRoot(
@@ -70,10 +71,17 @@ fun WelcomeScreen(
             }
         } else {
             state.todayShift?.let { shift ->
+                val sessionNote = shift.workSession?.id?.let { workSessionId ->
+                    state.sessionNotes[workSessionId] ?: ""
+                } ?: ""
+                val isSavingNote = shift.workSession?.id == state.savingNoteForSession
+                
                 UpcomingShiftCard(
                     shift = shift,
-                    onAction = onAction,
-                    canClockInOut = true
+                    canClockInOut = true,
+                    sessionNote = sessionNote,
+                    isSavingNote = isSavingNote,
+                    onAction = onAction
                 )
             } ?: Box(
                 modifier = Modifier.fillMaxWidth().height(80.dp),
@@ -123,13 +131,41 @@ fun WelcomeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(state.upcomingShifts) { shift ->
+                    val sessionNote = shift.workSession?.id?.let { workSessionId ->
+                        state.sessionNotes[workSessionId] ?: ""
+                    } ?: ""
+                    val isSavingNote = shift.workSession?.id == state.savingNoteForSession
+                    
                     UpcomingShiftCard(
                         shift = shift,
-                        onAction = onAction,
-                        canClockInOut = false
+                        canClockInOut = false,
+                        sessionNote = sessionNote,
+                        isSavingNote = isSavingNote,
+                        onAction = onAction
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
         }
     }
+    
+    // Clock Out Modal
+    ClockOutModal(
+        isVisible = state.showClockOutModal,
+        note = state.clockOutNote,
+        isSaving = state.isLoading,
+        onNoteChange = { onAction(WelcomeAction.UpdateClockOutNote(it)) },
+        onConfirmClockOut = {
+            if (state.clockOutModalShiftId != null) {
+                onAction(
+                    WelcomeAction.ClockOutWithNote(
+                        shiftId = state.clockOutModalShiftId,
+                        workSessionId = state.clockOutModalWorkSessionId,
+                        note = state.clockOutNote
+                    )
+                )
+            }
+        },
+        onDismiss = { onAction(WelcomeAction.HideClockOutModal) }
+    )
 }
