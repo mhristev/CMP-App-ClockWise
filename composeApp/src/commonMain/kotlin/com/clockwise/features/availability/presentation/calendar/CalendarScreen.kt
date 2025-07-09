@@ -27,6 +27,10 @@ import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 import androidx.compose.material.Divider
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 
 private fun formatCurrentMonth(date: LocalDate): String {
     val monthName = when (date.month) {
@@ -479,8 +483,14 @@ private fun AvailabilityDialog(
     initialStartTime: String = "",
     initialEndTime: String = ""
 ) {
-    var startTime by remember { mutableStateOf(initialStartTime) }
-    var endTime by remember { mutableStateOf(initialEndTime) }
+    // Parse initial times to hour/minute values
+    val (initialStartHour, initialStartMinute) = parseTimeString(initialStartTime)
+    val (initialEndHour, initialEndMinute) = parseTimeString(initialEndTime)
+    
+    var startHour by remember { mutableStateOf(initialStartHour) }
+    var startMinute by remember { mutableStateOf(initialStartMinute) }
+    var endHour by remember { mutableStateOf(initialEndHour) }
+    var endMinute by remember { mutableStateOf(initialEndMinute) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -490,34 +500,78 @@ private fun AvailabilityDialog(
                     "Set Availability for ${formatDate(date)}"
                 else 
                     "Edit Availability for ${formatDate(date)}",
-                color = Color(0xFF4A2B8C)
+                color = Color(0xFF4A2B8C),
+                style = MaterialTheme.typography.h6
             )
         },
         text = {
-            Column {
-                OutlinedTextField(
-                    value = startTime,
-                    onValueChange = { startTime = it },
-                    label = { Text("Start Time (HH:mm)") },
-                    modifier = Modifier.fillMaxWidth()
+            Column(
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                // Start Time Section
+                Text(
+                    text = "Start Time",
+                    style = MaterialTheme.typography.subtitle1,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF333333),
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = endTime,
-                    onValueChange = { endTime = it },
-                    label = { Text("End Time (HH:mm)") },
-                    modifier = Modifier.fillMaxWidth()
+                
+                TimePickerRow(
+                    hour = startHour,
+                    minute = startMinute,
+                    onHourChange = { startHour = it },
+                    onMinuteChange = { startMinute = it }
                 )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // End Time Section
+                Text(
+                    text = "End Time",
+                    style = MaterialTheme.typography.subtitle1,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF333333),
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+                
+                TimePickerRow(
+                    hour = endHour,
+                    minute = endMinute,
+                    onHourChange = { endHour = it },
+                    onMinuteChange = { endMinute = it }
+                )
+                
+                // Duration Preview
+                val startTimeFormatted = formatTime(startHour, startMinute)
+                val endTimeFormatted = formatTime(endHour, endMinute)
+                val duration = calculateDuration(startTimeFormatted, endTimeFormatted)
+                
+                if (duration != "Invalid duration") {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Duration: $duration",
+                        style = MaterialTheme.typography.caption,
+                        color = Color(0xFF666666),
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
         },
         confirmButton = {
             TextButton(
                 onClick = {
-                    onSetAvailability(startTime, endTime)
-                    onDismiss()
-                }
+                    val startTimeFormatted = formatTime(startHour, startMinute)
+                    val endTimeFormatted = formatTime(endHour, endMinute)
+                    onSetAvailability(startTimeFormatted, endTimeFormatted)
+                },
+                enabled = isValidTimeRange(startHour, startMinute, endHour, endMinute)
             ) {
-                Text(if (initialStartTime.isEmpty()) "Set" else "Update", color = Color(0xFF4A2B8C))
+                Text(
+                    text = if (initialStartTime.isEmpty()) "Set" else "Update", 
+                    color = if (isValidTimeRange(startHour, startMinute, endHour, endMinute)) 
+                        Color(0xFF4A2B8C) else Color(0xFFCCCCCC)
+                )
             }
         },
         dismissButton = {
@@ -526,6 +580,150 @@ private fun AvailabilityDialog(
             }
         }
     )
+}
+
+@Composable
+private fun TimePickerRow(
+    hour: Int,
+    minute: Int,
+    onHourChange: (Int) -> Unit,
+    onMinuteChange: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Hour Picker
+        TimePicker(
+            label = "Hour",
+            value = hour,
+            range = 0..23,
+            onValueChange = onHourChange,
+            modifier = Modifier.weight(1f)
+        )
+        
+        Text(
+            text = ":",
+            style = MaterialTheme.typography.h5,
+            color = Color(0xFF333333),
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+        
+        // Minute Picker
+        TimePicker(
+            label = "Min",
+            value = minute,
+            range = 0..59,
+            step = 15, // 15-minute intervals
+            onValueChange = onMinuteChange,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun TimePicker(
+    label: String,
+    value: Int,
+    range: IntRange,
+    onValueChange: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+    step: Int = 1
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.caption,
+            color = Color(0xFF666666)
+        )
+        
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Decrease button
+            IconButton(
+                onClick = {
+                    val newValue = if (value - step < range.first) range.last else value - step
+                    onValueChange(newValue)
+                },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Decrease $label",
+                    tint = Color(0xFF4A2B8C)
+                )
+            }
+            
+            // Value display
+            Text(
+                text = value.toString().padStart(2, '0'),
+                style = MaterialTheme.typography.h6,
+                color = Color(0xFF333333),
+                modifier = Modifier
+                    .background(
+                        Color(0xFFF5F5F5),
+                        RoundedCornerShape(8.dp)
+                    )
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .width(48.dp),
+                textAlign = TextAlign.Center
+            )
+            
+            // Increase button
+            IconButton(
+                onClick = {
+                    val newValue = if (step == 15) {
+                        // For minutes with 15-minute intervals
+                        val nextValue = ((value / 15) + 1) * 15
+                        if (nextValue > range.last) 0 else nextValue
+                    } else {
+                        if (value + step > range.last) range.first else value + step
+                    }
+                    onValueChange(newValue)
+                },
+                modifier = Modifier.size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowUp,
+                    contentDescription = "Increase $label",
+                    tint = Color(0xFF4A2B8C)
+                )
+            }
+        }
+    }
+}
+
+// Helper functions
+private fun parseTimeString(timeString: String): Pair<Int, Int> {
+    if (timeString.isEmpty()) return Pair(9, 0) // Default to 9:00 AM
+    
+    return try {
+        val parts = timeString.split(":")
+        if (parts.size >= 2) {
+            val hour = parts[0].toIntOrNull() ?: 9
+            val minute = parts[1].toIntOrNull() ?: 0
+            Pair(hour.coerceIn(0, 23), minute.coerceIn(0, 59))
+        } else {
+            Pair(9, 0)
+        }
+    } catch (e: Exception) {
+        Pair(9, 0)
+    }
+}
+
+private fun formatTime(hour: Int, minute: Int): String {
+    return "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"
+}
+
+private fun isValidTimeRange(startHour: Int, startMinute: Int, endHour: Int, endMinute: Int): Boolean {
+    val startTotalMinutes = startHour * 60 + startMinute
+    val endTotalMinutes = endHour * 60 + endMinute
+    return endTotalMinutes > startTotalMinutes
 }
 
 @Composable
@@ -619,39 +817,18 @@ private fun getDaysInMonth(currentMonth: LocalDate): List<LocalDate> {
 // Helper function to calculate the duration between two time strings (HH:mm format)
 private fun calculateDuration(startTime: String, endTime: String): String {
     try {
-        // Parse the time strings
-        val startComponents = startTime.split(":")
-        val endComponents = endTime.split(":")
+        val (startHour, startMinute) = startTime.split(":").map { it.toInt() }
+        val (endHour, endMinute) = endTime.split(":").map { it.toInt() }
         
-        if (startComponents.size < 2 || endComponents.size < 2) {
-            return "Unknown"
-        }
-        
-        val startHour = startComponents[0].toIntOrNull() ?: return "Unknown"
-        val startMinute = startComponents[1].toIntOrNull() ?: return "Unknown"
-        val endHour = endComponents[0].toIntOrNull() ?: return "Unknown"
-        val endMinute = endComponents[1].toIntOrNull() ?: return "Unknown"
-        
-        // Calculate total minutes
         val startTotalMinutes = startHour * 60 + startMinute
         val endTotalMinutes = endHour * 60 + endMinute
         val durationMinutes = endTotalMinutes - startTotalMinutes
         
-        if (durationMinutes <= 0) {
-            return "Invalid duration"
-        }
-        
-        // Convert to hours and minutes
         val hours = durationMinutes / 60
         val minutes = durationMinutes % 60
         
-        // Format the result
-        return when {
-            hours > 0 && minutes > 0 -> "$hours hour${if (hours > 1) "s" else ""} $minutes minute${if (minutes > 1) "s" else ""}"
-            hours > 0 -> "$hours hour${if (hours > 1) "s" else ""}"
-            else -> "$minutes minute${if (minutes > 1) "s" else ""}"
-        }
+        return "${hours}h ${minutes}m"
     } catch (e: Exception) {
-        return "Unknown"
+        return "Invalid duration"
     }
 }

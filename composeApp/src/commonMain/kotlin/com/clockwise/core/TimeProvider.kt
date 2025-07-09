@@ -45,11 +45,37 @@ object TimeProvider {
     }
     
     /**
-     * Formats a LocalDateTime to ISO-8601 string with timezone information
+     * Formats LocalDateTime for backend API calls (without timezone info)
+     * Format: yyyy-MM-dd'T'HH:mm:ss
+     */
+    fun formatForBackendApi(localDateTime: LocalDateTime): String {
+        val year = localDateTime.year
+        val month = localDateTime.monthNumber.toString().padStart(2, '0')
+        val day = localDateTime.dayOfMonth.toString().padStart(2, '0')
+        val hour = localDateTime.hour.toString().padStart(2, '0')
+        val minute = localDateTime.minute.toString().padStart(2, '0')
+        val second = localDateTime.second.toString().padStart(2, '0')
+        
+        return "${year}-${month}-${day}T${hour}:${minute}:${second}"
+    }
+
+    /**
+     * Formats LocalDateTime as ISO-8601 string with timezone for API calls.
+     * This is the correct format to use for availability API calls.
      */
     fun formatIsoDateTime(localDateTime: LocalDateTime): String {
+        // Convert LocalDateTime to UTC before formatting with Z timezone indicator
         val instant = localDateTime.toInstant(TimeZone.currentSystemDefault())
-        return instant.toString()
+        val utcDateTime = instant.toLocalDateTime(TimeZone.UTC)
+        
+        val year = utcDateTime.year
+        val month = utcDateTime.monthNumber.toString().padStart(2, '0')
+        val day = utcDateTime.dayOfMonth.toString().padStart(2, '0')
+        val hour = utcDateTime.hour.toString().padStart(2, '0')
+        val minute = utcDateTime.minute.toString().padStart(2, '0')
+        val second = utcDateTime.second.toString().padStart(2, '0')
+        
+        return "${year}-${month}-${day}T${hour}:${minute}:${second}Z"
     }
     
     /**
@@ -75,7 +101,7 @@ object TimeProvider {
     fun epochSecondsToLocalDateTime(epochSeconds: String): LocalDateTime {
         return epochSecondsToLocalDateTime(epochSeconds.toDouble())
     }
-
+    
     /**
      * Converts LocalDateTime to epoch seconds
      */

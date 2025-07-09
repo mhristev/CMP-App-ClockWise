@@ -32,14 +32,28 @@ class KtorRemoteAvailabilityDataSource(
     
     override suspend fun getUserAvailabilities(): Result<List<AvailabilityDto>, DataError.Remote> {
         val currentUserId = userService.currentUser.value?.id
-            ?: return Result.Error(DataError.Remote.UNKNOWN)
+        if (currentUserId == null) {
+            println("DEBUG: getUserAvailabilities - No current user ID found")
+            return Result.Error(DataError.Remote.UNKNOWN)
+        }
         
         val token = userService.authToken.value
-            ?: return Result.Error(DataError.Remote.UNKNOWN)
+        if (token == null) {
+            println("DEBUG: getUserAvailabilities - No auth token found")
+            return Result.Error(DataError.Remote.UNKNOWN)
+        }
+        
+        println("DEBUG: getUserAvailabilities - User ID: $currentUserId")
+        println("DEBUG: getUserAvailabilities - Token available: ${token.isNotEmpty()}")
+        println("DEBUG: getUserAvailabilities - Token length: ${token.length}")
+        println("DEBUG: getUserAvailabilities - Token preview: ${token.take(10)}...")
+        println("DEBUG: getUserAvailabilities - User authorized: ${userService.isUserAuthorized()}")
+        
+        val url = "${apiConfig.baseAvailabilityUrl}/users/${currentUserId}/availabilities"
+        println("DEBUG: getUserAvailabilities - URL: $url")
             
         return safeCall {
-            httpClient.get("${apiConfig.baseAvailabilityUrl}/users/me/availabilities") {
-                parameter("userId", currentUserId)
+            httpClient.get(url) {
                 header("Authorization", "Bearer $token")
             }
         }
@@ -51,29 +65,72 @@ class KtorRemoteAvailabilityDataSource(
         endTimeString: String
     ): Result<AvailabilityDto, DataError.Remote> {
         val currentUserId = userService.currentUser.value?.id
-            ?: return Result.Error(DataError.Remote.UNKNOWN)
+        if (currentUserId == null) {
+            println("DEBUG: createAvailability - No current user ID found")
+            return Result.Error(DataError.Remote.UNKNOWN)
+        }
             
         val token = userService.authToken.value
-            ?: return Result.Error(DataError.Remote.UNKNOWN)
+        if (token == null) {
+            println("DEBUG: createAvailability - No auth token found")
+            return Result.Error(DataError.Remote.UNKNOWN)
+        }
+        
+        println("DEBUG: createAvailability - User ID: $currentUserId")
+        println("DEBUG: createAvailability - Token available: ${token.isNotEmpty()}")
+        println("DEBUG: createAvailability - Token length: ${token.length}")
+        println("DEBUG: createAvailability - Token preview: ${token.take(10)}...")
+        println("DEBUG: createAvailability - User authorized: ${userService.isUserAuthorized()}")
             
         val businessUnitId = userService.currentUser.value?.businessUnitId
         
-        // Parse the time strings (HH:mm format)
-        val startComponents = startTimeString.split(":").map { it.toInt() }
-        val endComponents = endTimeString.split(":").map { it.toInt() }
+        // Clean and validate time strings - remove any extra quotes or whitespace
+        val cleanStartTime = startTimeString.trim().replace("\"", "")
+        val cleanEndTime = endTimeString.trim().replace("\"", "")
+        
+        // Parse the time strings (HH:mm format) with better error handling
+        val startComponents = try {
+            cleanStartTime.split(":").map { component ->
+                component.trim().toIntOrNull() ?: throw NumberFormatException("Invalid time component: $component")
+            }
+        } catch (e: Exception) {
+            println("Error parsing start time '$startTimeString': ${e.message}")
+            return Result.Error(DataError.Remote.UNKNOWN)
+        }
+        
+        val endComponents = try {
+            cleanEndTime.split(":").map { component ->
+                component.trim().toIntOrNull() ?: throw NumberFormatException("Invalid time component: $component")
+            }
+        } catch (e: Exception) {
+            println("Error parsing end time '$endTimeString': ${e.message}")
+            return Result.Error(DataError.Remote.UNKNOWN)
+        }
         
         if (startComponents.size != 2 || endComponents.size != 2) {
+            println("Invalid time format. Expected HH:mm, got start: '$cleanStartTime', end: '$cleanEndTime'")
+            return Result.Error(DataError.Remote.UNKNOWN)
+        }
+        
+        // Validate time values
+        val startHour = startComponents[0]
+        val startMinute = startComponents[1]
+        val endHour = endComponents[0]
+        val endMinute = endComponents[1]
+        
+        if (startHour !in 0..23 || startMinute !in 0..59 || endHour !in 0..23 || endMinute !in 0..59) {
+            println("Invalid time values. Hours must be 0-23, minutes 0-59")
             return Result.Error(DataError.Remote.UNKNOWN)
         }
         
         // Create LocalDateTime objects for start and end times
         val startDateTime = LocalDateTime(
             date.year, date.monthNumber, date.dayOfMonth,
-            startComponents[0], startComponents[1], 0, 0
+            startHour, startMinute, 0, 0
         )
         val endDateTime = LocalDateTime(
             date.year, date.monthNumber, date.dayOfMonth,
-            endComponents[0], endComponents[1], 0, 0
+            endHour, endMinute, 0, 0
         )
         
         // Convert to ISO-8601 format with timezone for API request
@@ -110,22 +167,53 @@ class KtorRemoteAvailabilityDataSource(
             
         val businessUnitId = userService.currentUser.value?.businessUnitId
         
-        // Parse the time strings (HH:mm format)
-        val startComponents = startTimeString.split(":").map { it.toInt() }
-        val endComponents = endTimeString.split(":").map { it.toInt() }
+        // Clean and validate time strings - remove any extra quotes or whitespace
+        val cleanStartTime = startTimeString.trim().replace("\"", "")
+        val cleanEndTime = endTimeString.trim().replace("\"", "")
+        
+        // Parse the time strings (HH:mm format) with better error handling
+        val startComponents = try {
+            cleanStartTime.split(":").map { component ->
+                component.trim().toIntOrNull() ?: throw NumberFormatException("Invalid time component: $component")
+            }
+        } catch (e: Exception) {
+            println("Error parsing start time '$startTimeString': ${e.message}")
+            return Result.Error(DataError.Remote.UNKNOWN)
+        }
+        
+        val endComponents = try {
+            cleanEndTime.split(":").map { component ->
+                component.trim().toIntOrNull() ?: throw NumberFormatException("Invalid time component: $component")
+            }
+        } catch (e: Exception) {
+            println("Error parsing end time '$endTimeString': ${e.message}")
+            return Result.Error(DataError.Remote.UNKNOWN)
+        }
         
         if (startComponents.size != 2 || endComponents.size != 2) {
+            println("Invalid time format. Expected HH:mm, got start: '$cleanStartTime', end: '$cleanEndTime'")
+            return Result.Error(DataError.Remote.UNKNOWN)
+        }
+        
+        // Validate time values
+        val startHour = startComponents[0]
+        val startMinute = startComponents[1]
+        val endHour = endComponents[0]
+        val endMinute = endComponents[1]
+        
+        if (startHour !in 0..23 || startMinute !in 0..59 || endHour !in 0..23 || endMinute !in 0..59) {
+            println("Invalid time values. Hours must be 0-23, minutes 0-59")
             return Result.Error(DataError.Remote.UNKNOWN)
         }
         
         // Create LocalDateTime objects for start and end times
         val startDateTime = LocalDateTime(
             date.year, date.monthNumber, date.dayOfMonth,
-            startComponents[0], startComponents[1], 0, 0
+            startHour, startMinute, 0, 0
         )
         val endDateTime = LocalDateTime(
             date.year, date.monthNumber, date.dayOfMonth,
-            endComponents[0], endComponents[1], 0, 0
+            endHour, endMinute, 0, 0
         )
         
         // Convert to ISO-8601 format with timezone for API request
@@ -152,10 +240,19 @@ class KtorRemoteAvailabilityDataSource(
         val token = userService.authToken.value
             ?: return Result.Error(DataError.Remote.UNKNOWN)
             
-        return safeCall {
-            httpClient.delete("${apiConfig.baseAvailabilityUrl}/availabilities/$id") {
+        return try {
+            val response = httpClient.delete("${apiConfig.baseAvailabilityUrl}/availabilities/$id") {
                 header("Authorization", "Bearer $token")
             }
+            
+            // Check if the response status indicates success (204 No Content)
+            if (response.status.value in 200..299) {
+                Result.Success(true)
+            } else {
+                Result.Error(DataError.Remote.SERVER)
+            }
+        } catch (e: Exception) {
+            Result.Error(DataError.Remote.UNKNOWN)
         }
     }
 }

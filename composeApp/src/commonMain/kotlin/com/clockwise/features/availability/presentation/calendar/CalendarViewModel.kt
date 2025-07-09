@@ -239,6 +239,7 @@ class CalendarViewModel(
                 _state.update {
                     it.copy(
                         isLoading = false,
+                        showDeleteConfirmationDialog = false,
                         error = "No availability ID found for the selected date"
                     )
                 }
