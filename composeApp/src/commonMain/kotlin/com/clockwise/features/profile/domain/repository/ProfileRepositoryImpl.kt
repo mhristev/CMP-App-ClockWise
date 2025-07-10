@@ -42,7 +42,7 @@ class ProfileRepositoryImpl(
     
     override suspend fun logout(): Result<Unit> {
         return try {
-            userService.clearAuthData()
+            userService.clearAllUserData()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -57,8 +57,8 @@ class ProfileRepositoryImpl(
                 header(HttpHeaders.Authorization, "Bearer $token")
             }
             
-            // After successful anonymization, log the user out
-            userService.clearAuthData()
+            // After successful anonymization, log the user out with comprehensive cleanup
+            userService.clearAllUserData()
             
             Result.success(Unit)
         } catch (e: Exception) {

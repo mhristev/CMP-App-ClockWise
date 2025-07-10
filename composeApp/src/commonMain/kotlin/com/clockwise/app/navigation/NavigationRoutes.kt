@@ -5,6 +5,7 @@ package com.clockwise.app.navigation
  * This provides type safety and prevents typos in route names.
  */
 sealed class NavigationRoutes(val route: String) {
+    object Splash : NavigationRoutes("splash")
     object Auth : NavigationRoutes("auth")
     // Instead of just "Home", we'll have all the screens as top-level routes
     object Welcome : NavigationRoutes("welcome")
@@ -18,6 +19,7 @@ sealed class NavigationRoutes(val route: String) {
         // Helper function to get route by name (for backward compatibility)
         fun fromRoute(route: String): NavigationRoutes {
             return when (route) {
+                Splash.route -> Splash
                 Auth.route -> Auth
                 Welcome.route -> Welcome
                 WeeklySchedule.route -> WeeklySchedule

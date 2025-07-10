@@ -13,11 +13,13 @@ import kotlinx.datetime.Clock
 interface SecureStorage {
     fun saveAuthData(authResponse: AuthResponse)
     fun getAuthToken(): String?
+    fun getRefreshToken(): String?
     fun getUserRole(): UserRole?
     fun getUser(): User?
     fun saveUser(user: User)
     fun isTokenExpired(): Boolean
     fun clearAuthData()
+    fun clearAllData()
 }
 
 /**
@@ -49,6 +51,10 @@ class KVaultSecureStorage(
     
     override fun getAuthToken(): String? {
         return if (isTokenExpired()) null else vault.string(KEY_AUTH_TOKEN)
+    }
+    
+    override fun getRefreshToken(): String? {
+        return vault.string(KEY_REFRESH_TOKEN)
     }
     
     override fun getUserRole(): UserRole? {
@@ -88,5 +94,9 @@ class KVaultSecureStorage(
         vault.deleteObject(KEY_USER_ROLE)
         vault.deleteObject(KEY_USER)
         vault.deleteObject(KEY_TOKEN_EXPIRY)
+    }
+    
+    override fun clearAllData() {
+        vault.clear()
     }
 }

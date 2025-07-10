@@ -18,6 +18,13 @@ class AuthRepositoryImpl(
     private val userService: UserService
 ) : AuthRepository {
 
+    init {
+        // Set up the refresh token function for UserService
+        userService.setRefreshTokenFunction { refreshToken ->
+            remoteDataSource.refreshToken(refreshToken)
+        }
+    }
+
     override suspend fun register(
         email: String, 
         password: String,
@@ -56,7 +63,25 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun logout(): Result<Unit, DataError.Remote> {
-        userService.clearAuthData()
+        userService.clearAllUserData()
         return Result.Success(Unit)
+    }
+
+    /**
+     * Refresh the authentication token using the refresh token
+     */
+    suspend fun refreshToken(): Result<AuthResponse, DataError.Remote> {
+        // UserService will handle this internally now
+        val newToken = userService.getValidAuthToken()
+        return if (newToken != null) {
+            Result.Success(AuthResponse(
+                accessToken = newToken,
+                refreshToken = "", // Placeholder - actual refresh token is stored internally
+                expiresIn = 3600,
+                role = userService.currentUserRole.value?.name ?: "EMPLOYEE"
+            ))
+        } else {
+            Result.Error(DataError.Remote.UNKNOWN)
+        }
     }
 } 

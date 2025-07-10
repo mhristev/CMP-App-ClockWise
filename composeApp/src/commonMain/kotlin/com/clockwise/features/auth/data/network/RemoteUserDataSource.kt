@@ -16,4 +16,6 @@ interface RemoteUserDataSource {
     ): Result<AuthResponse, DataError.Remote>
     
     suspend fun login(email: String, password: String): Result<AuthResponse, DataError.Remote>
+    
+    suspend fun refreshToken(refreshToken: String): Result<AuthResponse, DataError.Remote>
 }

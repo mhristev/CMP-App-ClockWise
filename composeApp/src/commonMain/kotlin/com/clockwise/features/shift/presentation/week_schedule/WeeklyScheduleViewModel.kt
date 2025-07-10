@@ -3,7 +3,7 @@ package com.clockwise.features.shift.presentation.week_schedule
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clockwise.core.TimeProvider
-import com.clockwise.features.shift.data.repository.ShiftRepository
+import com.clockwise.features.shift.domain.repositories.ShiftRepository
 import com.clockwise.features.shift.domain.model.Shift
 import com.clockwise.core.util.getWeekStartDate
 import com.clockwise.features.shift.data.dto.ShiftDto
@@ -21,10 +21,6 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
-import com.clockwise.features.shift.domain.model.WorkSession
-import com.clockwise.features.shift.domain.model.ShiftStatus
-import com.clockwise.features.shift.domain.model.WorkSessionStatus
-import com.clockwise.features.shift.domain.model.SessionNote
 
 class WeeklyScheduleViewModel(
     private val shiftRepository: ShiftRepository
@@ -64,7 +60,7 @@ class WeeklyScheduleViewModel(
             
             // Fetch shifts for the entire week
             val weekStart = _state.value.currentWeekStart
-            shiftRepository.getShiftsForWeek(weekStart).collect { result ->
+            shiftRepository.getShiftsForWeek(weekStart.toString()).collect { result ->
                 result.onSuccess { shiftDtos ->
                     processShiftDtos(shiftDtos)
                 }.onError { error ->
@@ -92,33 +88,11 @@ class WeeklyScheduleViewModel(
         shiftDtos.forEach { shiftDto ->
             try {
                 // Convert epoch seconds to LocalDateTime
-                val startTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.startTime.toDouble())
-                val endTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.endTime.toDouble())
+                val startTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.startTime)
+                val endTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.endTime)
                 
                 // Get day of week
-                val dayOfWeek = startTime.dayOfWeek
-
-                val workSession = shiftDto.workSession?.let { wsDto ->
-                    val sessionNote = wsDto.sessionNote?.let { noteDto ->
-                        SessionNote(
-                            id = noteDto.id,
-                            workSessionId = noteDto.workSessionId,
-                            content = noteDto.content,
-                            createdAt = TimeProvider.epochSecondsToLocalDateTime(noteDto.createdAt)
-                        )
-                    }
-                    
-                    WorkSession(
-                        id = wsDto.id,
-                        userId = wsDto.userId,
-                        shiftId = wsDto.shiftId,
-                        clockInTime = wsDto.clockInTime?.let { TimeProvider.epochSecondsToLocalDateTime(it) },
-                        clockOutTime = wsDto.clockOutTime?.let { TimeProvider.epochSecondsToLocalDateTime(it) },
-                        totalMinutes = wsDto.totalMinutes,
-                        status = WorkSessionStatus.fromString(wsDto.status),
-                        sessionNote = sessionNote
-                    )
-                }
+                val dayOfWeek = startTime.date.dayOfWeek
                 
                 // Create shift object
                 val shift = Shift(
@@ -126,18 +100,7 @@ class WeeklyScheduleViewModel(
                     startTime = startTime,
                     endTime = endTime,
                     position = shiftDto.position ?: "General Staff",
-                    employeeId = shiftDto.employeeId,
-                    workSession = workSession,
-                    status = workSession?.let {
-                        when(it.status) {
-                            WorkSessionStatus.CREATED -> ShiftStatus.SCHEDULED
-                            WorkSessionStatus.ACTIVE -> ShiftStatus.CLOCKED_IN
-                            WorkSessionStatus.COMPLETED -> ShiftStatus.COMPLETED
-                            else -> ShiftStatus.SCHEDULED
-                        }
-                    } ?: ShiftStatus.SCHEDULED,
-                    clockInTime = workSession?.clockInTime,
-                    clockOutTime = workSession?.clockOutTime
+                    employeeId = shiftDto.employeeId
                 )
                 
                 // Add to the appropriate day
@@ -181,9 +144,11 @@ class WeeklyScheduleViewModel(
     }
     
     private fun navigateToCurrentWeek() {
-        _state.update {
-            it.copy(
-                currentWeekStart = getWeekStartDate(TimeProvider.getCurrentLocalDate())
+        val today = TimeProvider.getCurrentLocalDate()
+        _state.update { currentState ->
+            currentState.copy(
+                currentWeekStart = getWeekStartDate(today),
+                selectedDay = today.dayOfWeek
             )
         }
         loadWeeklySchedule()

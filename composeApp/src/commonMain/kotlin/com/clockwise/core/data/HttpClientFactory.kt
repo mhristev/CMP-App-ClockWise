@@ -53,6 +53,14 @@ object HttpClientFactory {
                             null
                         }
                     }
+                    refreshTokens {
+                        val newToken = userService.getValidAuthToken()
+                        if (newToken != null) {
+                            BearerTokens(newToken, "")
+                        } else {
+                            null
+                        }
+                    }
                 }
             }
             defaultRequest {

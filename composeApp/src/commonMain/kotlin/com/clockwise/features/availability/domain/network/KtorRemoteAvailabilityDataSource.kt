@@ -37,9 +37,9 @@ class KtorRemoteAvailabilityDataSource(
             return Result.Error(DataError.Remote.UNKNOWN)
         }
         
-        val token = userService.authToken.value
+        val token = userService.getValidAuthToken()
         if (token == null) {
-            println("DEBUG: getUserAvailabilities - No auth token found")
+            println("DEBUG: getUserAvailabilities - No valid auth token found")
             return Result.Error(DataError.Remote.UNKNOWN)
         }
         
@@ -47,7 +47,7 @@ class KtorRemoteAvailabilityDataSource(
         println("DEBUG: getUserAvailabilities - Token available: ${token.isNotEmpty()}")
         println("DEBUG: getUserAvailabilities - Token length: ${token.length}")
         println("DEBUG: getUserAvailabilities - Token preview: ${token.take(10)}...")
-        println("DEBUG: getUserAvailabilities - User authorized: ${userService.isUserAuthorized()}")
+        println("DEBUG: getUserAvailabilities - User authorized: ${userService.isUserAuthorized}")
         
         val url = "${apiConfig.baseAvailabilityUrl}/users/${currentUserId}/availabilities"
         println("DEBUG: getUserAvailabilities - URL: $url")
@@ -70,9 +70,9 @@ class KtorRemoteAvailabilityDataSource(
             return Result.Error(DataError.Remote.UNKNOWN)
         }
             
-        val token = userService.authToken.value
+        val token = userService.getValidAuthToken()
         if (token == null) {
-            println("DEBUG: createAvailability - No auth token found")
+            println("DEBUG: createAvailability - No valid auth token found")
             return Result.Error(DataError.Remote.UNKNOWN)
         }
         
@@ -80,7 +80,7 @@ class KtorRemoteAvailabilityDataSource(
         println("DEBUG: createAvailability - Token available: ${token.isNotEmpty()}")
         println("DEBUG: createAvailability - Token length: ${token.length}")
         println("DEBUG: createAvailability - Token preview: ${token.take(10)}...")
-        println("DEBUG: createAvailability - User authorized: ${userService.isUserAuthorized()}")
+        println("DEBUG: createAvailability - User authorized: ${userService.isUserAuthorized}")
             
         val businessUnitId = userService.currentUser.value?.businessUnitId
         
@@ -162,7 +162,7 @@ class KtorRemoteAvailabilityDataSource(
         val currentUserId = userService.currentUser.value?.id
             ?: return Result.Error(DataError.Remote.UNKNOWN)
             
-        val token = userService.authToken.value
+        val token = userService.getValidAuthToken()
             ?: return Result.Error(DataError.Remote.UNKNOWN)
             
         val businessUnitId = userService.currentUser.value?.businessUnitId
@@ -237,7 +237,7 @@ class KtorRemoteAvailabilityDataSource(
     }
     
     override suspend fun deleteAvailability(id: String): Result<Boolean, DataError.Remote> {
-        val token = userService.authToken.value
+        val token = userService.getValidAuthToken()
             ?: return Result.Error(DataError.Remote.UNKNOWN)
             
         return try {

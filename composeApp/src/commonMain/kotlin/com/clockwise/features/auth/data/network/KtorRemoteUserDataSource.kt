@@ -54,6 +54,17 @@ class KtorRemoteUserDataSource(
             }
         }
     }
+
+    override suspend fun refreshToken(
+        refreshToken: String
+    ): Result<AuthResponse, DataError.Remote> {
+        return safeCall {
+            httpClient.post("${apiConfig.baseAuthUrl}/refresh") {
+                contentType(ContentType.Application.Json)
+                setBody(RefreshTokenRequestDto(refreshToken))
+            }
+        }
+    }
 }
 
 @Serializable
@@ -64,6 +75,11 @@ data class RegisterRequestDto(
     @SerialName("lastName") val lastName: String,
     @SerialName("phoneNumber") val phoneNumber: String,
     @SerialName("privacyConsent") val privacyConsent: PrivacyConsent
+)
+
+@Serializable
+data class RefreshTokenRequestDto(
+    @SerialName("refreshToken") val refreshToken: String
 )
 
 @Serializable

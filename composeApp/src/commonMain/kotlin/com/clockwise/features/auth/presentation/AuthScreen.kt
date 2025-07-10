@@ -19,9 +19,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.clockwise.core.model.PrivacyConsent
+import com.clockwise.core.config.AppConfig
 
 private val DarkPurple = Color(0xFF2D1B4E)
 private val LightPurple = Color(0xFF4A2B8C)
+private val Orange = Color(0xFFFF6B35)
 private val Black = Color(0xFF121212)
 private val White = Color(0xFFFFFFFF)
 
@@ -44,6 +46,22 @@ fun AuthScreen(
     
     var isLoginMode by remember { mutableStateOf(true) }
     val scrollState = rememberScrollState()
+
+    // Clear all form fields when user is not authenticated (e.g., after logout)
+    LaunchedEffect(state.isAuthenticated) {
+        if (!state.isAuthenticated) {
+            email = ""
+            password = ""
+            confirmPassword = ""
+            firstName = ""
+            lastName = ""
+            phoneNumber = ""
+            marketingConsent = false
+            analyticsConsent = false
+            thirdPartyConsent = false
+            isLoginMode = true // Reset to login mode
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -111,6 +129,96 @@ fun AuthScreen(
                     color = White,
                     modifier = Modifier.padding(bottom = 32.dp)
                 )
+
+                // Development Mode Test Accounts (only in debug mode and login mode)
+                if (AppConfig.IS_DEBUG_MODE && isLoginMode) {
+                    var isTestAccountsExpanded by remember { mutableStateOf(false) }
+                    
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        backgroundColor = DarkPurple,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            // Header row with expand/collapse functionality
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { isTestAccountsExpanded = !isTestAccountsExpanded },
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "🚀 Development Mode",
+                                        style = MaterialTheme.typography.h6,
+                                        color = Orange
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = if (isTestAccountsExpanded) "▼" else "▶",
+                                        style = MaterialTheme.typography.h6,
+                                        color = Orange
+                                    )
+                                }
+                            }
+                            
+                            Text(
+                                text = "Tap to ${if (isTestAccountsExpanded) "hide" else "show"} test accounts",
+                                style = MaterialTheme.typography.body2,
+                                color = White.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                            
+                            // Expandable test accounts section
+                            AnimatedVisibility(
+                                visible = isTestAccountsExpanded,
+                                enter = fadeIn() + expandVertically(),
+                                exit = fadeOut() + shrinkVertically()
+                            ) {
+                                Column(
+                                    modifier = Modifier.padding(top = 16.dp)
+                                ) {
+                                    Text(
+                                        text = "Quick Login with Test Accounts:",
+                                        style = MaterialTheme.typography.body2,
+                                        color = White,
+                                        modifier = Modifier.padding(bottom = 12.dp)
+                                    )
+                                    
+                                    AppConfig.TestAccounts.ALL_TEST_ACCOUNTS.forEach { testAccount ->
+                                        Button(
+                                            onClick = {
+                                                email = testAccount.email
+                                                password = testAccount.password
+                                                onAction(AuthAction.LoginWithTestAccount(testAccount.email, testAccount.password))
+                                            },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 4.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                backgroundColor = Orange,
+                                                contentColor = Black
+                                            ),
+                                            shape = RoundedCornerShape(8.dp)
+                                        ) {
+                                            Text(
+                                                text = testAccount.displayName,
+                                                style = MaterialTheme.typography.button
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 
                 // Mode Slider
                 Row(

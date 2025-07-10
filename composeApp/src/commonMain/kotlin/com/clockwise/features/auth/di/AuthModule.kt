@@ -5,7 +5,8 @@ import com.clockwise.features.auth.data.network.RemoteUserDataSource
 import com.clockwise.features.auth.data.repository.AuthRepositoryImpl
 import com.clockwise.features.auth.domain.repository.AuthRepository
 import com.clockwise.features.auth.presentation.AuthViewModel
-import org.koin.compose.viewmodel.dsl.viewModel
+import com.clockwise.features.auth.presentation.SplashViewModel
+import org.koin.core.module.dsl.viewModel
 import org.koin.core.module.Module
 import org.koin.dsl.module
 
@@ -21,4 +22,5 @@ val authModule: Module = module {
     
     // ViewModels
     viewModel { AuthViewModel(get(), get(), get()) }
+    viewModel { SplashViewModel(get(), get()) }
 }
