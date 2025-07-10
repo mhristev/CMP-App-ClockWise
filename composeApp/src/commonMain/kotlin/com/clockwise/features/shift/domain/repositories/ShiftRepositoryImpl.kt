@@ -23,10 +23,9 @@ class ShiftRepositoryImpl(
         }
     }
 
-    override suspend fun getShiftsForWeek(weekStart: String): Flow<Result<List<ShiftDto>, DataError.Remote>> {
+    override suspend fun getShiftsForWeek(weekStart: LocalDate): Flow<Result<List<ShiftDto>, DataError.Remote>> {
         return flow {
-            val date = LocalDate.parse(weekStart)
-            emit(remoteDataSource.getShiftsForWeek(date))
+            emit(remoteDataSource.getShiftsForWeek(weekStart))
         }
     }
 

@@ -51,7 +51,7 @@ class ProfileRepositoryImpl(
     
     override suspend fun anonymizeUserAccount(): Result<Unit> {
         return try {
-            val token = userService.authToken.value ?: throw IllegalStateException("No auth token available")
+            val token = userService.getValidAuthToken() ?: throw IllegalStateException("No auth token available")
             
             httpClient.delete("${apiConfig.gdprUrl}/erase-me") {
                 header(HttpHeaders.Authorization, "Bearer $token")

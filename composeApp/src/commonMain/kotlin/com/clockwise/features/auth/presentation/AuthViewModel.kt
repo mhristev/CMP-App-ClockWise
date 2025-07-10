@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.clockwise.core.model.PrivacyConsent
 import com.clockwise.features.auth.UserService
-import com.clockwise.features.auth.data.network.RemoteUserDataSource
+import com.clockwise.features.auth.domain.repository.AuthRepository
 import com.clockwise.features.profile.domain.repository.UserProfileRepository
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess
@@ -14,12 +14,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.delay
 
 
 class AuthViewModel(
     private val userService: UserService,
-    private val remoteUserDataSource: RemoteUserDataSource,
+    private val authRepository: AuthRepository,
     private val userProfileRepository: UserProfileRepository
 ) : ViewModel() {
 
@@ -43,7 +42,6 @@ class AuthViewModel(
     fun onAction(action: AuthAction) {
         when (action) {
             is AuthAction.Login -> login(action.email, action.password)
-            is AuthAction.LoginWithTestAccount -> login(action.email, action.password)
             is AuthAction.Register -> register(
                 action.email,
                 action.password,
@@ -69,7 +67,7 @@ class AuthViewModel(
                 return@launch
             }
 
-            remoteUserDataSource.login(email, password)
+            authRepository.login(email, password)
                 .onSuccess { authResponse ->
                     userService.saveAuthResponse(authResponse)
                     
@@ -142,7 +140,7 @@ class AuthViewModel(
                 return@launch
             }
 
-            remoteUserDataSource.register(
+            authRepository.register(
                 email = email,
                 password = password,
                 firstName = firstName,
@@ -153,41 +151,27 @@ class AuthViewModel(
                 .onSuccess { authResponse ->
                     userService.saveAuthResponse(authResponse)
                     
-                    // Fetch full user profile after successful registration with retry mechanism
-                    // to handle race condition where User Service may not have processed Kafka event yet
-                    viewModelScope.launch {
-                        val maxAttempts = 5
-                        val delays = listOf(500L, 1000L, 2000L, 4000L, 8000L) // Exponential backoff
-                        
-                        for (attempt in 1..maxAttempts) {
-                            userProfileRepository.getUserProfile()
-                                .onSuccess { user ->
-                                    // Update UserService with the full User object
-                                    userService.saveUser(user)
-                                    _state.value = _state.value.copy(
-                                        isLoading = false,
-                                        isAuthenticated = true,
-                                        hasBusinessUnit = user.businessUnitId != null,
-                                        resultMessage = "Registration successful"
-                                    )
-                                    return@launch // Success, exit the retry loop
-                                }
-                                .onError { error ->
-                                    if (attempt == maxAttempts) {
-                                        // Final attempt failed
-                                        _state.value = _state.value.copy(
-                                            isLoading = false,
-                                            isAuthenticated = true, // Still authenticated, but profile fetch failed
-                                            hasBusinessUnit = false,
-                                            resultMessage = "Registration successful, but failed to fetch user profile after $maxAttempts attempts: ${error.name}"
-                                        )
-                                        return@launch
-                                    }
-                                    // Wait before retrying (exponential backoff)
-                                    delay(delays[attempt - 1])
-                                }
+                    // Fetch full user profile after successful registration
+                    userProfileRepository.getUserProfile()
+                        .onSuccess { user ->
+                            // Update UserService with the full User object
+                            userService.saveUser(user)
+                            _state.value = _state.value.copy(
+                                isLoading = false,
+                                isAuthenticated = true,
+                                hasBusinessUnit = user.businessUnitId != null,
+                                resultMessage = "Registration successful"
+                            )
                         }
-                    }
+                        .onError { error ->
+                            _state.value = _state.value.copy(
+                                isLoading = false,
+                                isAuthenticated = true, // Still authenticated, but profile fetch failed
+                                hasBusinessUnit = false,
+                                resultMessage = "Registration successful, but failed to fetch user profile: ${error.name}"
+                            )
+                        }
+
                 }
                 .onError { error ->
                     _state.value = _state.value.copy(
@@ -208,7 +192,6 @@ class AuthViewModel(
 
 sealed class AuthAction {
     data class Login(val email: String, val password: String) : AuthAction()
-    data class LoginWithTestAccount(val email: String, val password: String) : AuthAction()
     data class Register(
         val email: String,
         val password: String,

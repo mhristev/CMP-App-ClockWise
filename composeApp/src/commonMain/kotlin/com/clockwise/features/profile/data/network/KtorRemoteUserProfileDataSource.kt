@@ -17,7 +17,7 @@ class KtorRemoteUserProfileDataSource(
     private val userService: UserService
 ) : RemoteUserProfileDataSource {
     override suspend fun getUserProfile(): Result<User, DataError.Remote> {
-        val token = userService.authToken.value
+        val token = userService.getValidAuthToken()
             ?: return Result.Error(DataError.Remote.UNKNOWN)
 
         return safeCall {

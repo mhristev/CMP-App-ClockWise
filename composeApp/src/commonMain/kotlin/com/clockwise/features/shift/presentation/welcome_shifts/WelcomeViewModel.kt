@@ -11,6 +11,7 @@ import com.clockwise.features.shift.domain.model.SessionNote
 import com.clockwise.features.shift.domain.repositories.ShiftRepository
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess
+import com.plcoding.bookpedia.core.domain.DataError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,6 +30,32 @@ class WelcomeViewModel(
             SharingStarted.WhileSubscribed(5000),
             _state.value
         )
+
+    private fun getErrorMessage(error: DataError.Remote, operation: String): String {
+        return when (error) {
+            DataError.Remote.SCHEDULE_NOT_PUBLISHED -> {
+                "No published schedule available. Please check back later or contact your manager."
+            }
+            DataError.Remote.NO_INTERNET -> {
+                "No internet connection. Please check your network and try again."
+            }
+            DataError.Remote.SERVER -> {
+                "Server error occurred. Please try again in a few minutes."
+            }
+            DataError.Remote.REQUEST_TIMEOUT -> {
+                "Request timed out. Please check your connection and try again."
+            }
+            DataError.Remote.TOO_MANY_REQUESTS -> {
+                "Too many requests. Please wait a moment and try again."
+            }
+            DataError.Remote.SERIALIZATION -> {
+                "Data format error. Please try again or contact support."
+            }
+            else -> {
+                "Failed to $operation. Please try again later."
+            }
+        }
+    }
 
     fun onAction(action: WelcomeAction) {
         when (action) {
@@ -50,8 +77,8 @@ class WelcomeViewModel(
                             // Convert DTOs to model objects
                             val shifts = shiftDtos.map { shiftDto ->
                                 // Convert timestamps to LocalDateTime
-                                val startTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.startTime.toDouble())
-                                val endTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.endTime.toDouble())
+                                val startTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.startTime)
+                                val endTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.endTime)
 
                                 val workSession = shiftDto.workSession?.let { wsDto ->
                                     val sessionNote = wsDto.sessionNote?.let { noteDto ->
@@ -125,7 +152,7 @@ class WelcomeViewModel(
                             _state.update {
                                 it.copy(
                                     isLoading = false,
-                                    error = "Failed to load shifts: ${error.name}"
+                                    error = getErrorMessage(error, "load shifts")
                                 )
                             }
                         }
@@ -144,12 +171,12 @@ class WelcomeViewModel(
                         result.onSuccess {
                             // Reload shifts to get updated status
                             onAction(WelcomeAction.LoadUpcomingShifts)
-                    }.onError { error ->
-                        _state.update {
-                            it.copy(
-                                isLoading = false,
-                                error = "Failed to clock in: ${error.name}"
-                            )
+                        }.onError { error ->
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error = getErrorMessage(error, "clock in")
+                                )
                             }
                         }
                     }
@@ -178,23 +205,23 @@ class WelcomeViewModel(
                             
                             _state.update { 
                                 it.copy(
-                                isLoading = false,
+                                    isLoading = false,
                                     sessionNotes = updatedSessionNotes
                                 ) 
                             }
                             
                             // Reload shifts to get updated status
                             onAction(WelcomeAction.LoadUpcomingShifts)
-                    }.onError { error ->
-                        _state.update {
-                            it.copy(
-                                isLoading = false,
-                                error = "Failed to clock out: ${error.name}"
-                            )
+                        }.onError { error ->
+                            _state.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error = getErrorMessage(error, "clock out")
+                                )
+                            }
                         }
                     }
                 }
-            }
             }
             is WelcomeAction.ShowClockOutModal -> {
                 _state.update {
@@ -225,7 +252,7 @@ class WelcomeViewModel(
                     if (action.note.isNotBlank() && action.workSessionId != null) {
                         shiftRepository.saveSessionNote(action.workSessionId, action.note).collect { noteResult ->
                             noteResult.onError { error ->
-                                println("Failed to save session note: ${error.name}")
+                                println("Failed to save session note: ${getErrorMessage(error, "save note")}")
                                 // Continue with clock out even if note save fails
                             }
                         }
@@ -261,7 +288,7 @@ class WelcomeViewModel(
                             _state.update {
                                 it.copy(
                                     isLoading = false,
-                                    error = "Failed to clock out: ${error.name}"
+                                    error = getErrorMessage(error, "clock out with note")
                                 )
                             }
                         }
@@ -297,10 +324,10 @@ class WelcomeViewModel(
                     _state.update { it.copy(savingNoteForSession = null) }
                 }.onError { error ->
                     // Clear saving state and show error
-                    _state.update { 
+                    _state.update {
                         it.copy(
                             savingNoteForSession = null,
-                            error = "Failed to save note: ${error.name}"
+                            error = getErrorMessage(error, "save note")
                         )
                     }
                 }

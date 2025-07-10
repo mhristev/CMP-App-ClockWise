@@ -46,7 +46,7 @@ object HttpClientFactory {
             install(Auth) {
                 bearer {
                     loadTokens {
-                        val token = userService.authToken.value
+                        val token = userService.getValidAuthToken()
                         if (token != null) {
                             BearerTokens(token, "")
                         } else {

@@ -38,7 +38,7 @@ class SplashViewModel(
                 
                 // Check if we have existing auth data
                 val hasStoredUser = userService.currentUser.value != null
-                val hasValidToken = userService.authToken.value != null
+                val hasValidToken = userService.getValidAuthToken() != null
                 
                 println("SplashViewModel: hasStoredUser=$hasStoredUser, hasValidToken=$hasValidToken")
                 
@@ -54,7 +54,7 @@ class SplashViewModel(
                         userService.initializeAuthState()
                         
                         // If we now have a token, fetch fresh user profile
-                        if (userService.authToken.value != null) {
+                        if (userService.getValidAuthToken() != null) {
                             userProfileRepository.getUserProfile()
                                 .onSuccess { user ->
                                     userService.saveUser(user)

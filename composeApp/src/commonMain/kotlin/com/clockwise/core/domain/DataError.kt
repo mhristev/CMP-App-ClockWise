@@ -7,6 +7,7 @@ sealed interface DataError: Error {
         NO_INTERNET,
         SERVER,
         SERIALIZATION,
+        SCHEDULE_NOT_PUBLISHED,
         UNKNOWN
     }
 

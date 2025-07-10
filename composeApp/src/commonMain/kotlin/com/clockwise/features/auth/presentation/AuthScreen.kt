@@ -197,7 +197,7 @@ fun AuthScreen(
                                             onClick = {
                                                 email = testAccount.email
                                                 password = testAccount.password
-                                                onAction(AuthAction.LoginWithTestAccount(testAccount.email, testAccount.password))
+                                                onAction(AuthAction.Login(testAccount.email, testAccount.password))
                                             },
                                             modifier = Modifier
                                                 .fillMaxWidth()

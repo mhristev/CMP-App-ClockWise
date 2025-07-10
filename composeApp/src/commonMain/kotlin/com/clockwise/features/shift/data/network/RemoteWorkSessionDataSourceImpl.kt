@@ -30,7 +30,7 @@ class RemoteWorkSessionDataSourceImpl(
 ) : RemoteWorkSessionDataSource {
 
     override suspend fun clockIn(userId: String, shiftId: String): Result<WorkSessionDto, DataError.Remote> {
-        val token = userService.authToken.value
+        val token = userService.getValidAuthToken()
             ?: return Result.Error(DataError.Remote.UNKNOWN)
             
         return safeCall {
@@ -43,7 +43,7 @@ class RemoteWorkSessionDataSourceImpl(
     }
 
     override suspend fun clockOut(userId: String, shiftId: String): Result<WorkSessionDto, DataError.Remote> {
-        val token = userService.authToken.value
+        val token = userService.getValidAuthToken()
             ?: return Result.Error(DataError.Remote.UNKNOWN)
             
         return safeCall {
@@ -56,7 +56,7 @@ class RemoteWorkSessionDataSourceImpl(
     }
 
     override suspend fun saveSessionNote(workSessionId: String, note: String): Result<Unit, DataError.Remote> {
-        val token = userService.authToken.value
+        val token = userService.getValidAuthToken()
             ?: return Result.Error(DataError.Remote.UNKNOWN)
             
         return safeCall {

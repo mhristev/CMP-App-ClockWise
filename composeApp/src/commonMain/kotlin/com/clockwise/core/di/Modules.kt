@@ -7,8 +7,6 @@ import com.clockwise.features.availability.data.repository.AvailabilityRepositor
 import com.clockwise.features.availability.domain.network.KtorRemoteAvailabilityDataSource
 import com.clockwise.features.availability.domain.repository.AvailabilityRepositoryImpl
 import com.clockwise.features.auth.UserService
-import com.clockwise.features.auth.data.network.KtorRemoteUserDataSource
-import com.clockwise.features.auth.data.network.RemoteUserDataSource
 import com.clockwise.features.auth.presentation.AuthViewModel
 import com.clockwise.features.business.data.repository.UserRepository
 import com.clockwise.features.business.domain.repository.UserRepositoryImpl
@@ -64,7 +62,7 @@ val sharedModule = module {
     }
 
     single { HttpClientFactory.create(get(), get()) }
-    single<RemoteUserDataSource> { KtorRemoteUserDataSource(get(), get()) }
+    // Note: RemoteUserDataSource is provided by authModule to avoid duplication
     single<RemoteShiftDataSource> { KtorRemoteShiftDataSource(get(), get(), get()) }
     single<ShiftRepository> { ShiftRepositoryImpl(get(), get(), get()) }
     single<RemoteAvailabilityDataSource> { KtorRemoteAvailabilityDataSource(get(), get(), get()) }

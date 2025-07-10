@@ -9,6 +9,7 @@ import com.clockwise.core.util.getWeekStartDate
 import com.clockwise.features.shift.data.dto.ShiftDto
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess
+import com.plcoding.bookpedia.core.domain.DataError
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,6 +40,32 @@ class WeeklyScheduleViewModel(
             _state.value
         )
 
+    private fun getErrorMessage(error: DataError.Remote, operation: String): String {
+        return when (error) {
+            DataError.Remote.SCHEDULE_NOT_PUBLISHED -> {
+                "No published schedule available for this week. Please check back later or contact your manager."
+            }
+            DataError.Remote.NO_INTERNET -> {
+                "No internet connection. Please check your network and try again."
+            }
+            DataError.Remote.SERVER -> {
+                "Server error occurred. Please try again in a few minutes."
+            }
+            DataError.Remote.REQUEST_TIMEOUT -> {
+                "Request timed out. Please check your connection and try again."
+            }
+            DataError.Remote.TOO_MANY_REQUESTS -> {
+                "Too many requests. Please wait a moment and try again."
+            }
+            DataError.Remote.SERIALIZATION -> {
+                "Data format error. Please try again or contact support."
+            }
+            else -> {
+                "Failed to $operation. Please try again later."
+            }
+        }
+    }
+
     fun onAction(action: WeeklyScheduleAction) {
         when (action) {
             is WeeklyScheduleAction.LoadWeeklySchedule -> loadWeeklySchedule()
@@ -58,16 +85,16 @@ class WeeklyScheduleViewModel(
                 )
             }
             
-            // Fetch shifts for the entire week
+            // Fetch shifts for the entire week - pass LocalDate directly to avoid parsing errors
             val weekStart = _state.value.currentWeekStart
-            shiftRepository.getShiftsForWeek(weekStart.toString()).collect { result ->
+            shiftRepository.getShiftsForWeek(weekStart).collect { result ->
                 result.onSuccess { shiftDtos ->
                     processShiftDtos(shiftDtos)
                 }.onError { error ->
                     _state.update {
                         it.copy(
                             isLoading = false,
-                            error = "Failed to load shifts: ${error.name}"
+                            error = getErrorMessage(error, "load weekly schedule")
                         )
                     }
                 }
