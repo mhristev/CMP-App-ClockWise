@@ -25,6 +25,9 @@ import com.clockwise.features.shift.presentation.week_schedule.WeeklyScheduleVie
 import com.clockwise.features.shift.presentation.week_schedule.WeeklyScheduleScreenRoot
 import com.clockwise.features.availability.presentation.calendar.CalendarViewModel
 import com.clockwise.features.availability.presentation.calendar.CalendarScreenRoot
+import com.clockwise.features.clockin.presentation.ClockInScreen
+import com.clockwise.features.clockin.presentation.ClockInViewModel
+import com.clockwise.features.location.domain.model.BusinessUnitAddress
 import com.clockwise.features.business.presentation.BusinessViewModel
 import com.clockwise.features.business.presentation.BusinessScreenRoot
 import com.clockwise.features.business.presentation.add_employee.SearchViewModel
@@ -76,6 +79,12 @@ fun App() {
                             label = { Text("Calendar") },
                             selected = currentRoute == NavigationRoutes.Calendar.route,
                             onClick = { navController.navigate(NavigationRoutes.Calendar.route) }
+                        )
+                        BottomNavigationItem(
+                            icon = { Icon(Icons.Default.CheckCircle, contentDescription = "Clock In") },
+                            label = { Text("Clock In") },
+                            selected = currentRoute == NavigationRoutes.ClockIn.route,
+                            onClick = { navController.navigate(NavigationRoutes.ClockIn.route) }
                         )
                         if (AccessControl.hasAccessToScreen("business", currentUserRole)) {
                             BottomNavigationItem(
@@ -129,6 +138,22 @@ fun App() {
                 composable(NavigationRoutes.Calendar.route) {
                     val viewModel = koinViewModel<CalendarViewModel>()
                     CalendarScreenRoot(viewModel = viewModel)
+                }
+                
+                composable(NavigationRoutes.ClockIn.route) {
+                    val viewModel = koinViewModel<ClockInViewModel>()
+                    val businessUnitAddress = BusinessUnitAddress(
+                        businessUnitId = "1", 
+                        name = "Vkushti",
+                        address = "Leenderweg 255, Eindhoven, Netherlands",
+                        latitude = 51.4209, // Accurate Leenderweg 255, Eindhoven coordinates
+                        longitude = 5.4935,
+                        allowedRadius = 250.0 // 100 meters
+                    )
+                    ClockInScreen(
+                        businessUnitAddress = businessUnitAddress,
+                        viewModel = viewModel
+                    )
                 }
                 
                 composable(NavigationRoutes.Profile.route) {

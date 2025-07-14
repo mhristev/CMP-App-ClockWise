@@ -62,6 +62,12 @@ kotlin {
             
             // Android specific KVault implementation
             implementation("com.liftric:kvault:1.12.0")
+            
+            // Google Play Services for location
+            implementation("com.google.android.gms:play-services-location:21.0.1")
+            
+            // Accompanist Permissions for handling permissions in Compose
+            implementation("com.google.accompanist:accompanist-permissions:0.32.0")
         }
         commonMain.dependencies {
             implementation(libs.jetbrains.compose.navigation)

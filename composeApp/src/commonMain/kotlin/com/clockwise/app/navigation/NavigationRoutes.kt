@@ -11,6 +11,7 @@ sealed class NavigationRoutes(val route: String) {
     object Welcome : NavigationRoutes("welcome")
     object WeeklySchedule : NavigationRoutes("weekly_schedule")
     object Calendar : NavigationRoutes("calendar")
+    object ClockIn : NavigationRoutes("clock_in")
     object Profile : NavigationRoutes("profile")
     object Search : NavigationRoutes("search")
     object Business : NavigationRoutes("business")
@@ -24,6 +25,7 @@ sealed class NavigationRoutes(val route: String) {
                 Welcome.route -> Welcome
                 WeeklySchedule.route -> WeeklySchedule
                 Calendar.route -> Calendar
+                ClockIn.route -> ClockIn
                 Profile.route -> Profile
                 Search.route -> Search
                 Business.route -> Business
