@@ -8,10 +8,6 @@ import com.clockwise.features.clockin.domain.service.LocationResult
  */
 class MockLocationService : LocationService {
     
-    init {
-        println("⚠️⚠️⚠️ MockLocationService INITIALIZED - Mock coordinates active! ⚠️⚠️⚠️")
-    }
-    
     override suspend fun hasLocationPermission(): Boolean {
         // For mock purposes, assume permission is granted
         return true
@@ -23,7 +19,6 @@ class MockLocationService : LocationService {
     }
     
     override suspend fun getCurrentLocation(): LocationResult {
-        println("⚠️⚠️⚠️ MockLocationService returning FAKE location - this should NOT happen on Android! ⚠️⚠️⚠️")
         // Return mock location (Eindhoven, Netherlands area)
         return LocationResult.Success(
             latitude = 51.4381, 

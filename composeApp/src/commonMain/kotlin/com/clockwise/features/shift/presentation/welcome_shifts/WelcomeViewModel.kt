@@ -32,6 +32,11 @@ class WelcomeViewModel(
     private val userService: UserService
 ) : ViewModel() {
 
+    init {
+        println("🔍🔍🔍 WelcomeViewModel initialized with LocationService: ${locationService::class.simpleName} 🔍🔍🔍")
+        println("🔍🔍🔍 LocationService class: ${locationService.javaClass.name} 🔍🔍🔍")
+    }
+
     private val _state = MutableStateFlow(WelcomeState())
     val state: StateFlow<WelcomeState> = _state
         .stateIn(
@@ -164,6 +169,106 @@ class WelcomeViewModel(
                                 it.copy(
                                     isLoading = false,
                                     error = getErrorMessage(error, "load shifts")
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            is WelcomeAction.RefreshShifts -> {
+                viewModelScope.launch {
+                    _state.update {
+                        it.copy(
+                            isRefreshing = true,
+                            error = null
+                        )
+                    }
+                    
+                    // Fetch upcoming shifts from the API
+                    shiftRepository.getUpcomingShifts().collect { result ->
+                        result.onSuccess { shiftDtos ->
+                            // Find the current day to determine today's shift
+                            val today = TimeProvider.getCurrentLocalDate()
+                            
+                            // Convert DTOs to model objects
+                            val shifts = shiftDtos.map { shiftDto ->
+                                // Convert timestamps to LocalDateTime
+                                val startTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.startTime)
+                                val endTime = TimeProvider.epochSecondsToLocalDateTime(shiftDto.endTime)
+
+                                val workSession = shiftDto.workSession?.let { wsDto ->
+                                    val sessionNote = wsDto.sessionNote?.let { noteDto ->
+                                        SessionNote(
+                                            id = noteDto.id,
+                                            workSessionId = noteDto.workSessionId,
+                                            content = noteDto.content,
+                                            createdAt = TimeProvider.epochSecondsToLocalDateTime(noteDto.createdAt)
+                                        )
+                                    }
+                                    
+                                    WorkSession(
+                                        id = wsDto.id,
+                                        userId = wsDto.userId,
+                                        shiftId = wsDto.shiftId,
+                                        clockInTime = wsDto.clockInTime?.let { TimeProvider.epochSecondsToLocalDateTime(it) },
+                                        clockOutTime = wsDto.clockOutTime?.let { TimeProvider.epochSecondsToLocalDateTime(it) },
+                                        totalMinutes = wsDto.totalMinutes,
+                                        status = WorkSessionStatus.fromString(wsDto.status),
+                                        sessionNote = sessionNote
+                                    )
+                                }
+                                
+                                // Create the shift
+                                Shift(
+                                    id = shiftDto.id,
+                                    startTime = startTime,
+                                    endTime = endTime,
+                                    position = shiftDto.position ?: "General Staff",
+                                    employeeId = shiftDto.employeeId,
+                                    workSession = workSession,
+                                    status = workSession?.let {
+                                        when(it.status) {
+                                            WorkSessionStatus.CREATED -> ShiftStatus.SCHEDULED
+                                            WorkSessionStatus.ACTIVE -> ShiftStatus.CLOCKED_IN
+                                            WorkSessionStatus.COMPLETED -> ShiftStatus.COMPLETED
+                                            else -> ShiftStatus.SCHEDULED
+                                        }
+                                    } ?: ShiftStatus.SCHEDULED,
+                                    clockInTime = workSession?.clockInTime,
+                                    clockOutTime = workSession?.clockOutTime
+                                )
+                            }
+                            
+                            // Separate today's shift from upcoming shifts
+                            val todayShift = shifts.find { shift -> 
+                                shift.startTime.date == today
+                            }
+                            
+                            val upcomingShifts = shifts.filter { shift ->
+                                shift.startTime.date > today
+                            }
+
+                            println("Refreshed - Today: $today, Today's shift: ${todayShift?.startTime?.date}, Upcoming shifts: ${upcomingShifts.size}")
+                            
+                            // Update state with the shifts
+                            _state.update {
+                                it.copy(
+                                    todayShift = todayShift,
+                                    upcomingShifts = upcomingShifts,
+                                    isRefreshing = false,
+                                    // Initialize session notes from backend data
+                                    sessionNotes = shifts.mapNotNull { shift ->
+                                        shift.workSession?.let { workSession ->
+                                            workSession.id to (workSession.sessionNote?.content ?: "")
+                                        }
+                                    }.toMap()
+                                )
+                            }
+                        }.onError { error ->
+                            _state.update {
+                                it.copy(
+                                    isRefreshing = false,
+                                    error = getErrorMessage(error, "refresh shifts")
                                 )
                             }
                         }
@@ -311,69 +416,11 @@ class WelcomeViewModel(
             
             println("DEBUG: Business unit location retrieved for clock-out: ${businessUnitLocation.first}, ${businessUnitLocation.second}")
             
-            // Always get fresh current location - no caching
-            val requestTime = Clock.System.now()
-            println("DEBUG: === CLOCK-OUT LOCATION REQUEST ===")
-            println("DEBUG: Request timestamp: $requestTime")
-            println("DEBUG: 🚨 DEMANDING ULTRA-FRESH LOCATION for clock-out...")
-            
-            // Update UI to show we're getting fresh location
-            _state.update { 
-                it.copy(
-                    isCheckingLocation = true,
-                    error = null
-                ) 
-            }
-            
-            val locationResult = locationService.getCurrentLocation()
-            val responseTime = Clock.System.now()
-            println("DEBUG: Location response received in ${(responseTime - requestTime).inWholeMilliseconds}ms")
-            
-            val currentLocation = when (locationResult) {
-                is LocationResult.Success -> {
-                    println("DEBUG: ✅ Successfully got user location for clock-out: ${locationResult.latitude}, ${locationResult.longitude}")
-                    Pair(locationResult.latitude, locationResult.longitude)
-                }
-                is LocationResult.PermissionDenied -> {
-                    println("DEBUG: Location permission denied for clock-out")
-                    _state.update { 
-                        it.copy(
-                            isCheckingLocation = false,
-                            showLocationRequiredDialog = true
-                        ) 
-                    }
-                    return
-                }
-                is LocationResult.LocationUnavailable -> {
-                    println("DEBUG: Location services unavailable for clock-out")
-                    _state.update { 
-                        it.copy(
-                            isCheckingLocation = false,
-                            error = "Location services are unavailable. Please check your device settings."
-                        ) 
-                    }
-                    return
-                }
-                is LocationResult.LocationDisabled -> {
-                    println("DEBUG: Location services disabled for clock-out")
-                    _state.update { 
-                        it.copy(
-                            isCheckingLocation = false,
-                            error = "Location services are disabled. Please enable GPS to continue."
-                        ) 
-                    }
-                    return
-                }
-                is LocationResult.Error -> {
-                    println("DEBUG: Location error for clock-out: ${locationResult.message}")
-                    _state.update { 
-                        it.copy(
-                            isCheckingLocation = false,
-                            error = "Failed to get location: ${locationResult.message}"
-                        ) 
-                    }
-                    return
-                }
+            // Get ultra-fresh current location using enhanced method
+            val currentLocation = requestUltraFreshLocation("CLOCK-OUT")
+            if (currentLocation == null) {
+                println("DEBUG: Failed to get ultra-fresh location for clock-out")
+                return
             }
             
             // Calculate distance between fresh user location and workplace
@@ -497,69 +544,11 @@ class WelcomeViewModel(
             
             println("DEBUG: Business unit location retrieved: ${businessUnitLocation.first}, ${businessUnitLocation.second}")
             
-            // Always get fresh current location - no caching
-            val requestTime = Clock.System.now()
-            println("DEBUG: === CLOCK-IN LOCATION REQUEST ===")
-            println("DEBUG: Request timestamp: $requestTime")
-            println("DEBUG: 🚨 DEMANDING ULTRA-FRESH LOCATION for clock-in...")
-            
-            // Update UI to show we're getting fresh location
-            _state.update { 
-                it.copy(
-                    isCheckingLocation = true,
-                    error = null
-                ) 
-            }
-            
-            val locationResult = locationService.getCurrentLocation()
-            val responseTime = Clock.System.now()
-            println("DEBUG: Location response received in ${(responseTime - requestTime).inWholeMilliseconds}ms")
-            
-            val currentLocation = when (locationResult) {
-                is LocationResult.Success -> {
-                    println("DEBUG: ✅ Successfully got user location: ${locationResult.latitude}, ${locationResult.longitude}")
-                    Pair(locationResult.latitude, locationResult.longitude)
-                }
-                is LocationResult.PermissionDenied -> {
-                    println("DEBUG: Location permission denied")
-                    _state.update { 
-                        it.copy(
-                            isCheckingLocation = false,
-                            showLocationRequiredDialog = true
-                        ) 
-                    }
-                    return
-                }
-                is LocationResult.LocationUnavailable -> {
-                    println("DEBUG: Location services unavailable")
-                    _state.update { 
-                        it.copy(
-                            isCheckingLocation = false,
-                            error = "Location services are unavailable. Please check your device settings."
-                        ) 
-                    }
-                    return
-                }
-                is LocationResult.LocationDisabled -> {
-                    println("DEBUG: Location services disabled")
-                    _state.update { 
-                        it.copy(
-                            isCheckingLocation = false,
-                            error = "Location services are disabled. Please enable GPS to continue."
-                        ) 
-                    }
-                    return
-                }
-                is LocationResult.Error -> {
-                    println("DEBUG: Location error: ${locationResult.message}")
-                    _state.update { 
-                        it.copy(
-                            isCheckingLocation = false,
-                            error = "Failed to get location: ${locationResult.message}"
-                        ) 
-                    }
-                    return
-                }
+            // Get ultra-fresh current location using enhanced method
+            val currentLocation = requestUltraFreshLocation("CLOCK-IN")
+            if (currentLocation == null) {
+                println("DEBUG: Failed to get ultra-fresh location for clock-in")
+                return
             }
             
             // Calculate distance between fresh user location and workplace
@@ -689,5 +678,86 @@ class WelcomeViewModel(
         // 1. Use a geocoding service like Google Maps API
         // 2. Or implement a reverse geocoding function
         return "Address: ${latitude.toString().take(7)}, ${longitude.toString().take(7)}"
+    }
+
+    /**
+     * Helper method to request zero-tolerance fresh location with enhanced debugging and timing
+     */
+    private suspend fun requestUltraFreshLocation(operation: String): Pair<Double, Double>? {
+        val requestTime = Clock.System.now()
+        println("DEBUG: 🚨🚨🚨 ZERO-TOLERANCE LOCATION REQUEST 🚨🚨🚨")
+        println("DEBUG: Operation: $operation")
+        println("DEBUG: Request timestamp: $requestTime")
+        println("DEBUG: 🚨🚨🚨 DEMANDING ZERO-TOLERANCE FRESH LOCATION - ABSOLUTELY NO CACHE! 🚨🚨🚨")
+        println("DEBUG: 🚨 User clicked: $operation - MUST get fresh GPS coordinates!")
+        println("DEBUG: 🚨🚨🚨 ================================================================ 🚨🚨🚨")
+        
+        // Update UI to show we're getting fresh location
+        _state.update { 
+            it.copy(
+                isCheckingLocation = true,
+                error = null
+            ) 
+        }
+        
+        val locationResult = locationService.getCurrentLocation()
+        val responseTime = Clock.System.now()
+        val totalRequestTime = (responseTime - requestTime).inWholeMilliseconds
+        
+        println("DEBUG: 🚨🚨🚨 ZERO-TOLERANCE LOCATION RESPONSE 🚨🚨🚨")
+        println("DEBUG: Operation: $operation")
+        println("DEBUG: Response timestamp: $responseTime")
+        println("DEBUG: Total request time: ${totalRequestTime}ms")
+        println("DEBUG: 🚨🚨🚨 ================================================================ 🚨🚨🚨")
+        
+        return when (locationResult) {
+            is LocationResult.Success -> {
+                println("DEBUG: 🚨🚨🚨 ✅ SUCCESS! Got ZERO-TOLERANCE fresh location for $operation 🚨🚨🚨")
+                println("DEBUG: 🚨 FRESH COORDINATES: ${locationResult.latitude}, ${locationResult.longitude}")
+                println("DEBUG: 🚨 Total time from user click to fresh GPS: ${totalRequestTime}ms")
+                println("DEBUG: 🚨🚨🚨 NO CACHED DATA WAS USED! 🚨🚨🚨")
+                Pair(locationResult.latitude, locationResult.longitude)
+            }
+            is LocationResult.PermissionDenied -> {
+                println("DEBUG: 🚨🚨🚨 ❌ Location permission denied for $operation 🚨🚨🚨")
+                _state.update { 
+                    it.copy(
+                        isCheckingLocation = false,
+                        showLocationRequiredDialog = true
+                    ) 
+                }
+                null
+            }
+            is LocationResult.LocationUnavailable -> {
+                println("DEBUG: ❌ Location services unavailable for $operation")
+                _state.update { 
+                    it.copy(
+                        isCheckingLocation = false,
+                        error = "Location services are unavailable. Please check your device settings."
+                    ) 
+                }
+                null
+            }
+            is LocationResult.LocationDisabled -> {
+                println("DEBUG: ❌ Location services disabled for $operation")
+                _state.update { 
+                    it.copy(
+                        isCheckingLocation = false,
+                        error = "Location services are disabled. Please enable GPS to continue."
+                    ) 
+                }
+                null
+            }
+            is LocationResult.Error -> {
+                println("DEBUG: ❌ Location error for $operation: ${locationResult.message}")
+                _state.update { 
+                    it.copy(
+                        isCheckingLocation = false,
+                        error = "Failed to get fresh location: ${locationResult.message}"
+                    ) 
+                }
+                null
+            }
+        }
     }
 }

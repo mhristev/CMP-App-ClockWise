@@ -24,7 +24,7 @@ actual val platformModule: Module
             KVault(context, "clockwise_secure_storage")
         }
         
-        // Clock-in location service (interface implementation using real GPS)
+        // Clock-in location service (real GPS implementation - overrides mock)
         single<LocationService> { 
             AndroidLocationServiceImpl(androidContext()) 
         }

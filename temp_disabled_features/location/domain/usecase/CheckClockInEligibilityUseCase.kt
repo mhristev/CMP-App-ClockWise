@@ -1,10 +1,9 @@
 package com.clockwise.features.location.domain.usecase
 
-import com.clockwise.features.organization.data.model.BusinessUnitAddress
+import com.clockwise.features.location.domain.model.BusinessUnitAddress
 import com.clockwise.features.location.domain.model.ClockInEligibility
 import com.clockwise.features.location.domain.model.Location
 import com.clockwise.features.location.domain.model.LocationResult
-import com.clockwise.features.location.domain.model.toLocation
 import com.clockwise.features.location.domain.repository.LocationRepository
 import kotlin.math.*
 
@@ -21,10 +20,10 @@ class CheckClockInEligibilityUseCase(
     private fun calculateDistance(location1: Location, location2: Location): Double {
         val earthRadius = 6371000.0 // Earth's radius in meters
         
-        val lat1Rad = (location1.latitude * PI) / 180.0
-        val lat2Rad = (location2.latitude * PI) / 180.0
-        val deltaLatRad = ((location2.latitude - location1.latitude) * PI) / 180.0
-        val deltaLonRad = ((location2.longitude - location1.longitude) * PI) / 180.0
+        val lat1Rad = Math.toRadians(location1.latitude)
+        val lat2Rad = Math.toRadians(location2.latitude)
+        val deltaLatRad = Math.toRadians(location2.latitude - location1.latitude)
+        val deltaLonRad = Math.toRadians(location2.longitude - location1.longitude)
         
         val a = sin(deltaLatRad / 2) * sin(deltaLatRad / 2) +
                 cos(lat1Rad) * cos(lat2Rad) *
@@ -96,16 +95,6 @@ class CheckClockInEligibilityUseCase(
                     businessLocation = businessUnitAddress,
                     distance = null,
                     reason = "Unable to get your location: ${locationResult.message}"
-                )
-            }
-            
-            is LocationResult.Loading -> {
-                ClockInEligibility(
-                    isEligible = false,
-                    userLocation = null,
-                    businessLocation = businessUnitAddress,
-                    distance = null,
-                    reason = "Getting your location..."
                 )
             }
         }

@@ -4,6 +4,7 @@ import com.clockwise.features.shift.domain.model.Shift
 
 data class WelcomeState(
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val todayShift: Shift? = null,
     val upcomingShifts: List<Shift> = emptyList(),
     val sessionNotes: Map<String, String> = emptyMap(),
