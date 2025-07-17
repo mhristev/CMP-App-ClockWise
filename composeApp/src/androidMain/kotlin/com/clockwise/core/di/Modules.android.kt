@@ -2,9 +2,8 @@ package com.clockwise.core.di
 
 import android.content.Context
 import androidx.activity.ComponentActivity
-import com.clockwise.features.location.platform.AndroidLocationService
-import com.clockwise.features.location.platform.PlatformLocationService
-import com.clockwise.features.clockin.presentation.LocationService
+import com.clockwise.features.clockin.domain.service.LocationService
+import com.clockwise.features.clockin.data.service.AndroidLocationServiceImpl
 import com.liftric.kvault.KVault
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
@@ -25,15 +24,8 @@ actual val platformModule: Module
             KVault(context, "clockwise_secure_storage")
         }
         
-        // Android location service
-        single<PlatformLocationService> { 
-            AndroidLocationService() 
-        }
-        
-        // Clock-in location service  
+        // Clock-in location service (interface implementation using real GPS)
         single<LocationService> { 
-            LocationService(
-                context = androidContext()
-            ) 
+            AndroidLocationServiceImpl(androidContext()) 
         }
     }

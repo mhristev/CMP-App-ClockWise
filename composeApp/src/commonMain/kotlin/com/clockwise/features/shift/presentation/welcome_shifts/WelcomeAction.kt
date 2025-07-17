@@ -10,4 +10,11 @@ sealed class WelcomeAction {
     data object HideClockOutModal : WelcomeAction()
     data class ClockOutWithNote(val shiftId: String, val workSessionId: String?, val note: String) : WelcomeAction()
     data class UpdateClockOutNote(val note: String) : WelcomeAction()
+    
+    // Location-related actions
+    data object RequestLocationPermission : WelcomeAction()
+    data object DismissLocationPermissionDialog : WelcomeAction()
+    data object DismissLocationRequiredDialog : WelcomeAction()
+    data object DismissLocationOutOfRangeDialog : WelcomeAction()
+    data object RetryLocationCheck : WelcomeAction()
 } 

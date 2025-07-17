@@ -1,8 +1,7 @@
 package com.clockwise.core.di
 
-import com.clockwise.features.location.data.platform.IOSLocationService
-import com.clockwise.features.location.data.platform.PlatformLocationService
-import com.clockwise.features.clockin.presentation.LocationService
+import com.clockwise.features.clockin.domain.service.LocationService
+import com.clockwise.features.clockin.data.service.IOSLocationServiceImpl
 import com.liftric.kvault.KVault
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
@@ -20,13 +19,8 @@ actual val platformModule: Module = module {
         KVault("clockwise_secure_storage") 
     }
     
-    // iOS location service with Core Location
-    single<PlatformLocationService> { 
-        IOSLocationService() 
-    }
-    
-    // Clock-in location service
+    // iOS location service with Core Location - use the proper domain service implementation
     single<LocationService> { 
-        LocationService() 
+        IOSLocationServiceImpl() 
     }
 } 

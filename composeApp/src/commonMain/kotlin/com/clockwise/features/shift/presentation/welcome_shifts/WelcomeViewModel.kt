@@ -9,6 +9,10 @@ import com.clockwise.features.shift.domain.model.WorkSession
 import com.clockwise.features.shift.domain.model.WorkSessionStatus
 import com.clockwise.features.shift.domain.model.SessionNote
 import com.clockwise.features.shift.domain.repositories.ShiftRepository
+import com.clockwise.features.clockin.domain.service.LocationService
+import com.clockwise.features.clockin.domain.service.LocationResult
+import com.clockwise.features.organization.domain.repository.OrganizationRepository
+import com.clockwise.features.auth.UserService
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess
 import com.plcoding.bookpedia.core.domain.DataError
@@ -18,9 +22,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlin.math.*
 
 class WelcomeViewModel(
-    private val shiftRepository: ShiftRepository
+    private val shiftRepository: ShiftRepository,
+    private val locationService: LocationService,
+    private val organizationRepository: OrganizationRepository,
+    private val userService: UserService
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WelcomeState())
@@ -56,6 +65,8 @@ class WelcomeViewModel(
             }
         }
     }
+
+
 
     fun onAction(action: WelcomeAction) {
         when (action) {
@@ -161,66 +172,12 @@ class WelcomeViewModel(
             }
             is WelcomeAction.ClockIn -> {
                 viewModelScope.launch {
-                    // Show loading indicator
-                    _state.update { it.copy(isLoading = true) }
-                    
-                    // Call the repository to perform clock-in
-                    shiftRepository.clockIn(
-                        shiftId = action.shiftId
-                    ).collect { result ->
-                        result.onSuccess {
-                            // Reload shifts to get updated status
-                            onAction(WelcomeAction.LoadUpcomingShifts)
-                        }.onError { error ->
-                            _state.update {
-                                it.copy(
-                                    isLoading = false,
-                                    error = getErrorMessage(error, "clock in")
-                                )
-                            }
-                        }
-                    }
+                    performLocationBasedClockIn(action.shiftId)
                 }
             }
             is WelcomeAction.ClockOut -> {
                 viewModelScope.launch {
-                    // Show loading indicator
-                    _state.update { it.copy(isLoading = true) }
-                    
-                    // Call the repository to perform clock-out
-                    shiftRepository.clockOut(
-                        shiftId = action.shiftId
-                    ).collect { result ->
-                        result.onSuccess {
-                            // Clear session notes for this shift's work session on successful clock out
-                            val currentState = _state.value
-                            val shiftToClockOut = currentState.todayShift?.takeIf { it.id == action.shiftId }
-                            val workSessionId = shiftToClockOut?.workSession?.id
-                            
-                            val updatedSessionNotes = if (workSessionId != null) {
-                                currentState.sessionNotes.filterKeys { it != workSessionId }
-                            } else {
-                                currentState.sessionNotes
-                            }
-                            
-                            _state.update { 
-                                it.copy(
-                                    isLoading = false,
-                                    sessionNotes = updatedSessionNotes
-                                ) 
-                            }
-                            
-                            // Reload shifts to get updated status
-                            onAction(WelcomeAction.LoadUpcomingShifts)
-                        }.onError { error ->
-                            _state.update {
-                                it.copy(
-                                    isLoading = false,
-                                    error = getErrorMessage(error, "clock out")
-                                )
-                            }
-                        }
-                    }
+                    performLocationBasedClockOut(action.shiftId)
                 }
             }
             is WelcomeAction.ShowClockOutModal -> {
@@ -245,54 +202,7 @@ class WelcomeViewModel(
             }
             is WelcomeAction.ClockOutWithNote -> {
                 viewModelScope.launch {
-                    // Show loading indicator
-                    _state.update { it.copy(isLoading = true) }
-                    
-                    // Save note first if provided and workSessionId exists
-                    if (action.note.isNotBlank() && action.workSessionId != null) {
-                        shiftRepository.saveSessionNote(action.workSessionId, action.note).collect { noteResult ->
-                            noteResult.onError { error ->
-                                println("Failed to save session note: ${getErrorMessage(error, "save note")}")
-                                // Continue with clock out even if note save fails
-                            }
-                        }
-                    }
-                    
-                    // Then perform clock-out
-                    shiftRepository.clockOut(
-                        shiftId = action.shiftId
-                    ).collect { result ->
-                        result.onSuccess {
-                            // Clear session notes for this shift's work session on successful clock out
-                            val currentState = _state.value
-                            val updatedSessionNotes = if (action.workSessionId != null) {
-                                currentState.sessionNotes.filterKeys { it != action.workSessionId }
-                            } else {
-                                currentState.sessionNotes
-                            }
-                            
-                            _state.update { 
-                                it.copy(
-                                    isLoading = false,
-                                    sessionNotes = updatedSessionNotes,
-                                    showClockOutModal = false,
-                                    clockOutModalShiftId = null,
-                                    clockOutModalWorkSessionId = null,
-                                    clockOutNote = ""
-                                ) 
-                            }
-                            
-                            // Reload shifts to get updated status
-                            onAction(WelcomeAction.LoadUpcomingShifts)
-                        }.onError { error ->
-                            _state.update {
-                                it.copy(
-                                    isLoading = false,
-                                    error = getErrorMessage(error, "clock out with note")
-                                )
-                            }
-                        }
-                    }
+                    performLocationBasedClockOut(action.shiftId, action.note, action.workSessionId)
                 }
             }
             is WelcomeAction.SaveNote -> saveNote(action.workSessionId, action.note)
@@ -308,6 +218,51 @@ class WelcomeViewModel(
             is WelcomeAction.UpdateClockOutNote -> {
                 _state.update {
                     it.copy(clockOutNote = action.note)
+                }
+            }
+            is WelcomeAction.RequestLocationPermission -> {
+                // Permission request is handled by the UI layer (Android/iOS specific)
+                // This action just dismisses the dialog - the actual permission handling 
+                // is done in the platform-specific WelcomeScreen implementations
+                _state.update { 
+                    it.copy(
+                        showLocationPermissionDialog = false
+                    ) 
+                }
+            }
+            is WelcomeAction.DismissLocationPermissionDialog -> {
+                _state.update { 
+                    it.copy(
+                        showLocationPermissionDialog = false,
+                        pendingClockInShiftId = null
+                    ) 
+                }
+            }
+            is WelcomeAction.DismissLocationRequiredDialog -> {
+                _state.update { 
+                    it.copy(
+                        showLocationRequiredDialog = false,
+                        pendingClockInShiftId = null
+                    ) 
+                }
+            }
+            is WelcomeAction.DismissLocationOutOfRangeDialog -> {
+                _state.update { 
+                    it.copy(
+                        showLocationOutOfRangeDialog = false,
+                        distanceFromWorkplace = null,
+                        pendingClockInShiftId = null,
+                        userLocation = null,
+                        userAddress = null
+                    ) 
+                }
+            }
+            is WelcomeAction.RetryLocationCheck -> {
+                val shiftId = _state.value.pendingClockInShiftId
+                if (shiftId != null) {
+                    viewModelScope.launch {
+                        performLocationBasedClockIn(shiftId)
+                    }
                 }
             }
         }
@@ -334,4 +289,405 @@ class WelcomeViewModel(
             }
         }
     }
-} 
+
+    private suspend fun performLocationBasedClockOut(shiftId: String, note: String? = null, workSessionId: String? = null) {
+        _state.update { it.copy(isCheckingLocation = true) }
+        
+        try {
+            println("DEBUG: Starting location-based clock-out for shift $shiftId")
+            
+            // Get business unit location
+            val businessUnitLocation = getBusinessUnitLocation()
+            if (businessUnitLocation == null) {
+                println("DEBUG: Failed to get business unit location for clock-out")
+                _state.update { 
+                    it.copy(
+                        isCheckingLocation = false,
+                        error = "Unable to retrieve workplace location. Please try again."
+                    ) 
+                }
+                return
+            }
+            
+            println("DEBUG: Business unit location retrieved for clock-out: ${businessUnitLocation.first}, ${businessUnitLocation.second}")
+            
+            // Always get fresh current location - no caching
+            val requestTime = Clock.System.now()
+            println("DEBUG: === CLOCK-OUT LOCATION REQUEST ===")
+            println("DEBUG: Request timestamp: $requestTime")
+            println("DEBUG: 🚨 DEMANDING ULTRA-FRESH LOCATION for clock-out...")
+            
+            // Update UI to show we're getting fresh location
+            _state.update { 
+                it.copy(
+                    isCheckingLocation = true,
+                    error = null
+                ) 
+            }
+            
+            val locationResult = locationService.getCurrentLocation()
+            val responseTime = Clock.System.now()
+            println("DEBUG: Location response received in ${(responseTime - requestTime).inWholeMilliseconds}ms")
+            
+            val currentLocation = when (locationResult) {
+                is LocationResult.Success -> {
+                    println("DEBUG: ✅ Successfully got user location for clock-out: ${locationResult.latitude}, ${locationResult.longitude}")
+                    Pair(locationResult.latitude, locationResult.longitude)
+                }
+                is LocationResult.PermissionDenied -> {
+                    println("DEBUG: Location permission denied for clock-out")
+                    _state.update { 
+                        it.copy(
+                            isCheckingLocation = false,
+                            showLocationRequiredDialog = true
+                        ) 
+                    }
+                    return
+                }
+                is LocationResult.LocationUnavailable -> {
+                    println("DEBUG: Location services unavailable for clock-out")
+                    _state.update { 
+                        it.copy(
+                            isCheckingLocation = false,
+                            error = "Location services are unavailable. Please check your device settings."
+                        ) 
+                    }
+                    return
+                }
+                is LocationResult.LocationDisabled -> {
+                    println("DEBUG: Location services disabled for clock-out")
+                    _state.update { 
+                        it.copy(
+                            isCheckingLocation = false,
+                            error = "Location services are disabled. Please enable GPS to continue."
+                        ) 
+                    }
+                    return
+                }
+                is LocationResult.Error -> {
+                    println("DEBUG: Location error for clock-out: ${locationResult.message}")
+                    _state.update { 
+                        it.copy(
+                            isCheckingLocation = false,
+                            error = "Failed to get location: ${locationResult.message}"
+                        ) 
+                    }
+                    return
+                }
+            }
+            
+            // Calculate distance between fresh user location and workplace
+            val distance = calculateDistance(
+                currentLocation.first,
+                currentLocation.second,
+                businessUnitLocation.first,
+                businessUnitLocation.second
+            )
+            
+            // Debug logging with fresh location verification
+            println("DEBUG: ========== FRESH LOCATION CLOCK-OUT ==========")
+            println("DEBUG: Fresh user location: ${currentLocation.first}, ${currentLocation.second}")
+            println("DEBUG: Business unit location: ${businessUnitLocation.first}, ${businessUnitLocation.second}")
+            println("DEBUG: Calculated distance: $distance meters")
+            println("DEBUG: Distance threshold: 200.0 meters")
+            println("DEBUG: Within range: ${distance <= 200.0}")
+            println("DEBUG: =======================================")
+            
+            // Check if within 200 meter radius
+            if (distance <= 200.0) {
+                println("DEBUG: User is within range - proceeding with clock-out")
+                // Location is valid, proceed with clock out
+                _state.update { 
+                    it.copy(
+                        isCheckingLocation = false,
+                        isLoading = true
+                    ) 
+                }
+                
+                // Save note first if provided and workSessionId exists
+                if (!note.isNullOrBlank() && workSessionId != null) {
+                    shiftRepository.saveSessionNote(workSessionId, note).collect { noteResult ->
+                        noteResult.onError { error ->
+                            println("Failed to save session note: ${getErrorMessage(error, "save note")}")
+                            // Continue with clock out even if note save fails
+                        }
+                    }
+                }
+                
+                // Then perform clock-out
+                shiftRepository.clockOut(shiftId).collect { result ->
+                    result.onSuccess {
+                        // Clear session notes for this shift's work session on successful clock out
+                        val currentState = _state.value
+                        val shiftToClockOut = currentState.todayShift?.takeIf { it.id == shiftId }
+                        val workSessionIdToRemove = workSessionId ?: shiftToClockOut?.workSession?.id
+                        
+                        val updatedSessionNotes = if (workSessionIdToRemove != null) {
+                            currentState.sessionNotes.filterKeys { it != workSessionIdToRemove }
+                        } else {
+                            currentState.sessionNotes
+                        }
+                        
+                        _state.update { 
+                            it.copy(
+                                isLoading = false,
+                                sessionNotes = updatedSessionNotes,
+                                showClockOutModal = false,
+                                clockOutModalShiftId = null,
+                                clockOutModalWorkSessionId = null,
+                                clockOutNote = ""
+                            ) 
+                        }
+                        
+                        // Reload shifts to get updated status
+                        onAction(WelcomeAction.LoadUpcomingShifts)
+                    }.onError { error ->
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                error = getErrorMessage(error, "clock out")
+                            )
+                        }
+                    }
+                }
+            } else {
+                println("DEBUG: User is TOO FAR from workplace for clock-out - showing location dialog")
+                // Location is too far, get user address and show error dialog
+                val userAddress = getAddressFromCoordinates(currentLocation.first, currentLocation.second)
+                println("DEBUG: User address for clock-out: $userAddress")
+                
+                _state.update { 
+                    it.copy(
+                        isCheckingLocation = false,
+                        showLocationOutOfRangeDialog = true,
+                        distanceFromWorkplace = distance,
+                        userLocation = currentLocation,
+                        userAddress = userAddress
+                    ) 
+                }
+            }
+        } catch (e: Exception) {
+            _state.update { 
+                it.copy(
+                    isCheckingLocation = false,
+                    error = "Failed to check location for clock-out: ${e.message}"
+                ) 
+            }
+        }
+    }
+
+    private suspend fun performLocationBasedClockIn(shiftId: String) {
+        _state.update { it.copy(isCheckingLocation = true) }
+        
+        try {
+            println("DEBUG: Starting location-based clock-in for shift $shiftId")
+            
+            // Get business unit location
+            val businessUnitLocation = getBusinessUnitLocation()
+            if (businessUnitLocation == null) {
+                println("DEBUG: Failed to get business unit location")
+                _state.update { 
+                    it.copy(
+                        isCheckingLocation = false,
+                        error = "Unable to retrieve workplace location. Please try again."
+                    ) 
+                }
+                return
+            }
+            
+            println("DEBUG: Business unit location retrieved: ${businessUnitLocation.first}, ${businessUnitLocation.second}")
+            
+            // Always get fresh current location - no caching
+            val requestTime = Clock.System.now()
+            println("DEBUG: === CLOCK-IN LOCATION REQUEST ===")
+            println("DEBUG: Request timestamp: $requestTime")
+            println("DEBUG: 🚨 DEMANDING ULTRA-FRESH LOCATION for clock-in...")
+            
+            // Update UI to show we're getting fresh location
+            _state.update { 
+                it.copy(
+                    isCheckingLocation = true,
+                    error = null
+                ) 
+            }
+            
+            val locationResult = locationService.getCurrentLocation()
+            val responseTime = Clock.System.now()
+            println("DEBUG: Location response received in ${(responseTime - requestTime).inWholeMilliseconds}ms")
+            
+            val currentLocation = when (locationResult) {
+                is LocationResult.Success -> {
+                    println("DEBUG: ✅ Successfully got user location: ${locationResult.latitude}, ${locationResult.longitude}")
+                    Pair(locationResult.latitude, locationResult.longitude)
+                }
+                is LocationResult.PermissionDenied -> {
+                    println("DEBUG: Location permission denied")
+                    _state.update { 
+                        it.copy(
+                            isCheckingLocation = false,
+                            showLocationRequiredDialog = true
+                        ) 
+                    }
+                    return
+                }
+                is LocationResult.LocationUnavailable -> {
+                    println("DEBUG: Location services unavailable")
+                    _state.update { 
+                        it.copy(
+                            isCheckingLocation = false,
+                            error = "Location services are unavailable. Please check your device settings."
+                        ) 
+                    }
+                    return
+                }
+                is LocationResult.LocationDisabled -> {
+                    println("DEBUG: Location services disabled")
+                    _state.update { 
+                        it.copy(
+                            isCheckingLocation = false,
+                            error = "Location services are disabled. Please enable GPS to continue."
+                        ) 
+                    }
+                    return
+                }
+                is LocationResult.Error -> {
+                    println("DEBUG: Location error: ${locationResult.message}")
+                    _state.update { 
+                        it.copy(
+                            isCheckingLocation = false,
+                            error = "Failed to get location: ${locationResult.message}"
+                        ) 
+                    }
+                    return
+                }
+            }
+            
+            // Calculate distance between fresh user location and workplace
+            val distance = calculateDistance(
+                currentLocation.first,
+                currentLocation.second,
+                businessUnitLocation.first,
+                businessUnitLocation.second
+            )
+            
+            // Debug logging with fresh location verification
+            println("DEBUG: ========== FRESH LOCATION CLOCK-IN ==========")
+            println("DEBUG: Fresh user location: ${currentLocation.first}, ${currentLocation.second}")
+            println("DEBUG: Business unit location: ${businessUnitLocation.first}, ${businessUnitLocation.second}")
+            println("DEBUG: Calculated distance: $distance meters")
+            println("DEBUG: Distance threshold: 200.0 meters")
+            println("DEBUG: Within range: ${distance <= 200.0}")
+            println("DEBUG: =======================================")
+            
+            // Check if within 200 meter radius
+            if (distance <= 200.0) {
+                println("DEBUG: User is within range - proceeding with clock-in")
+                // Location is valid, proceed with clock in
+                _state.update { 
+                    it.copy(
+                        isCheckingLocation = false,
+                        pendingClockInShiftId = null,
+                        isLoading = true
+                    ) 
+                }
+                
+                shiftRepository.clockIn(shiftId).collect { result ->
+                    result.onSuccess {
+                        // Reload shifts to get updated status
+                        onAction(WelcomeAction.LoadUpcomingShifts)
+                    }.onError { error ->
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                error = getErrorMessage(error, "clock in")
+                            )
+                        }
+                    }
+                }
+            } else {
+                println("DEBUG: User is TOO FAR from workplace - showing location dialog")
+                // Location is too far, get user address and show error dialog
+                val userAddress = getAddressFromCoordinates(currentLocation.first, currentLocation.second)
+                println("DEBUG: User address: $userAddress")
+                
+                _state.update { 
+                    it.copy(
+                        isCheckingLocation = false,
+                        showLocationOutOfRangeDialog = true,
+                        distanceFromWorkplace = distance,
+                        userLocation = currentLocation,
+                        userAddress = userAddress
+                    ) 
+                }
+            }
+        } catch (e: Exception) {
+            _state.update { 
+                it.copy(
+                    isCheckingLocation = false,
+                    error = "Failed to check location: ${e.message}"
+                ) 
+            }
+        }
+    }
+
+    private suspend fun getBusinessUnitLocation(): Pair<Double, Double>? {
+        return try {
+            // Get the business unit ID from the current user
+            val currentUser = userService.currentUser.value
+            val businessUnitId = currentUser?.businessUnitId
+            
+            if (businessUnitId == null) {
+                println("DEBUG: No business unit ID found for current user")
+                return _state.value.businessUnitLocation
+            }
+            
+            organizationRepository.getBusinessUnitById(businessUnitId)
+                .onSuccess { businessUnitAddress ->
+                    println("DEBUG: Successfully fetched business unit location from API: ${businessUnitAddress.name} at ${businessUnitAddress.latitude}, ${businessUnitAddress.longitude}")
+                    
+                    // Cache the address in state for display
+                    _state.update { currentState ->
+                        currentState.copy(
+                            businessUnitAddress = businessUnitAddress.address
+                        )
+                    }
+                    
+                    return Pair(businessUnitAddress.latitude, businessUnitAddress.longitude)
+                }
+                .onError { error ->
+                    println("DEBUG: Failed to fetch business unit location from API: $error")
+                    // Fallback to cached location if available
+                    return _state.value.businessUnitLocation
+                }
+            
+            // Should not reach here due to explicit returns above
+            null
+        } catch (e: Exception) {
+            println("DEBUG: Exception while fetching business unit location: ${e.message}")
+            // Fallback to cached location if available
+            _state.value.businessUnitLocation
+        }
+    }
+
+    private fun calculateDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
+        val earthRadius = 6371000.0 // Earth radius in meters
+        
+        val dLat = (lat2 - lat1) * kotlin.math.PI / 180
+        val dLon = (lon2 - lon1) * kotlin.math.PI / 180
+        
+        val a = sin(dLat / 2) * sin(dLat / 2) +
+                cos(lat1 * kotlin.math.PI / 180) * cos(lat2 * kotlin.math.PI / 180) *
+                sin(dLon / 2) * sin(dLon / 2)
+        
+        val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        
+        return earthRadius * c
+    }
+
+    private suspend fun getAddressFromCoordinates(latitude: Double, longitude: Double): String {
+        // For now, return a mock address. In a real implementation, you would:
+        // 1. Use a geocoding service like Google Maps API
+        // 2. Or implement a reverse geocoding function
+        return "Address: ${latitude.toString().take(7)}, ${longitude.toString().take(7)}"
+    }
+}

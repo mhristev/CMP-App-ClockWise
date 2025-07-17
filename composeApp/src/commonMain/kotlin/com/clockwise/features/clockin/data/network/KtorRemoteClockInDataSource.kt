@@ -1,6 +1,6 @@
 package com.clockwise.features.clockin.data.network
 
-import com.clockwise.core.data.SecureStorage
+import com.clockwise.core.di.ApiConfig
 import com.clockwise.features.clockin.domain.model.ClockInRequest
 import com.clockwise.features.clockin.domain.model.ClockInResponse
 import io.ktor.client.*
@@ -14,8 +14,8 @@ import kotlinx.serialization.json.Json
  */
 class KtorRemoteClockInDataSource(
     private val httpClient: HttpClient,
-    private val secureStorage: SecureStorage,
-    private val json: Json
+    private val userService: com.clockwise.features.auth.UserService,
+    private val apiConfig: ApiConfig
 ) : RemoteClockInDataSource {
     
     companion object {
@@ -25,7 +25,7 @@ class KtorRemoteClockInDataSource(
     }
     
     override suspend fun clockIn(request: ClockInRequest): ClockInResponse {
-        val token = secureStorage.getAccessToken()
+        val token = userService.getValidAuthToken()
             ?: throw Exception("No access token available")
         
         val response = httpClient.post(CLOCK_IN_ENDPOINT) {
@@ -38,7 +38,7 @@ class KtorRemoteClockInDataSource(
     }
     
     override suspend fun isUserClockedIn(userId: String): Boolean {
-        val token = secureStorage.getAccessToken()
+        val token = userService.getValidAuthToken()
             ?: throw Exception("No access token available")
         
         val response = httpClient.get("$CLOCK_STATUS_ENDPOINT/$userId") {
@@ -49,7 +49,7 @@ class KtorRemoteClockInDataSource(
     }
     
     override suspend fun clockOut(userId: String): Boolean {
-        val token = secureStorage.getAccessToken()
+        val token = userService.getValidAuthToken()
             ?: throw Exception("No access token available")
         
         val response = httpClient.post(CLOCK_OUT_ENDPOINT) {

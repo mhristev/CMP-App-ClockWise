@@ -61,6 +61,8 @@ val sharedModule = module {
         UserService(get())
     }
 
+    // Note: LocationService is provided by platformModule (Android/iOS specific implementations)
+
     single { HttpClientFactory.create(get(), get()) }
     // Note: RemoteUserDataSource is provided by authModule to avoid duplication
     single<RemoteShiftDataSource> { KtorRemoteShiftDataSource(get(), get(), get()) }

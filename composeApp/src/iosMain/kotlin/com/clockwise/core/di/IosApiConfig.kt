@@ -8,4 +8,5 @@ class IosApiConfig : ApiConfig {
     override val baseShiftUrl: String = "http://127.0.0.1:8083/v1"
     override val gdprUrl: String = "http://127.0.0.1:8082/v1/gdpr"
     override val baseWorkSessionUrl: String = "http://127.0.0.1:8083/v1/work-sessions"
+    override val baseOrganizationUrl: String = "http://127.0.0.1:8084/v1"
 } 

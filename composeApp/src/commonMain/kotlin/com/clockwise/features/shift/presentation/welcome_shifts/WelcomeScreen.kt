@@ -13,6 +13,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clockwise.features.shift.presentation.welcome_shifts.components.UpcomingShiftCard
 import com.clockwise.features.shift.presentation.welcome_shifts.components.ClockOutModal
+import com.clockwise.features.welcome.presentation.components.LocationPermissionDialog
+import com.clockwise.features.welcome.presentation.components.LocationRequiredDialog
+import com.clockwise.features.welcome.presentation.components.LocationOutOfRangeDialog
 
 @Composable
 fun WelcomeScreenRoot(
@@ -20,13 +23,20 @@ fun WelcomeScreenRoot(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    WelcomeScreen(
+    // Platform-specific permission handling
+    WelcomeScreenWithPermissions(
         state = state,
         onAction = { action ->
             viewModel.onAction(action)
         }
     )
 }
+
+@Composable
+expect fun WelcomeScreenWithPermissions(
+    state: WelcomeState,
+    onAction: (WelcomeAction) -> Unit
+)
 
 @Composable
 fun WelcomeScreen(
@@ -60,14 +70,26 @@ fun WelcomeScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        if (state.isLoading) {
+        if (state.isLoading || state.isCheckingLocation) {
             Box(
                 modifier = Modifier.fillMaxWidth().height(120.dp),
                 contentAlignment = Alignment.Center
             ) {
-                CircularProgressIndicator(
-                    color = Color(0xFF4A2B8C)
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator(
+                        color = Color(0xFF4A2B8C)
+                    )
+                    if (state.isCheckingLocation) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Checking location...",
+                            style = MaterialTheme.typography.body2,
+                            color = Color(0xFF666666)
+                        )
+                    }
+                }
             }
         } else {
             state.todayShift?.let { shift ->
@@ -106,7 +128,7 @@ fun WelcomeScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        if (state.isLoading) {
+        if (state.isLoading || state.isCheckingLocation) {
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
@@ -167,5 +189,33 @@ fun WelcomeScreen(
             }
         },
         onDismiss = { onAction(WelcomeAction.HideClockOutModal) }
+    )
+    
+    // Location Permission Dialog
+    LocationPermissionDialog(
+        isVisible = state.showLocationPermissionDialog,
+        title = "Location Permission Required",
+        message = "ClockWise needs location access to verify you're at your workplace for clocking in. Please allow location access to continue.",
+        onAllowClick = { onAction(WelcomeAction.RequestLocationPermission) },
+        onDenyClick = { onAction(WelcomeAction.DismissLocationPermissionDialog) },
+        onDismiss = { onAction(WelcomeAction.DismissLocationPermissionDialog) }
+    )
+    
+    // Location Required Dialog (when permission is denied)
+    LocationRequiredDialog(
+        isVisible = state.showLocationRequiredDialog,
+        onRetryClick = { onAction(WelcomeAction.RetryLocationCheck) },
+        onDismiss = { onAction(WelcomeAction.DismissLocationRequiredDialog) }
+    )
+    
+    // Location Out of Range Dialog
+    LocationOutOfRangeDialog(
+        isVisible = state.showLocationOutOfRangeDialog,
+        distance = state.distanceFromWorkplace ?: 0.0,
+        businessUnitAddress = state.businessUnitAddress,
+        userLatitude = state.userLocation?.first,
+        userLongitude = state.userLocation?.second,
+        userAddress = state.userAddress,
+        onDismiss = { onAction(WelcomeAction.DismissLocationOutOfRangeDialog) }
     )
 }

@@ -25,9 +25,7 @@ import com.clockwise.features.shift.presentation.week_schedule.WeeklyScheduleVie
 import com.clockwise.features.shift.presentation.week_schedule.WeeklyScheduleScreenRoot
 import com.clockwise.features.availability.presentation.calendar.CalendarViewModel
 import com.clockwise.features.availability.presentation.calendar.CalendarScreenRoot
-import com.clockwise.features.clockin.presentation.ClockInScreen
-import com.clockwise.features.clockin.presentation.ClockInViewModel
-import com.clockwise.features.location.domain.model.BusinessUnitAddress
+import com.clockwise.features.organization.data.model.BusinessUnitAddress
 import com.clockwise.features.business.presentation.BusinessViewModel
 import com.clockwise.features.business.presentation.BusinessScreenRoot
 import com.clockwise.features.business.presentation.add_employee.SearchViewModel
@@ -140,20 +138,14 @@ fun App() {
                     CalendarScreenRoot(viewModel = viewModel)
                 }
                 
+                // Clock-in functionality is now integrated in WelcomeScreen
                 composable(NavigationRoutes.ClockIn.route) {
-                    val viewModel = koinViewModel<ClockInViewModel>()
-                    val businessUnitAddress = BusinessUnitAddress(
-                        businessUnitId = "1", 
-                        name = "Vkushti",
-                        address = "Leenderweg 255, Eindhoven, Netherlands",
-                        latitude = 51.4209, // Accurate Leenderweg 255, Eindhoven coordinates
-                        longitude = 5.4935,
-                        allowedRadius = 250.0 // 100 meters
-                    )
-                    ClockInScreen(
-                        businessUnitAddress = businessUnitAddress,
-                        viewModel = viewModel
-                    )
+                    // Redirect to welcome screen since clock-in is integrated there
+                    LaunchedEffect(Unit) {
+                        navController.navigate(NavigationRoutes.Welcome.route) {
+                            popUpTo(NavigationRoutes.ClockIn.route) { inclusive = true }
+                        }
+                    }
                 }
                 
                 composable(NavigationRoutes.Profile.route) {

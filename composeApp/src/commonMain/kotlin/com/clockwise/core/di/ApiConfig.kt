@@ -8,4 +8,5 @@ interface ApiConfig {
     val baseShiftUrl: String
     val gdprUrl: String
     val baseWorkSessionUrl: String
+    val baseOrganizationUrl: String
 } 

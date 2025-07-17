@@ -12,5 +12,16 @@ data class WelcomeState(
     val clockOutModalShiftId: String? = null,
     val clockOutModalWorkSessionId: String? = null,
     val clockOutNote: String = "",
-    val error: String? = null
+    val error: String? = null,
+    // Location checking states
+    val isCheckingLocation: Boolean = false,
+    val showLocationPermissionDialog: Boolean = false,
+    val showLocationRequiredDialog: Boolean = false,
+    val showLocationOutOfRangeDialog: Boolean = false,
+    val distanceFromWorkplace: Double? = null,
+    val pendingClockInShiftId: String? = null, // Track which shift is waiting for location check
+    val businessUnitLocation: Pair<Double, Double>? = null, // Cache business unit coordinates
+    val businessUnitAddress: String? = null, // Store business unit address for display
+    val userLocation: Pair<Double, Double>? = null, // Store user's current location (latitude, longitude)
+    val userAddress: String? = null // Store user's address if available
 ) 
