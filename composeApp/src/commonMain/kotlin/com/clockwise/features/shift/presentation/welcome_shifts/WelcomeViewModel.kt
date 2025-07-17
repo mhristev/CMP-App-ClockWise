@@ -34,7 +34,7 @@ class WelcomeViewModel(
 
     init {
         println("🔍🔍🔍 WelcomeViewModel initialized with LocationService: ${locationService::class.simpleName} 🔍🔍🔍")
-        println("🔍🔍🔍 LocationService class: ${locationService.javaClass.name} 🔍🔍🔍")
+        println("🔍🔍🔍 LocationService implementation active 🔍🔍🔍")
     }
 
     private val _state = MutableStateFlow(WelcomeState())
