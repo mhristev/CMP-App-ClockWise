@@ -13,7 +13,7 @@ import org.koin.dsl.module
  * Koin module for providing ViewModels.
  */
 val viewModelModule = module {
-    viewModel { WelcomeViewModel(get(), get(), get(), get()) }
+    viewModel { WelcomeViewModel(get(), get(), get(), get(), get()) }
     viewModel { WeeklyScheduleViewModel(get()) }
     viewModel { CalendarViewModel(get()) }
     viewModel { ProfileViewModel(get()) }

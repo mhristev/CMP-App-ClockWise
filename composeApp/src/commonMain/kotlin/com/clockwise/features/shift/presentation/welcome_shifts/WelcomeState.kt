@@ -1,6 +1,8 @@
 package com.clockwise.features.shift.presentation.welcome_shifts
 
 import com.clockwise.features.shift.domain.model.Shift
+import com.clockwise.features.consumption.domain.model.ConsumptionItem
+import com.clockwise.features.consumption.domain.model.SelectedConsumptionItem
 
 data class WelcomeState(
     val isLoading: Boolean = false,
@@ -24,5 +26,10 @@ data class WelcomeState(
     val businessUnitLocation: Pair<Double, Double>? = null, // Cache business unit coordinates
     val businessUnitAddress: String? = null, // Store business unit address for display
     val userLocation: Pair<Double, Double>? = null, // Store user's current location (latitude, longitude)
-    val userAddress: String? = null // Store user's address if available
+    val userAddress: String? = null, // Store user's address if available
+    // Consumption items states
+    val consumptionItems: List<ConsumptionItem> = emptyList(),
+    val selectedConsumptionItems: List<SelectedConsumptionItem> = emptyList(),
+    val selectedConsumptionType: String? = null,
+    val isLoadingConsumptionItems: Boolean = false
 ) 

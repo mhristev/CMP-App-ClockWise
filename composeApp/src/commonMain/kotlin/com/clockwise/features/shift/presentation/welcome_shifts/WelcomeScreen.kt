@@ -17,7 +17,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.clockwise.features.shift.presentation.welcome_shifts.components.UpcomingShiftCard
-import com.clockwise.features.shift.presentation.welcome_shifts.components.ClockOutModal
+import com.clockwise.features.shift.presentation.welcome_shifts.components.ClockOutBottomSheet
+import com.clockwise.features.shift.presentation.welcome_shifts.components.generateSummaryText
 import com.clockwise.features.welcome.presentation.components.LocationPermissionDialog
 import com.clockwise.features.welcome.presentation.components.LocationRequiredDialog
 import com.clockwise.features.welcome.presentation.components.LocationOutOfRangeDialog
@@ -205,72 +206,40 @@ fun WelcomeScreen(
         )
     }
     
-    // Clock Out Modal
-    ClockOutModal(
+    // Clock Out Bottom Sheet
+    ClockOutBottomSheet(
         isVisible = state.showClockOutModal,
         note = state.clockOutNote,
         isSaving = state.isLoading,
         onNoteChange = { onAction(WelcomeAction.UpdateClockOutNote(it)) },
         onConfirmClockOut = {
             if (state.clockOutModalShiftId != null) {
+                // Generate summary text that combines note and consumption items
+                val summaryText = generateSummaryText(
+                    note = state.clockOutNote,
+                    selectedConsumptionItems = state.selectedConsumptionItems
+                )
                 onAction(
-                    WelcomeAction.ClockOutWithNote(
+                    WelcomeAction.ClockOutWithNoteAndConsumption(
                         shiftId = state.clockOutModalShiftId,
                         workSessionId = state.clockOutModalWorkSessionId,
-                        note = state.clockOutNote
+                        note = summaryText // Send the formatted summary instead of raw note
                     )
                 )
             }
         },
-        onDismiss = { onAction(WelcomeAction.HideClockOutModal) }
-    )
-    
-    // Location Permission Dialog
-    LocationPermissionDialog(
-        isVisible = state.showLocationPermissionDialog,
-        title = "Location Permission Required",
-        message = "ClockWise needs location access to verify you're at your workplace for clocking in. Please allow location access to continue.",
-        onAllowClick = { onAction(WelcomeAction.RequestLocationPermission) },
-        onDenyClick = { onAction(WelcomeAction.DismissLocationPermissionDialog) },
-        onDismiss = { onAction(WelcomeAction.DismissLocationPermissionDialog) }
-    )
-    
-    // Location Required Dialog (when permission is denied)
-    LocationRequiredDialog(
-        isVisible = state.showLocationRequiredDialog,
-        onRetryClick = { onAction(WelcomeAction.RetryLocationCheck) },
-        onDismiss = { onAction(WelcomeAction.DismissLocationRequiredDialog) }
-    )
-    
-    // Location Out of Range Dialog
-    LocationOutOfRangeDialog(
-        isVisible = state.showLocationOutOfRangeDialog,
-        distance = state.distanceFromWorkplace ?: 0.0,
-        businessUnitAddress = state.businessUnitAddress,
-        userLatitude = state.userLocation?.first,
-        userLongitude = state.userLocation?.second,
-        userAddress = state.userAddress,
-        onDismiss = { onAction(WelcomeAction.DismissLocationOutOfRangeDialog) }
-    )
-    
-    // Clock Out Modal
-    ClockOutModal(
-        isVisible = state.showClockOutModal,
-        note = state.clockOutNote,
-        isSaving = state.isLoading,
-        onNoteChange = { onAction(WelcomeAction.UpdateClockOutNote(it)) },
-        onConfirmClockOut = {
-            if (state.clockOutModalShiftId != null) {
-                onAction(
-                    WelcomeAction.ClockOutWithNote(
-                        shiftId = state.clockOutModalShiftId,
-                        workSessionId = state.clockOutModalWorkSessionId,
-                        note = state.clockOutNote
-                    )
-                )
-            }
+        onDismiss = { onAction(WelcomeAction.HideClockOutModal) },
+        // Consumption items parameters
+        consumptionItems = state.consumptionItems,
+        selectedConsumptionItems = state.selectedConsumptionItems,
+        selectedConsumptionType = state.selectedConsumptionType,
+        isLoadingConsumptionItems = state.isLoadingConsumptionItems,
+        onConsumptionItemQuantityChanged = { item, quantity ->
+            onAction(WelcomeAction.UpdateConsumptionItemQuantity(item, quantity))
         },
-        onDismiss = { onAction(WelcomeAction.HideClockOutModal) }
+        onConsumptionTypeSelected = { type ->
+            onAction(WelcomeAction.SelectConsumptionType(type))
+        }
     )
     
     // Location Permission Dialog

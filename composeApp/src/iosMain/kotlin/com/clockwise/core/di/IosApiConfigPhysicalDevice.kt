@@ -1,9 +1,13 @@
 package com.clockwise.core.di
 
-class IosApiConfig : ApiConfig {
-    // For iOS Simulator use 127.0.0.1, for physical device use your Mac's IP address
-    // Switch between "http://127.0.0.1" and "http://192.168.100.185" as needed
-    private val baseHost = "http://192.168.100.185" // Use this for physical device testing
+/**
+ * iOS API configuration for physical device testing.
+ * Use this configuration when testing on a physical iOS device.
+ * Replace IosApiConfig() with IosApiConfigPhysicalDevice() in PlatformModule.kt
+ */
+class IosApiConfigPhysicalDevice : ApiConfig {
+    // Use your Mac's IP address for physical device testing
+    private val baseHost = "http://192.168.100.185"
     
     override val baseAuthUrl: String = "$baseHost:8081/v1/auth"
     override val baseUsersUrl: String = "$baseHost:8082/v1/users"
@@ -13,4 +17,4 @@ class IosApiConfig : ApiConfig {
     override val gdprUrl: String = "$baseHost:8082/v1/gdpr"
     override val baseWorkSessionUrl: String = "$baseHost:8083/v1/work-sessions"
     override val baseOrganizationUrl: String = "$baseHost:8084/v1"
-} 
+}

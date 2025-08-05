@@ -12,7 +12,8 @@ actual val platformModule: Module = module {
     single<HttpClientEngine> { Darwin.create() }
     
     // Provide iOS-specific API configuration
-    single<ApiConfig> { IosApiConfig() }
+    // Use IosApiConfig() for iOS Simulator, IosApiConfigPhysicalDevice() for physical device
+    single<ApiConfig> { IosApiConfig() } // Change to IosApiConfigPhysicalDevice() for physical device
     
     // Provide KVault for iOS platform - iOS version doesn't need context
     single { 

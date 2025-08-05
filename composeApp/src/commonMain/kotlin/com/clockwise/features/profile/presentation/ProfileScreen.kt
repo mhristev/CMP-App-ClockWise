@@ -61,7 +61,7 @@ fun ProfileScreen(
                 onLogout = {
                     onAction(ProfileAction.Logout)
                     navController?.navigate(NavigationRoutes.Auth.route) {
-                        popUpTo(0) // Clear entire back stack
+                        popUpTo(navController.graph.startDestinationRoute ?: NavigationRoutes.Auth.route) { inclusive = true }
                         launchSingleTop = true
                     }
                 }

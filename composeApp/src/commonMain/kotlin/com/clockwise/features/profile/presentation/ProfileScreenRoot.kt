@@ -18,7 +18,7 @@ fun ProfileScreenRoot(
     LaunchedEffect(state.redirectToAuth) {
         if (state.redirectToAuth && navController != null) {
             navController.navigate(NavigationRoutes.Auth.route) {
-                popUpTo(0) // Clear entire back stack
+                popUpTo(navController.graph.startDestinationRoute ?: NavigationRoutes.Auth.route) { inclusive = true }
                 launchSingleTop = true
             }
         }

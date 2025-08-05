@@ -2,6 +2,7 @@ package com.clockwise.core.di
 
 import com.clockwise.features.auth.di.authModule
 import com.clockwise.features.organization.di.organizationModule
+import com.clockwise.features.consumption.di.consumptionModule
 import org.koin.core.context.startKoin
 import org.koin.dsl.KoinAppDeclaration
 
@@ -15,7 +16,8 @@ fun initKoin(config: KoinAppDeclaration? = null) {
             sharedModule, 
             platformModule,
             authModule,
-            organizationModule
+            organizationModule,
+            consumptionModule
         )
     }
 }

@@ -13,6 +13,9 @@ import com.clockwise.features.clockin.domain.service.LocationService
 import com.clockwise.features.clockin.domain.service.LocationResult
 import com.clockwise.features.organization.domain.repository.OrganizationRepository
 import com.clockwise.features.auth.UserService
+import com.clockwise.features.consumption.domain.repository.ConsumptionRepository
+import com.clockwise.features.consumption.domain.model.ConsumptionItem
+import com.clockwise.features.consumption.domain.model.SelectedConsumptionItem
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess
 import com.plcoding.bookpedia.core.domain.DataError
@@ -29,7 +32,8 @@ class WelcomeViewModel(
     private val shiftRepository: ShiftRepository,
     private val locationService: LocationService,
     private val organizationRepository: OrganizationRepository,
-    private val userService: UserService
+    private val userService: UserService,
+    private val consumptionRepository: ConsumptionRepository
 ) : ViewModel() {
 
     init {
@@ -291,9 +295,13 @@ class WelcomeViewModel(
                         showClockOutModal = true,
                         clockOutModalShiftId = action.shiftId,
                         clockOutModalWorkSessionId = action.workSessionId,
-                        clockOutNote = ""
+                        clockOutNote = "",
+                        selectedConsumptionItems = emptyList(),
+                        selectedConsumptionType = null
                     )
                 }
+                // Load consumption items for the current user's business unit
+                loadConsumptionItems()
             }
             is WelcomeAction.HideClockOutModal -> {
                 _state.update {
@@ -301,7 +309,11 @@ class WelcomeViewModel(
                         showClockOutModal = false,
                         clockOutModalShiftId = null,
                         clockOutModalWorkSessionId = null,
-                        clockOutNote = ""
+                        clockOutNote = "",
+                        consumptionItems = emptyList(),
+                        selectedConsumptionItems = emptyList(),
+                        selectedConsumptionType = null,
+                        isLoadingConsumptionItems = false
                     )
                 }
             }
@@ -368,6 +380,25 @@ class WelcomeViewModel(
                     viewModelScope.launch {
                         performLocationBasedClockIn(shiftId)
                     }
+                }
+            }
+            // Consumption items actions
+            is WelcomeAction.LoadConsumptionItems -> {
+                viewModelScope.launch {
+                    loadConsumptionItemsForBusinessUnit(action.businessUnitId)
+                }
+            }
+            is WelcomeAction.UpdateConsumptionItemQuantity -> {
+                updateConsumptionItemQuantity(action.item, action.quantity)
+            }
+            is WelcomeAction.SelectConsumptionType -> {
+                _state.update {
+                    it.copy(selectedConsumptionType = action.type)
+                }
+            }
+            is WelcomeAction.ClockOutWithNoteAndConsumption -> {
+                viewModelScope.launch {
+                    performLocationBasedClockOut(action.shiftId, action.note, action.workSessionId)
                 }
             }
         }
@@ -758,6 +789,92 @@ class WelcomeViewModel(
                 }
                 null
             }
+        }
+    }
+    
+    // Consumption items helper methods
+    private fun loadConsumptionItems() {
+        val currentUser = userService.currentUser.value
+        val businessUnitId = currentUser?.businessUnitId
+        
+        println("🔍 DEBUG loadConsumptionItems: currentUser = $currentUser")
+        println("🔍 DEBUG loadConsumptionItems: businessUnitId = $businessUnitId")
+        println("🔍 DEBUG loadConsumptionItems: consumptionRepository = $consumptionRepository")
+        
+        if (businessUnitId != null) {
+            println("🔍 DEBUG loadConsumptionItems: Starting to load consumption items for businessUnitId = $businessUnitId")
+            viewModelScope.launch {
+                loadConsumptionItemsForBusinessUnit(businessUnitId)
+            }
+        } else {
+            println("🔍 DEBUG loadConsumptionItems: No businessUnitId available, setting loading state to false")
+            _state.update { it.copy(isLoadingConsumptionItems = false) }
+        }
+    }
+    
+    private suspend fun loadConsumptionItemsForBusinessUnit(businessUnitId: String) {
+        println("🔍 DEBUG loadConsumptionItemsForBusinessUnit: Starting load for businessUnitId = $businessUnitId")
+        _state.update { it.copy(isLoadingConsumptionItems = true) }
+        
+        try {
+            val result = consumptionRepository.getConsumptionItemsByBusinessUnit(businessUnitId)
+            println("🔍 DEBUG loadConsumptionItemsForBusinessUnit: API call completed, result = $result")
+            
+            result.onSuccess { items ->
+                println("🔍 DEBUG loadConsumptionItemsForBusinessUnit: SUCCESS - loaded ${items.size} items")
+                items.forEach { item ->
+                    println("🔍   - Item: ${item.name}, Price: ${item.price}, Type: ${item.type}")
+                }
+                _state.update {
+                    it.copy(
+                        consumptionItems = items,
+                        isLoadingConsumptionItems = false
+                    )
+                }
+            }
+            .onError { error ->
+                println("🔍 DEBUG loadConsumptionItemsForBusinessUnit: ERROR - $error")
+                _state.update {
+                    it.copy(
+                        isLoadingConsumptionItems = false,
+                        // Don't show error for consumption items - they're optional
+                    )
+                }
+                println("🔍 DEBUG: Failed to load consumption items: $error")
+            }
+        } catch (e: Exception) {
+            println("🔍 DEBUG loadConsumptionItemsForBusinessUnit: EXCEPTION - ${e.message}")
+            _state.update {
+                it.copy(isLoadingConsumptionItems = false)
+            }
+        }
+    }
+    
+    private fun updateConsumptionItemQuantity(item: ConsumptionItem, quantity: Int) {
+        _state.update { currentState ->
+            val updatedSelection = if (quantity <= 0) {
+                // Remove item if quantity is 0 or less
+                currentState.selectedConsumptionItems.filter { 
+                    it.consumptionItem.id != item.id 
+                }
+            } else {
+                // Update or add item
+                val existingIndex = currentState.selectedConsumptionItems.indexOfFirst { 
+                    it.consumptionItem.id == item.id 
+                }
+                
+                if (existingIndex >= 0) {
+                    // Update existing item
+                    currentState.selectedConsumptionItems.toMutableList().apply {
+                        set(existingIndex, SelectedConsumptionItem(item, quantity))
+                    }
+                } else {
+                    // Add new item
+                    currentState.selectedConsumptionItems + SelectedConsumptionItem(item, quantity)
+                }
+            }
+            
+            currentState.copy(selectedConsumptionItems = updatedSelection)
         }
     }
 }
