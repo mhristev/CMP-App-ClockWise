@@ -1,8 +1,10 @@
 package com.clockwise.features.organization.data.repository
 
 import com.clockwise.core.di.ApiConfig
+import com.clockwise.features.organization.data.model.BusinessUnit
 import com.clockwise.features.organization.data.model.BusinessUnitAddress
 import com.clockwise.features.organization.data.model.BusinessUnitAddressDto
+import com.clockwise.features.organization.data.model.BusinessUnitDto
 import com.clockwise.features.organization.data.model.toDomain
 import com.clockwise.features.organization.domain.repository.OrganizationRepository
 import com.plcoding.bookpedia.core.data.safeCall
@@ -20,6 +22,14 @@ class OrganizationRepositoryImpl(
     override suspend fun getBusinessUnitById(businessUnitId: String): Result<BusinessUnitAddress, DataError.Remote> {
         return safeCall<BusinessUnitAddressDto> {
             client.get("${apiConfig.baseOrganizationUrl}/business-units/$businessUnitId/address")
+        }.map { dto ->
+            dto.toDomain()
+        }
+    }
+
+    override suspend fun getBusinessUnitDetails(businessUnitId: String): Result<BusinessUnit, DataError.Remote> {
+        return safeCall<BusinessUnitDto> {
+            client.get("${apiConfig.baseOrganizationUrl}/business-units/$businessUnitId")
         }.map { dto ->
             dto.toDomain()
         }

@@ -495,26 +495,8 @@ class WelcomeViewModel(
                 // Then perform clock-out
                 shiftRepository.clockOut(shiftId).collect { result ->
                     result.onSuccess {
-                        println("🔍 DEBUG: Clock out successful, now recording consumption items")
-                        
-                        // Record consumption items if any are selected
-                        val currentState = _state.value
-                        if (currentState.selectedConsumptionItems.isNotEmpty() && workSessionId != null) {
-                            println("🔍 DEBUG: Recording ${currentState.selectedConsumptionItems.size} consumption items for workSession: $workSessionId")
-                            
-                            consumptionRepository.recordBulkConsumption(workSessionId, currentState.selectedConsumptionItems)
-                                .onSuccess {
-                                    println("🔍 DEBUG: Successfully recorded bulk consumption")
-                                }
-                                .onError { error ->
-                                    println("🔍 DEBUG: Failed to record bulk consumption: $error")
-                                    // Don't fail the clock out if consumption recording fails
-                                }
-                        } else {
-                            println("🔍 DEBUG: No consumption items to record or missing workSessionId")
-                        }
-                        
                         // Clear session notes for this shift's work session on successful clock out
+                        val currentState = _state.value
                         val shiftToClockOut = currentState.todayShift?.takeIf { it.id == shiftId }
                         val workSessionIdToRemove = workSessionId ?: shiftToClockOut?.workSession?.id
                         
@@ -531,12 +513,7 @@ class WelcomeViewModel(
                                 showClockOutModal = false,
                                 clockOutModalShiftId = null,
                                 clockOutModalWorkSessionId = null,
-                                clockOutNote = "",
-                                // Clear consumption items after successful clock out
-                                consumptionItems = emptyList(),
-                                selectedConsumptionItems = emptyList(),
-                                selectedConsumptionType = null,
-                                isLoadingConsumptionItems = false
+                                clockOutNote = ""
                             ) 
                         }
                         
@@ -820,34 +797,25 @@ class WelcomeViewModel(
         val currentUser = userService.currentUser.value
         val businessUnitId = currentUser?.businessUnitId
         
-        println("🔍 DEBUG loadConsumptionItems: currentUser = $currentUser")
-        println("🔍 DEBUG loadConsumptionItems: businessUnitId = $businessUnitId")
-        println("🔍 DEBUG loadConsumptionItems: consumptionRepository = $consumptionRepository")
+        println("DEBUG loadConsumptionItems: currentUser = $currentUser")
+        println("DEBUG loadConsumptionItems: businessUnitId = $businessUnitId")
         
         if (businessUnitId != null) {
-            println("🔍 DEBUG loadConsumptionItems: Starting to load consumption items for businessUnitId = $businessUnitId")
             viewModelScope.launch {
                 loadConsumptionItemsForBusinessUnit(businessUnitId)
             }
         } else {
-            println("🔍 DEBUG loadConsumptionItems: No businessUnitId available, setting loading state to false")
-            _state.update { it.copy(isLoadingConsumptionItems = false) }
+            println("DEBUG loadConsumptionItems: No businessUnitId available, skipping consumption items loading")
         }
     }
     
     private suspend fun loadConsumptionItemsForBusinessUnit(businessUnitId: String) {
-        println("🔍 DEBUG loadConsumptionItemsForBusinessUnit: Starting load for businessUnitId = $businessUnitId")
+        println("DEBUG loadConsumptionItemsForBusinessUnit: Starting load for businessUnitId = $businessUnitId")
         _state.update { it.copy(isLoadingConsumptionItems = true) }
         
-        try {
-            val result = consumptionRepository.getConsumptionItemsByBusinessUnit(businessUnitId)
-            println("🔍 DEBUG loadConsumptionItemsForBusinessUnit: API call completed, result = $result")
-            
-            result.onSuccess { items ->
-                println("🔍 DEBUG loadConsumptionItemsForBusinessUnit: SUCCESS - loaded ${items.size} items")
-                items.forEach { item ->
-                    println("🔍   - Item: ${item.name}, Price: ${item.price}, Type: ${item.type}")
-                }
+        consumptionRepository.getConsumptionItemsByBusinessUnit(businessUnitId)
+            .onSuccess { items ->
+                println("DEBUG loadConsumptionItemsForBusinessUnit: SUCCESS - loaded ${items.size} items")
                 _state.update {
                     it.copy(
                         consumptionItems = items,
@@ -856,21 +824,15 @@ class WelcomeViewModel(
                 }
             }
             .onError { error ->
-                println("🔍 DEBUG loadConsumptionItemsForBusinessUnit: ERROR - $error")
+                println("DEBUG loadConsumptionItemsForBusinessUnit: ERROR - $error")
                 _state.update {
                     it.copy(
                         isLoadingConsumptionItems = false,
                         // Don't show error for consumption items - they're optional
                     )
                 }
-                println("🔍 DEBUG: Failed to load consumption items: $error")
+                println("DEBUG: Failed to load consumption items: $error")
             }
-        } catch (e: Exception) {
-            println("🔍 DEBUG loadConsumptionItemsForBusinessUnit: EXCEPTION - ${e.message}")
-            _state.update {
-                it.copy(isLoadingConsumptionItems = false)
-            }
-        }
     }
     
     private fun updateConsumptionItemQuantity(item: ConsumptionItem, quantity: Int) {

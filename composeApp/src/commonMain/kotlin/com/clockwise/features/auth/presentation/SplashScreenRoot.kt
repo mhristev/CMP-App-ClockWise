@@ -19,7 +19,7 @@ fun SplashScreenRoot(
         if (state.initializationComplete) {
             if (state.isAuthenticated && state.hasBusinessUnit) {
                 // User is authenticated and has business unit - go to main app
-                navController.navigate(NavigationRoutes.Welcome.route) {
+                navController.navigate(NavigationRoutes.BusinessUnitLanding.route) {
                     popUpTo(NavigationRoutes.Splash.route) {
                         inclusive = true
                     }

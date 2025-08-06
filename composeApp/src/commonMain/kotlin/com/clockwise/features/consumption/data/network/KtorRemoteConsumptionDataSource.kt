@@ -44,8 +44,7 @@ class KtorRemoteConsumptionDataSource(
     override suspend fun recordBulkConsumption(bulkDto: BulkCreateConsumptionRecordDto): Result<List<ConsumptionRecordDto>, DataError.Remote> {
         return try {
             val url = "${apiConfig.baseOrganizationUrl}/consumption-records/bulk"
-            println("🔍 DEBUG KtorRemoteConsumptionDataSource: Recording bulk consumption to $url")
-            println("🔍 DEBUG bulkDto: workSessionId=${bulkDto.workSessionId}, consumptions=${bulkDto.consumptions.size} items")
+            println("DEBUG KtorRemoteConsumptionDataSource: Making bulk consumption request to $url")
             
             val response = httpClient.post {
                 url(url)
@@ -53,19 +52,18 @@ class KtorRemoteConsumptionDataSource(
                 setBody(bulkDto)
             }
             
-            println("🔍 DEBUG KtorRemoteConsumptionDataSource: Bulk consumption response status = ${response.status}")
+            println("DEBUG KtorRemoteConsumptionDataSource: Bulk consumption response status = ${response.status}")
             
-            if (response.status == HttpStatusCode.OK || response.status == HttpStatusCode.Created) {
+            if (response.status == HttpStatusCode.Created || response.status == HttpStatusCode.OK) {
                 val records = response.body<List<ConsumptionRecordDto>>()
-                println("🔍 DEBUG KtorRemoteConsumptionDataSource: Successfully recorded ${records.size} consumption records")
+                println("DEBUG KtorRemoteConsumptionDataSource: Successfully created ${records.size} consumption records")
                 Result.Success(records)
             } else {
-                println("🔍 DEBUG KtorRemoteConsumptionDataSource: Bulk consumption error - HTTP ${response.status}")
+                println("DEBUG KtorRemoteConsumptionDataSource: Bulk consumption error - HTTP ${response.status}")
                 Result.Error(DataError.Remote.UNKNOWN)
             }
         } catch (e: Exception) {
-            println("🔍 DEBUG KtorRemoteConsumptionDataSource: Bulk consumption exception - ${e.message}")
-            e.printStackTrace()
+            println("DEBUG KtorRemoteConsumptionDataSource: Bulk consumption exception - ${e.message}")
             Result.Error(DataError.Remote.UNKNOWN)
         }
     }

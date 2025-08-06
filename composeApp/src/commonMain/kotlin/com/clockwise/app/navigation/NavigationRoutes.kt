@@ -7,7 +7,9 @@ package com.clockwise.app.navigation
 sealed class NavigationRoutes(val route: String) {
     object Splash : NavigationRoutes("splash")
     object Auth : NavigationRoutes("auth")
-    // Instead of just "Home", we'll have all the screens as top-level routes
+    // Business Unit Landing as the new default home screen
+    object BusinessUnitLanding : NavigationRoutes("businessunit_landing")
+    // Other screens accessible through drawer menu
     object Welcome : NavigationRoutes("welcome")
     object WeeklySchedule : NavigationRoutes("weekly_schedule")
     object Calendar : NavigationRoutes("calendar")
@@ -15,6 +17,8 @@ sealed class NavigationRoutes(val route: String) {
     object Profile : NavigationRoutes("profile")
     object Search : NavigationRoutes("search")
     object Business : NavigationRoutes("business")
+    object Settings : NavigationRoutes("settings")
+    object Notifications : NavigationRoutes("notifications")
     
     companion object {
         // Helper function to get route by name (for backward compatibility)
@@ -22,6 +26,7 @@ sealed class NavigationRoutes(val route: String) {
             return when (route) {
                 Splash.route -> Splash
                 Auth.route -> Auth
+                BusinessUnitLanding.route -> BusinessUnitLanding
                 Welcome.route -> Welcome
                 WeeklySchedule.route -> WeeklySchedule
                 Calendar.route -> Calendar
@@ -29,6 +34,8 @@ sealed class NavigationRoutes(val route: String) {
                 Profile.route -> Profile
                 Search.route -> Search
                 Business.route -> Business
+                Settings.route -> Settings
+                Notifications.route -> Notifications
                 else -> throw IllegalArgumentException("Route $route is not recognized.")
             }
         }
