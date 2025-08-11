@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,6 +33,7 @@ fun DrawerContent(
     onNavigateToCalendar: () -> Unit,
     onNavigateToClockIn: () -> Unit,
     onNavigateToBusinessUnit: () -> Unit,
+    onNavigateToShiftExchange: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onLogout: () -> Unit,
@@ -93,6 +95,13 @@ fun DrawerContent(
                         title = "Clock In",
                         isSelected = currentRoute == "clock_in",
                         onClick = onNavigateToClockIn
+                    )
+                    
+                    DrawerMenuItem(
+                        icon = Icons.Default.SwapHoriz,
+                        title = "Shift Exchange",
+                        isSelected = currentRoute == "shift_exchange",
+                        onClick = onNavigateToShiftExchange
                     )
                     
                     // Show Business Unit for Admin/Manager only

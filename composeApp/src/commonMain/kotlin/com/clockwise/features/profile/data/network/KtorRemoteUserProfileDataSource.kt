@@ -10,6 +10,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.http.HttpHeaders
+import kotlinx.datetime.Clock
 
 class KtorRemoteUserProfileDataSource(
     private val httpClient: HttpClient,
@@ -17,14 +18,45 @@ class KtorRemoteUserProfileDataSource(
     private val userService: UserService
 ) : RemoteUserProfileDataSource {
     override suspend fun getUserProfile(): Result<User, DataError.Remote> {
+        // Check if user is authenticated - let Auth plugin handle token automatically
         val token = userService.getValidAuthToken()
             ?: return Result.Error(DataError.Remote.UNKNOWN)
 
-        return safeCall {
-            
+        val timestamp = Clock.System.now().toEpochMilliseconds()
+        
+        println("🌐 KtorRemoteUserProfileDataSource: Making fresh GET request to /me endpoint")
+        println("🔑 UserService provided token: ${token.take(30)}... (length: ${token.length})")
+        println("🔗 URL: ${apiConfig.baseUsersUrl}/me")
+        println("⏰ Request timestamp: $timestamp")
+        println("🔧 Auth plugin will automatically handle Bearer token (NO manual Authorization header)")
+
+        val result = safeCall<User> {
             httpClient.get("${apiConfig.baseUsersUrl}/me") {
-                header(HttpHeaders.Authorization, "Bearer $token")
+                // Don't manually set Authorization header - let Auth plugin handle it
+                header(HttpHeaders.CacheControl, "no-cache, no-store, must-revalidate")
+                header(HttpHeaders.Pragma, "no-cache")
+                header(HttpHeaders.Expires, "0")
+                header("X-Requested-With", "XMLHttpRequest")
+                header("X-Timestamp", timestamp.toString())
+                url {
+                    parameters.append("_t", timestamp.toString()) // Add timestamp as query parameter for cache busting
+                }
+                println("📤 Request headers set: Cache-Control: no-cache, Timestamp: $timestamp")
             }
         }
+        
+        when (result) {
+            is Result.Success -> {
+                val user = result.data
+                println("✅ /me endpoint response successful: user=${user.email}, id=${user.id}")
+                println("🔍 User details: firstName=${user.firstName}, lastName=${user.lastName}")
+                println("🏢 Business details: unitId=${user.businessUnitId}, unitName=${user.businessUnitName}")
+            }
+            is Result.Error -> {
+                println("❌ /me endpoint response failed: error=${result.error}")
+            }
+        }
+        
+        return result
     }
 }

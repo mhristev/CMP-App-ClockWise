@@ -1,5 +1,7 @@
 package com.clockwise.core.di
 
+import com.clockwise.core.data.IOSPlatformDataCleaner
+import com.clockwise.core.data.PlatformDataCleaner
 import com.clockwise.features.clockin.domain.service.LocationService
 import com.clockwise.features.clockin.data.service.IOSLocationServiceImpl
 import com.clockwise.features.sidemenu.platform.PlatformActions
@@ -17,9 +19,9 @@ actual val platformModule: Module = module {
     // Use IosApiConfig() for iOS Simulator, IosApiConfigPhysicalDevice() for physical device
     single<ApiConfig> { IosApiConfig() } // Change to IosApiConfigPhysicalDevice() for physical device
     
-    // Provide KVault for iOS platform - iOS version doesn't need context
+    // Provide KVault for iOS platform
     single { 
-        KVault("clockwise_secure_storage") 
+        KVault("clockwise_secure_storage")
     }
     
     // iOS location service with Core Location - use the proper domain service implementation
@@ -30,5 +32,10 @@ actual val platformModule: Module = module {
     // Platform-specific actions for side menu
     single<PlatformActions> {
         IOSPlatformActions()
+    }
+    
+    // iOS-specific data cleaner
+    single<PlatformDataCleaner> {
+        IOSPlatformDataCleaner()
     }
 } 

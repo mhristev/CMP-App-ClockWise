@@ -2,6 +2,8 @@ package com.clockwise.core.di
 
 import android.content.Context
 import androidx.activity.ComponentActivity
+import com.clockwise.core.data.AndroidPlatformDataCleaner
+import com.clockwise.core.data.PlatformDataCleaner
 import com.clockwise.features.clockin.domain.service.LocationService
 import com.clockwise.features.clockin.data.service.AndroidLocationServiceImpl
 import com.clockwise.features.sidemenu.platform.PlatformActions
@@ -23,7 +25,9 @@ actual val platformModule: Module
         // Provide KVault initialization for Android platform
         single {
             val context = get<Context>()
-            KVault(context, "clockwise_secure_storage")
+            val vault = KVault(context, "clockwise_secure_storage")
+            println("🔐 Android: Created KVault instance: ${vault.hashCode()}")
+            vault
         }
         
         // Clock-in location service (real GPS implementation - overrides mock)
@@ -34,5 +38,10 @@ actual val platformModule: Module
         // Platform-specific actions for side menu
         single<PlatformActions> {
             AndroidPlatformActions(androidContext())
+        }
+        
+        // Android-specific data cleaner
+        single<PlatformDataCleaner> {
+            AndroidPlatformDataCleaner(androidContext())
         }
     }

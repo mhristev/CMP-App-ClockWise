@@ -4,34 +4,88 @@ import com.clockwise.features.auth.UserService
 import com.clockwise.core.di.ApiConfig
 import com.clockwise.features.profile.data.repository.ProfileRepository
 import com.clockwise.features.profile.domain.model.UserProfile
+import com.clockwise.features.profile.data.network.RemoteUserProfileDataSource
 import io.ktor.client.*
 import io.ktor.client.request.*
 import io.ktor.http.*
 
 /**
- * Implementation of the ProfileRepository that uses UserService for data operations
+ * Implementation of the ProfileRepository that fetches fresh user profile data
  */
 class ProfileRepositoryImpl(
     private val userService: UserService,
     private val httpClient: HttpClient,
-    private val apiConfig: ApiConfig
+    private val apiConfig: ApiConfig,
+    private val remoteUserProfileDataSource: RemoteUserProfileDataSource
 ) : ProfileRepository {
     
     override suspend fun getUserProfile(): UserProfile? {
-        val currentUser = userService.currentUser.value
+        println("🔍 ProfileRepositoryImpl: Fetching fresh user profile from server...")
         
-        if (currentUser == null) {
-            return null
+        // Debug the current UserService state before making the request
+        userService.debugCurrentState()
+        
+        // Fetch fresh user data from server instead of using cached data
+        return try {
+            val result = remoteUserProfileDataSource.getUserProfile()
+            when (result) {
+                is com.plcoding.bookpedia.core.domain.Result.Success -> {
+                    val user = result.data
+                    println("✅ ProfileRepositoryImpl: Successfully fetched user profile: ${user.email}")
+                    
+                    // Update UserService with fresh user data to keep it in sync
+                    userService.saveUser(user)
+                    
+                    // Convert to UserProfile for UI
+                    UserProfile(
+                        firstName = user.firstName,
+                        lastName = user.lastName,
+                        email = user.email,
+                        role = user.role.name,
+                        company = user.businessUnitName ?: "Not assigned",
+                        phoneNumber = user.phoneNumber
+                    )
+                }
+                is com.plcoding.bookpedia.core.domain.Result.Error -> {
+                    println("❌ ProfileRepositoryImpl: Failed to fetch user profile: ${result.error}")
+                    
+                    // Fallback to cached data if server request fails
+                    val currentUser = userService.currentUser.value
+                    if (currentUser != null) {
+                        println("⚠️ ProfileRepositoryImpl: Using cached user data as fallback")
+                        UserProfile(
+                            firstName = currentUser.firstName,
+                            lastName = currentUser.lastName,
+                            email = currentUser.email,
+                            role = currentUser.role.name,
+                            company = currentUser.businessUnitName ?: "Not assigned",
+                            phoneNumber = currentUser.phoneNumber
+                        )
+                    } else {
+                        println("❌ ProfileRepositoryImpl: No cached user data available")
+                        null
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            println("❌ ProfileRepositoryImpl: Exception while fetching profile: ${e.message}")
+            
+            // Fallback to cached data if exception occurs
+            val currentUser = userService.currentUser.value
+            if (currentUser != null) {
+                println("⚠️ ProfileRepositoryImpl: Using cached user data due to exception")
+                UserProfile(
+                    firstName = currentUser.firstName,
+                    lastName = currentUser.lastName,
+                    email = currentUser.email,
+                    role = currentUser.role.name,
+                    company = currentUser.businessUnitName ?: "Not assigned",
+                    phoneNumber = currentUser.phoneNumber
+                )
+            } else {
+                null
+            }
         }
-        
-        return UserProfile(
-            firstName = currentUser.firstName,
-            lastName = currentUser.lastName,
-            email = currentUser.email,
-            role = currentUser.role.name,
-            company = currentUser.businessUnitName ?: "Not assigned",
-            phoneNumber = currentUser.phoneNumber
-        )
     }
     
     override suspend fun updateUserProfile(profile: UserProfile): Result<UserProfile> {
@@ -57,7 +111,7 @@ class ProfileRepositoryImpl(
                 header(HttpHeaders.Authorization, "Bearer $token")
             }
             
-            // After successful anonymization, log the user out with comprehensive cleanup
+            // After successful anonymization, use comprehensive data clearing
             userService.clearAllUserData()
             
             Result.success(Unit)

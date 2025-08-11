@@ -30,6 +30,10 @@ class KVaultSecureStorage(
     private val json: Json
 ) : SecureStorage {
     
+    init {
+        println("🔐 KVaultSecureStorage initialized with vault instance: ${vault.hashCode()}")
+    }
+    
     companion object {
         private const val KEY_AUTH_TOKEN = "auth_token"
         private const val KEY_REFRESH_TOKEN = "refresh_token"
@@ -39,6 +43,7 @@ class KVaultSecureStorage(
     }
     
     override fun saveAuthData(authResponse: AuthResponse) {
+        println("🔐 SecureStorage: Saving auth data to vault instance: ${vault.hashCode()}")
         vault.set(KEY_AUTH_TOKEN, authResponse.accessToken)
         vault.set(KEY_REFRESH_TOKEN, authResponse.refreshToken)
         vault.set(KEY_USER_ROLE, authResponse.role)
@@ -47,10 +52,13 @@ class KVaultSecureStorage(
         val currentTimeMillis = Clock.System.now().toEpochMilliseconds()
         val expiryTimeMillis = currentTimeMillis + (authResponse.expiresIn * 1000)
         vault.set(KEY_TOKEN_EXPIRY, expiryTimeMillis.toString())
+        println("✅ SecureStorage: Auth data saved")
     }
     
     override fun getAuthToken(): String? {
-        return if (isTokenExpired()) null else vault.string(KEY_AUTH_TOKEN)
+        val token = if (isTokenExpired()) null else vault.string(KEY_AUTH_TOKEN)
+        println("🔍 SecureStorage: Getting auth token from vault instance: ${vault.hashCode()}, exists: ${token != null}")
+        return token
     }
     
     override fun getRefreshToken(): String? {
@@ -67,11 +75,17 @@ class KVaultSecureStorage(
     }
     
     override fun getUser(): User? {
-        val userJson = vault.string(KEY_USER) ?: return null
-        return try {
-            json.decodeFromString<User>(userJson)
-        } catch (e: Exception) {
+        val userJson = vault.string(KEY_USER)
+        println("🔍 SecureStorage: Getting user from vault instance: ${vault.hashCode()}, exists: ${userJson != null}")
+        return if (userJson == null) {
             null
+        } else {
+            try {
+                json.decodeFromString<User>(userJson)
+            } catch (e: Exception) {
+                println("❌ SecureStorage: Error decoding user: ${e.message}")
+                null
+            }
         }
     }
     
@@ -89,14 +103,73 @@ class KVaultSecureStorage(
     }
     
     override fun clearAuthData() {
-        vault.deleteObject(KEY_AUTH_TOKEN)
-        vault.deleteObject(KEY_REFRESH_TOKEN)
-        vault.deleteObject(KEY_USER_ROLE)
-        vault.deleteObject(KEY_USER)
-        vault.deleteObject(KEY_TOKEN_EXPIRY)
+        println("🧹 SecureStorage: Starting clearAuthData()")
+        try {
+            println("🔍 SecureStorage: Before clearing - checking if data exists:")
+            println("   - Auth token exists: ${vault.string(KEY_AUTH_TOKEN) != null}")
+            println("   - Refresh token exists: ${vault.string(KEY_REFRESH_TOKEN) != null}")
+            println("   - User role exists: ${vault.string(KEY_USER_ROLE) != null}")
+            println("   - User data exists: ${vault.string(KEY_USER) != null}")
+            println("   - Token expiry exists: ${vault.string(KEY_TOKEN_EXPIRY) != null}")
+            
+            vault.deleteObject(KEY_AUTH_TOKEN)
+            vault.deleteObject(KEY_REFRESH_TOKEN)
+            vault.deleteObject(KEY_USER_ROLE)
+            vault.deleteObject(KEY_USER)
+            vault.deleteObject(KEY_TOKEN_EXPIRY)
+            
+            println("🔍 SecureStorage: After clearing - verifying data is gone:")
+            println("   - Auth token exists: ${vault.string(KEY_AUTH_TOKEN) != null}")
+            println("   - Refresh token exists: ${vault.string(KEY_REFRESH_TOKEN) != null}")
+            println("   - User role exists: ${vault.string(KEY_USER_ROLE) != null}")
+            println("   - User data exists: ${vault.string(KEY_USER) != null}")
+            println("   - Token expiry exists: ${vault.string(KEY_TOKEN_EXPIRY) != null}")
+            
+            println("✅ SecureStorage: clearAuthData() completed")
+        } catch (e: Exception) {
+            println("❌ SecureStorage: Error during clearAuthData(): ${e.message}")
+            e.printStackTrace()
+        }
     }
     
     override fun clearAllData() {
-        vault.clear()
+        println("🧹 SecureStorage: Starting clearAllData()")
+        try {
+            println("🔍 SecureStorage: Before clearing - KVault instance: ${vault.hashCode()}")
+            
+            // First try individual deletion
+            clearAuthData()
+            
+            // Then try vault.clear() as a nuclear option
+            println("🔥 SecureStorage: Calling vault.clear() as nuclear option")
+            vault.clear()
+            
+            println("🔍 SecureStorage: After vault.clear() - verifying everything is gone:")
+            println("   - Auth token exists: ${vault.string(KEY_AUTH_TOKEN) != null}")
+            println("   - Refresh token exists: ${vault.string(KEY_REFRESH_TOKEN) != null}")
+            println("   - User role exists: ${vault.string(KEY_USER_ROLE) != null}")
+            println("   - User data exists: ${vault.string(KEY_USER) != null}")
+            println("   - Token expiry exists: ${vault.string(KEY_TOKEN_EXPIRY) != null}")
+            
+            // Try to check if KVault has any keys at all
+            try {
+                val authToken = vault.string(KEY_AUTH_TOKEN)
+                val refreshToken = vault.string(KEY_REFRESH_TOKEN)
+                if (authToken != null || refreshToken != null) {
+                    println("❌ CRITICAL: Data still exists after clearing! This is the bug!")
+                    println("   - Auth token: ${authToken?.take(20)}...")
+                    println("   - Refresh token: ${refreshToken?.take(20)}...")
+                } else {
+                    println("✅ SecureStorage: All data successfully cleared")
+                }
+            } catch (e: Exception) {
+                println("❌ SecureStorage: Error verifying clear: ${e.message}")
+            }
+            
+            println("✅ SecureStorage: clearAllData() completed")
+        } catch (e: Exception) {
+            println("❌ SecureStorage: Error during clearAllData(): ${e.message}")
+            e.printStackTrace()
+        }
     }
 }

@@ -15,7 +15,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 class KtorRemoteUserDataSource(
-    private val httpClient: HttpClient,
+    private val publicHttpClient: HttpClient, // Use public client for auth endpoints
     private val apiConfig: ApiConfig
 ) : RemoteUserDataSource {
     override suspend fun register(
@@ -27,7 +27,7 @@ class KtorRemoteUserDataSource(
         privacyConsent: PrivacyConsent
     ): Result<AuthResponse, DataError.Remote> {
         return safeCall {
-            httpClient.post("${apiConfig.baseAuthUrl}/register") {
+            publicHttpClient.post("${apiConfig.baseAuthUrl}/register") {
                 contentType(ContentType.Application.Json)
                 setBody(
                     RegisterRequestDto(
@@ -48,7 +48,7 @@ class KtorRemoteUserDataSource(
         password: String
     ): Result<AuthResponse, DataError.Remote> {
         return safeCall {
-            httpClient.post("${apiConfig.baseAuthUrl}/login") {
+            publicHttpClient.post("${apiConfig.baseAuthUrl}/login") {
                 contentType(ContentType.Application.Json)
                 setBody(LoginRequestDto(email, password))
             }
@@ -59,7 +59,7 @@ class KtorRemoteUserDataSource(
         refreshToken: String
     ): Result<AuthResponse, DataError.Remote> {
         return safeCall {
-            httpClient.post("${apiConfig.baseAuthUrl}/refresh") {
+            publicHttpClient.post("${apiConfig.baseAuthUrl}/refresh") {
                 contentType(ContentType.Application.Json)
                 setBody(RefreshTokenRequestDto(refreshToken))
             }

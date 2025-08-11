@@ -88,7 +88,8 @@ class ProfileViewModel(
     private fun logout() {
         viewModelScope.launch {
             repository.logout()
-            // Navigation is handled by the UI
+            // Clear the ViewModel state to prevent showing old data after re-login
+            _state.update { ProfileState() }
         }
     }
     

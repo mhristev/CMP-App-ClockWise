@@ -63,6 +63,7 @@ class AuthRepositoryImpl(
     }
 
     override suspend fun logout(): Result<Unit, DataError.Remote> {
+        // Use the comprehensive data clearing service through UserService
         userService.clearAllUserData()
         return Result.Success(Unit)
     }

@@ -9,4 +9,5 @@ interface ApiConfig {
     val gdprUrl: String
     val baseWorkSessionUrl: String
     val baseOrganizationUrl: String
+    val baseCollaborationUrl: String
 } 

@@ -69,7 +69,7 @@ class AuthViewModel(
 
             authRepository.login(email, password)
                 .onSuccess { authResponse ->
-                    userService.saveAuthResponse(authResponse)
+                    // AuthRepository already saves the auth response to UserService
                     
                     // Fetch full user profile after successful authentication
                     userProfileRepository.getUserProfile()
@@ -149,7 +149,7 @@ class AuthViewModel(
                 privacyConsent = privacyConsent
             )
                 .onSuccess { authResponse ->
-                    userService.saveAuthResponse(authResponse)
+                    // AuthRepository already saves the auth response to UserService
                     
                     // Fetch full user profile after successful registration
                     userProfileRepository.getUserProfile()

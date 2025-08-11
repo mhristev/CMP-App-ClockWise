@@ -29,6 +29,8 @@ import com.clockwise.features.business.presentation.BusinessViewModel
 import com.clockwise.features.business.presentation.BusinessScreenRoot
 import com.clockwise.features.business.presentation.add_employee.SearchViewModel
 import com.clockwise.features.business.presentation.add_employee.SearchScreenRoot
+import com.clockwise.features.shiftexchange.presentation.ShiftExchangeViewModel
+import com.clockwise.features.shiftexchange.presentation.ShiftExchangeScreenRoot
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -196,6 +198,18 @@ fun App() {
                     }
                 }
                 
+                composable(NavigationRoutes.ShiftExchange.route) {
+                    val viewModel = koinViewModel<ShiftExchangeViewModel>()
+                    if (shouldShowDrawer) {
+                        ShiftExchangeScreenWithDrawer(
+                            viewModel = viewModel,
+                            onOpenDrawer = openDrawer
+                        )
+                    } else {
+                        ShiftExchangeScreenRoot(viewModel = viewModel)
+                    }
+                }
+                
                 composable(NavigationRoutes.Business.route) {
                     if (AccessControl.hasAccessToScreen("business", currentUserRole)) {
                         val viewModel = koinViewModel<BusinessViewModel>()
@@ -337,6 +351,10 @@ fun App() {
                         onNavigateToBusinessUnit = {
                             closeDrawer()
                             navController.navigate(NavigationRoutes.Business.route)
+                        },
+                        onNavigateToShiftExchange = {
+                            closeDrawer()
+                            navController.navigate(NavigationRoutes.ShiftExchange.route)
                         },
                         onNavigateToSettings = {
                             closeDrawer()
@@ -521,6 +539,22 @@ private fun SearchScreenWithDrawer(
             viewModel = viewModel,
             onNavigateBack = onNavigateBack
         )
+    }
+}
+
+@Composable
+private fun ShiftExchangeScreenWithDrawer(
+    viewModel: ShiftExchangeViewModel,
+    onOpenDrawer: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text("Shift Exchange") },
+            backgroundColor = MaterialTheme.colors.primary,
+            contentColor = MaterialTheme.colors.onPrimary,
+            elevation = 8.dp
+        )
+        ShiftExchangeScreenRoot(viewModel = viewModel)
     }
 }
 
