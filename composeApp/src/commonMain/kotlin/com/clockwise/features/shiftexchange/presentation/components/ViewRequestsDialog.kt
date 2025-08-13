@@ -3,7 +3,9 @@ package com.clockwise.features.shiftexchange.presentation.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
@@ -47,15 +49,15 @@ fun ViewRequestsDialog(
         Card(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(16.dp)
+                .heightIn(max = 600.dp), // Set maximum height to ensure dialog fits on screen
             shape = RoundedCornerShape(16.dp),
             elevation = 8.dp
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.padding(24.dp)
             ) {
-                // Header
+                // Header - Fixed at top
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -79,115 +81,125 @@ fun ViewRequestsDialog(
                 
                 Divider()
                 
-                // Shift info
-                Card(
-                    backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.1f),
-                    elevation = 0.dp
+                // Scrollable content section
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    // Shift info
+                    Card(
+                        backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.1f),
+                        elevation = 0.dp
                     ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Your Posted Shift",
+                                style = MaterialTheme.typography.body1,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colors.onSurface
+                            )
+                            
+                            if (exchangeShift.position != null) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Work,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colors.primary
+                                    )
+                                    Text(
+                                        text = exchangeShift.position,
+                                        style = MaterialTheme.typography.body2,
+                                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+                            
+                            if (exchangeShift.shiftStartTime != null && exchangeShift.shiftEndTime != null) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Schedule,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colors.primary
+                                    )
+                                    Text(
+                                        text = formatShiftTime(exchangeShift.shiftStartTime, exchangeShift.shiftEndTime),
+                                        style = MaterialTheme.typography.body2,
+                                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Requests
+                    if (requests.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(150.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "No requests yet",
+                                    style = MaterialTheme.typography.body1,
+                                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = "Requests will appear here when other employees are interested in your shift",
+                                    style = MaterialTheme.typography.body2,
+                                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.4f),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    } else {
                         Text(
-                            text = "Your Posted Shift",
+                            text = "${requests.size} ${if (requests.size == 1) "Request" else "Requests"}",
                             style = MaterialTheme.typography.body1,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colors.onSurface
                         )
                         
-                        if (exchangeShift.position != null) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Work,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colors.primary
-                                )
-                                Text(
-                                    text = exchangeShift.position,
-                                    style = MaterialTheme.typography.body2,
-                                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
-                                )
-                            }
-                        }
-                        
-                        if (exchangeShift.shiftStartTime != null && exchangeShift.shiftEndTime != null) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Schedule,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colors.primary
-                                )
-                                Text(
-                                    text = formatShiftTime(exchangeShift.shiftStartTime, exchangeShift.shiftEndTime),
-                                    style = MaterialTheme.typography.body2,
-                                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
-                                )
-                            }
-                        }
-                    }
-                }
-                
-                // Requests
-                if (requests.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(150.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
+                        // Replace LazyColumn with regular Column for better scrolling integration
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(
-                                text = "No requests yet",
-                                style = MaterialTheme.typography.body1,
-                                color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = "Requests will appear here when other employees are interested in your shift",
-                                style = MaterialTheme.typography.body2,
-                                color = MaterialTheme.colors.onSurface.copy(alpha = 0.4f),
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                } else {
-                    Text(
-                        text = "${requests.size} ${if (requests.size == 1) "Request" else "Requests"}",
-                        style = MaterialTheme.typography.body1,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colors.onSurface
-                    )
-                    
-                    LazyColumn(
-                        modifier = Modifier.heightIn(max = 300.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(requests) { request ->
-                            ShiftRequestCard(
-                                request = request,
-                                onAccept = { onAcceptRequest(request.id) }
-                            )
+                            requests.forEach { request ->
+                                ShiftRequestCard(
+                                    request = request,
+                                    onAccept = { onAcceptRequest(request.id) }
+                                )
+                            }
                         }
                     }
                 }
                 
-                Divider()
+                // Close button - Fixed at bottom
+                Divider(modifier = Modifier.padding(top = 16.dp))
                 
-                // Close button
                 Button(
                     onClick = onDismiss,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
                 ) {
                     Text("Close")
                 }

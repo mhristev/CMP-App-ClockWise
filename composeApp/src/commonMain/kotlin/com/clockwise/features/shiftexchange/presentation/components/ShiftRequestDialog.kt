@@ -4,7 +4,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -25,6 +27,7 @@ import com.clockwise.features.shiftexchange.domain.model.ExchangeShift
 import com.clockwise.features.shiftexchange.domain.model.RequestType
 import kotlinx.datetime.LocalDateTime
 import com.clockwise.core.util.formatDate
+import com.clockwise.core.TimeProvider
 
 @Composable
 fun ShiftRequestDialog(
@@ -48,15 +51,15 @@ fun ShiftRequestDialog(
         Card(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(16.dp)
+                .heightIn(max = 600.dp), // Set maximum height to ensure dialog fits on screen
             shape = RoundedCornerShape(16.dp),
             elevation = 8.dp
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.padding(24.dp)
             ) {
-                // Header
+                // Header - Fixed at top
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -80,134 +83,142 @@ fun ShiftRequestDialog(
                 
                 Divider()
                 
-                // Shift info
-                Card(
-                    backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.1f),
-                    elevation = 0.dp
+                // Scrollable content section
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    // Shift info
+                    Card(
+                        backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.1f),
+                        elevation = 0.dp
                     ) {
-                        Text(
-                            text = "Requesting shift from ${exchangeShift.posterName}",
-                            style = MaterialTheme.typography.body1,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colors.onSurface
-                        )
-                        
-                        if (exchangeShift.position != null) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Work,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colors.primary
-                                )
-                                Text(
-                                    text = exchangeShift.position,
-                                    style = MaterialTheme.typography.body2,
-                                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
-                                )
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = "Requesting shift from ${exchangeShift.posterName}",
+                                style = MaterialTheme.typography.body1,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colors.onSurface
+                            )
+                            
+                            if (exchangeShift.position != null) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Work,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colors.primary
+                                    )
+                                    Text(
+                                        text = exchangeShift.position,
+                                        style = MaterialTheme.typography.body2,
+                                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
+                            
+                            if (exchangeShift.shiftStartTime != null && exchangeShift.shiftEndTime != null) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Schedule,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = MaterialTheme.colors.primary
+                                    )
+                                    Text(
+                                        text = formatShiftTime(exchangeShift.shiftStartTime, exchangeShift.shiftEndTime),
+                                        style = MaterialTheme.typography.body2,
+                                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+                                    )
+                                }
                             }
                         }
-                        
-                        if (exchangeShift.shiftStartTime != null && exchangeShift.shiftEndTime != null) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Schedule,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp),
-                                    tint = MaterialTheme.colors.primary
-                                )
-                                Text(
-                                    text = formatShiftTime(exchangeShift.shiftStartTime, exchangeShift.shiftEndTime),
-                                    style = MaterialTheme.typography.body2,
-                                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
-                                )
-                            }
-                        }
                     }
-                }
-                
-                // Request type selection
-                Text(
-                    text = "How would you like to request this shift?",
-                    style = MaterialTheme.typography.body1,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colors.onSurface
-                )
-                
-                RequestTypeCard(
-                    type = RequestType.TAKE_SHIFT,
-                    title = "Take Shift",
-                    description = "Take this shift without offering one in return",
-                    isSelected = requestType == RequestType.TAKE_SHIFT,
-                    onSelect = { 
-                        requestType = RequestType.TAKE_SHIFT
-                        selectedSwapShift = null
-                    }
-                )
-                
-                RequestTypeCard(
-                    type = RequestType.SWAP_SHIFT,
-                    title = "Swap Shifts",
-                    description = "Offer one of your shifts in exchange",
-                    isSelected = requestType == RequestType.SWAP_SHIFT,
-                    onSelect = { 
-                        requestType = RequestType.SWAP_SHIFT
-                    }
-                )
-                
-                // Swap shift selection (only show if swap is selected)
-                if (requestType == RequestType.SWAP_SHIFT) {
+                    
+                    // Request type selection
                     Text(
-                        text = "Select your shift to offer in exchange:",
-                        style = MaterialTheme.typography.body2,
+                        text = "How would you like to request this shift?",
+                        style = MaterialTheme.typography.body1,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colors.onSurface
                     )
                     
-                    if (userShifts.isEmpty()) {
-                        Card(
-                            backgroundColor = MaterialTheme.colors.error.copy(alpha = 0.1f),
-                            elevation = 0.dp
-                        ) {
-                            Text(
-                                text = "You don't have any shifts to offer for swap",
-                                modifier = Modifier.padding(12.dp),
-                                style = MaterialTheme.typography.body2,
-                                color = MaterialTheme.colors.error,
-                                textAlign = TextAlign.Center
-                            )
+                    RequestTypeCard(
+                        title = "Take Shift",
+                        description = "Take this shift without offering one in return",
+                        isSelected = requestType == RequestType.TAKE_SHIFT,
+                        onSelect = { 
+                            requestType = RequestType.TAKE_SHIFT
+                            selectedSwapShift = null
                         }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier.heightIn(max = 150.dp),
-                            verticalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            items(userShifts) { shift ->
-                                SwapShiftCard(
-                                    shift = shift,
-                                    isSelected = selectedSwapShift?.id == shift.id,
-                                    onSelect = { selectedSwapShift = shift }
+                    )
+                    
+                    RequestTypeCard(
+                        title = "Swap Shifts",
+                        description = "Offer one of your shifts in exchange",
+                        isSelected = requestType == RequestType.SWAP_SHIFT,
+                        onSelect = { 
+                            requestType = RequestType.SWAP_SHIFT
+                        }
+                    )
+                    
+                    // Swap shift selection (only show if swap is selected)
+                    if (requestType == RequestType.SWAP_SHIFT) {
+                        Text(
+                            text = "Select your shift to offer in exchange:",
+                            style = MaterialTheme.typography.body2,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colors.onSurface
+                        )
+                        
+                        if (userShifts.isEmpty()) {
+                            Card(
+                                backgroundColor = MaterialTheme.colors.error.copy(alpha = 0.1f),
+                                elevation = 0.dp
+                            ) {
+                                Text(
+                                    text = "You don't have any shifts to offer for swap",
+                                    modifier = Modifier.padding(12.dp),
+                                    style = MaterialTheme.typography.body2,
+                                    color = MaterialTheme.colors.error,
+                                    textAlign = TextAlign.Center
                                 )
+                            }
+                        } else {
+                            // Replace LazyColumn with regular Column for better scrolling integration
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                userShifts.forEach { shift ->
+                                    SwapShiftCard(
+                                        shift = shift,
+                                        isSelected = selectedSwapShift?.id == shift.id,
+                                        onSelect = { selectedSwapShift = shift }
+                                    )
+                                }
                             }
                         }
                     }
                 }
                 
-                Divider()
+                // Action buttons - Fixed at bottom
+                Divider(modifier = Modifier.padding(top = 16.dp))
                 
-                // Action buttons
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(
@@ -220,10 +231,15 @@ fun ShiftRequestDialog(
                     Button(
                         onClick = { 
                             requestType?.let { type ->
-                                val swapShiftId = if (type == RequestType.SWAP_SHIFT) selectedSwapShift?.id else null
-                                val swapShiftPosition = if (type == RequestType.SWAP_SHIFT) selectedSwapShift?.position else null
-                                val swapShiftStartTime = if (type == RequestType.SWAP_SHIFT) "${selectedSwapShift?.startTime}:00Z" else null
-                                val swapShiftEndTime = if (type == RequestType.SWAP_SHIFT) "${selectedSwapShift?.endTime}:00Z" else null
+                                val swapShift = selectedSwapShift
+                                val swapShiftId = if (type == RequestType.SWAP_SHIFT) swapShift?.id else null
+                                val swapShiftPosition = if (type == RequestType.SWAP_SHIFT) swapShift?.position else null
+                                val swapShiftStartTime = if (type == RequestType.SWAP_SHIFT && swapShift != null) {
+                                    TimeProvider.formatIsoDateTime(swapShift.startTime)
+                                } else null
+                                val swapShiftEndTime = if (type == RequestType.SWAP_SHIFT && swapShift != null) {
+                                    TimeProvider.formatIsoDateTime(swapShift.endTime)
+                                } else null
                                 onSubmitRequest(type, swapShiftId, swapShiftPosition, swapShiftStartTime, swapShiftEndTime)
                             }
                         },
@@ -241,7 +257,6 @@ fun ShiftRequestDialog(
 
 @Composable
 private fun RequestTypeCard(
-    type: RequestType,
     title: String,
     description: String,
     isSelected: Boolean,

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Work
@@ -21,14 +22,21 @@ import com.clockwise.core.util.formatDate
 @Composable
 fun AvailableShiftCard(
     exchangeShift: ExchangeShift,
+    isOwnShift: Boolean,
+    isLoading: Boolean = false,
     onRequestShift: () -> Unit,
+    onCancelShift: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        elevation = 4.dp,
+        elevation = if (isOwnShift) 2.dp else 4.dp,
         shape = RoundedCornerShape(12.dp),
-        backgroundColor = MaterialTheme.colors.surface
+        backgroundColor = if (isOwnShift) {
+            MaterialTheme.colors.surface.copy(alpha = 0.7f)
+        } else {
+            MaterialTheme.colors.surface
+        }
     ) {
         Column(
             modifier = Modifier.padding(16.dp),
@@ -41,10 +49,14 @@ fun AvailableShiftCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Available Shift",
+                    text = if (isOwnShift) "Your Posted Shift" else "Available Shift",
                     style = MaterialTheme.typography.h6,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colors.onSurface
+                    color = if (isOwnShift) {
+                        MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                    } else {
+                        MaterialTheme.colors.onSurface
+                    }
                 )
                 
                 StatusChip(
@@ -74,14 +86,16 @@ fun AvailableShiftCard(
             ShiftDetailRow(
                 icon = Icons.Default.Person,
                 label = "Posted by",
-                value = exchangeShift.posterName
+                value = exchangeShift.posterName,
+                isOwnShift = isOwnShift
             )
             
             if (exchangeShift.position != null) {
                 ShiftDetailRow(
                     icon = Icons.Default.Work,
                     label = "Position",
-                    value = exchangeShift.position
+                    value = exchangeShift.position,
+                    isOwnShift = isOwnShift
                 )
             }
             
@@ -89,19 +103,67 @@ fun AvailableShiftCard(
                 ShiftDetailRow(
                     icon = Icons.Default.Schedule,
                     label = "Time",
-                    value = formatShiftTime(exchangeShift.shiftStartTime, exchangeShift.shiftEndTime)
+                    value = formatShiftTime(exchangeShift.shiftStartTime, exchangeShift.shiftEndTime),
+                    isOwnShift = isOwnShift
                 )
             }
             
-            // Request button
-            Button(
-                onClick = onRequestShift,
-                modifier = Modifier.fillMaxWidth(),
-                enabled = exchangeShift.canAcceptRequests()
-            ) {
-                Text(
-                    text = if (exchangeShift.canAcceptRequests()) "Request This Shift" else "Unavailable"
-                )
+            // Action button - different for own vs others' shifts
+            if (isOwnShift) {
+                if (onCancelShift != null) {
+                    Button(
+                        onClick = onCancelShift,
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !isLoading,
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = MaterialTheme.colors.error.copy(alpha = 0.1f),
+                            contentColor = MaterialTheme.colors.error
+                        )
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colors.error
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Cancel,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text(
+                            text = if (isLoading) "Cancelling..." else "Cancel from Marketplace"
+                        )
+                    }
+                } else {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        backgroundColor = MaterialTheme.colors.onSurface.copy(alpha = 0.05f),
+                        elevation = 0.dp
+                    ) {
+                        Text(
+                            text = "This is your posted shift",
+                            modifier = Modifier.padding(16.dp),
+                            style = MaterialTheme.typography.body2,
+                            color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+                }
+            } else {
+                Button(
+                    onClick = onRequestShift,
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = exchangeShift.canAcceptRequests()
+                ) {
+                    Text(
+                        text = if (exchangeShift.canAcceptRequests()) "Request This Shift" else "Unavailable"
+                    )
+                }
             }
         }
     }
@@ -112,6 +174,7 @@ private fun ShiftDetailRow(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     label: String,
     value: String,
+    isOwnShift: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -123,7 +186,11 @@ private fun ShiftDetailRow(
             imageVector = icon,
             contentDescription = label,
             modifier = Modifier.size(20.dp),
-            tint = MaterialTheme.colors.primary
+            tint = if (isOwnShift) {
+                MaterialTheme.colors.primary.copy(alpha = 0.6f)
+            } else {
+                MaterialTheme.colors.primary
+            }
         )
         
         Column(
@@ -132,13 +199,17 @@ private fun ShiftDetailRow(
             Text(
                 text = label,
                 style = MaterialTheme.typography.caption,
-                color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                color = MaterialTheme.colors.onSurface.copy(alpha = if (isOwnShift) 0.4f else 0.6f)
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.body2,
-                color = MaterialTheme.colors.onSurface,
-                fontWeight = FontWeight.Medium
+                color = if (isOwnShift) {
+                    MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+                } else {
+                    MaterialTheme.colors.onSurface
+                },
+                fontWeight = if (isOwnShift) FontWeight.Normal else FontWeight.Medium
             )
         }
     }

@@ -6,7 +6,9 @@
       "Bash(rm:*)",
       "Bash(kotlinc:*)",
       "Bash(grep:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(../gradlew:*)"
     ],
     "deny": []
   }

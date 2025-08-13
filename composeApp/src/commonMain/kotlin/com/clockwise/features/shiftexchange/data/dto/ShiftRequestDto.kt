@@ -41,14 +41,16 @@ data class ShiftRequestDto(
 data class CreateShiftRequestRequest(
     @SerialName("requestType")
     val requestType: RequestType,
+    @SerialName("requesterUserId")
+    val requesterUserId: String, // Application user ID (not Keycloak ID)
     @SerialName("swapShiftId")
     val swapShiftId: String? = null,
     @SerialName("swapShiftPosition")
     val swapShiftPosition: String? = null,
     @SerialName("swapShiftStartTime")
-    val swapShiftStartTime: String? = null, // ISO 8601 format
+    val swapShiftStartTime: String? = null, // Must be in ISO 8601 format with UTC timezone (e.g., 2025-08-12T08:00:00Z)
     @SerialName("swapShiftEndTime")
-    val swapShiftEndTime: String? = null, // ISO 8601 format
+    val swapShiftEndTime: String? = null, // Must be in ISO 8601 format with UTC timezone (e.g., 2025-08-12T14:00:00Z)
     @SerialName("requesterUserFirstName")
     val requesterUserFirstName: String? = null,
     @SerialName("requesterUserLastName")

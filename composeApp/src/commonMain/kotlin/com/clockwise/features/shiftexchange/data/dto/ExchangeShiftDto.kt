@@ -49,6 +49,8 @@ data class CreateExchangeShiftRequest(
     val shiftStartTime: String, // ISO 8601 format
     @SerialName("shiftEndTime")
     val shiftEndTime: String, // ISO 8601 format
+    @SerialName("userId")
+    val userId: String, // Application user ID (not Keycloak ID)
     @SerialName("userFirstName")
     val userFirstName: String,
     @SerialName("userLastName")

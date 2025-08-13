@@ -14,7 +14,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 class ShiftExchangeRepositoryImpl(
-    private val remoteDataSource: RemoteShiftExchangeDataSource
+    private val remoteDataSource: RemoteShiftExchangeDataSource,
+    private val userService: com.clockwise.features.auth.UserService
 ) : ShiftExchangeRepository {
     
     override suspend fun postShiftToMarketplace(
@@ -26,12 +27,18 @@ class ShiftExchangeRepositoryImpl(
         userFirstName: String,
         userLastName: String
     ): Flow<Result<ExchangeShift, DataError.Remote>> {
+        val currentUserId = userService.currentUser.value?.id
+        if (currentUserId == null) {
+            return flowOf(Result.Error(DataError.Remote.UNKNOWN))
+        }
+        
         val request = CreateExchangeShiftRequest(
             planningServiceShiftId = planningServiceShiftId,
             businessUnitId = businessUnitId,
             shiftPosition = shiftPosition,
             shiftStartTime = shiftStartTime,
             shiftEndTime = shiftEndTime,
+            userId = currentUserId,
             userFirstName = userFirstName,
             userLastName = userLastName
         )
@@ -76,8 +83,24 @@ class ShiftExchangeRepositoryImpl(
         requesterUserFirstName: String?,
         requesterUserLastName: String?
     ): Flow<Result<ShiftRequest, DataError.Remote>> {
+        val currentUserId = userService.currentUser.value?.id
+        if (currentUserId == null) {
+            return flowOf(Result.Error(DataError.Remote.UNKNOWN))
+        }
+        
+        println("DEBUG REPO: Creating request with:")
+        println("DEBUG REPO: requestType = $requestType")
+        println("DEBUG REPO: requesterUserId = $currentUserId")
+        println("DEBUG REPO: swapShiftId = $swapShiftId")
+        println("DEBUG REPO: swapShiftPosition = $swapShiftPosition")
+        println("DEBUG REPO: swapShiftStartTime = '$swapShiftStartTime'")
+        println("DEBUG REPO: swapShiftEndTime = '$swapShiftEndTime'")
+        println("DEBUG REPO: requesterUserFirstName = $requesterUserFirstName")
+        println("DEBUG REPO: requesterUserLastName = $requesterUserLastName")
+        
         val request = CreateShiftRequestRequest(
             requestType = requestType,
+            requesterUserId = currentUserId,
             swapShiftId = swapShiftId,
             swapShiftPosition = swapShiftPosition,
             swapShiftStartTime = swapShiftStartTime,

@@ -4,7 +4,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -43,15 +45,15 @@ fun PostShiftDialog(
         Card(
             modifier = modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(16.dp)
+                .heightIn(max = 600.dp), // Set maximum height to ensure dialog fits on screen
             shape = RoundedCornerShape(16.dp),
             elevation = 8.dp
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.padding(24.dp)
             ) {
-                // Header
+                // Header - Fixed at top
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -75,61 +77,69 @@ fun PostShiftDialog(
                 
                 Divider()
                 
-                // Instructions
-                Text(
-                    text = "Select a shift from your schedule to post on the marketplace for exchange:",
-                    style = MaterialTheme.typography.body2,
-                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
-                )
-                
-                // Shifts list
-                if (userShifts.isEmpty()) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(200.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
+                // Scrollable content section
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Instructions
+                    Text(
+                        text = "Select a shift from your schedule to post on the marketplace for exchange:",
+                        style = MaterialTheme.typography.body2,
+                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+                    )
+                    
+                    // Shifts list
+                    if (userShifts.isEmpty()) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(
+                                    text = "No shifts found",
+                                    style = MaterialTheme.typography.body1,
+                                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
+                                    textAlign = TextAlign.Center
+                                )
+                                Text(
+                                    text = "You need to have scheduled shifts to post for exchange",
+                                    style = MaterialTheme.typography.body2,
+                                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.4f),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    } else {
+                        // Replace LazyColumn with regular Column for better scrolling integration
                         Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Text(
-                                text = "No shifts found",
-                                style = MaterialTheme.typography.body1,
-                                color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
-                                textAlign = TextAlign.Center
-                            )
-                            Text(
-                                text = "You need to have scheduled shifts to post for exchange",
-                                style = MaterialTheme.typography.body2,
-                                color = MaterialTheme.colors.onSurface.copy(alpha = 0.4f),
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(max = 300.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(userShifts) { shift ->
-                            ShiftSelectionCard(
-                                shift = shift,
-                                isSelected = selectedShift?.id == shift.id,
-                                onSelect = { onShiftSelected(shift) }
-                            )
+                            userShifts.forEach { shift ->
+                                ShiftSelectionCard(
+                                    shift = shift,
+                                    isSelected = selectedShift?.id == shift.id,
+                                    onSelect = { onShiftSelected(shift) }
+                                )
+                            }
                         }
                     }
                 }
                 
-                Divider()
+                // Action buttons - Fixed at bottom
+                Divider(modifier = Modifier.padding(top = 16.dp))
                 
-                // Action buttons
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     OutlinedButton(

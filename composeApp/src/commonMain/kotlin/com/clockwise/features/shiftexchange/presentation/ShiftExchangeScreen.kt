@@ -168,14 +168,39 @@ private fun AvailableShiftsContent(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(state.availableShifts) { exchangeShift ->
+                    val isOwnShift = state.currentUserId != null && 
+                                   exchangeShift.posterUserId == state.currentUserId
+                    val isLoading = state.cancellingExchangeShiftIds.contains(exchangeShift.id)
+                    
                     AvailableShiftCard(
                         exchangeShift = exchangeShift,
+                        isOwnShift = isOwnShift,
+                        isLoading = isLoading,
                         onRequestShift = { 
                             onAction(ShiftExchangeAction.ShowRequestDialog(exchangeShift))
-                        }
+                        },
+                        onCancelShift = if (isOwnShift) {
+                            { onAction(ShiftExchangeAction.CancelExchangeShift(exchangeShift.id)) }
+                        } else null
                     )
                 }
             }
+        }
+        
+        // Floating Action Button for posting shifts
+        FloatingActionButton(
+            onClick = { onAction(ShiftExchangeAction.ShowPostShiftDialog) },
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            backgroundColor = MaterialTheme.colors.primary,
+            contentColor = MaterialTheme.colors.onPrimary
+        ) {
+            Icon(
+                imageVector = Icons.Default.Add,
+                contentDescription = "Post shift for exchange",
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }
@@ -186,83 +211,53 @@ private fun MyPostedExchangesContent(
     onAction: (ShiftExchangeAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Box(modifier = modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier.fillMaxSize()
+    if (state.isLoadingMyPostedShifts) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            // Post new shift button
-            Button(
-                onClick = { onAction(ShiftExchangeAction.ShowPostShiftDialog) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                enabled = !state.isLoading
+            CircularProgressIndicator()
+        }
+    } else if (state.myPostedShifts.isEmpty()) {
+        Box(
+            modifier = modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
+                Text(
+                    text = "You haven't posted any shifts for exchange",
+                    style = MaterialTheme.typography.body1,
+                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
+                    textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Post Shift for Exchange")
+                Text(
+                    text = "Switch to the Available Shifts tab to post your first shift",
+                    style = MaterialTheme.typography.body2,
+                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.4f),
+                    textAlign = TextAlign.Center
+                )
             }
-            
-            // Posted shifts content
-            if (state.isLoadingMyPostedShifts) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
-            } else if (state.myPostedShifts.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Text(
-                            text = "You haven't posted any shifts for exchange",
-                            style = MaterialTheme.typography.body1,
-                            color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "Use the button above to post your first shift",
-                            style = MaterialTheme.typography.body2,
-                            color = MaterialTheme.colors.onSurface.copy(alpha = 0.4f),
-                            textAlign = TextAlign.Center
-                        )
+        }
+    } else {
+        LazyColumn(
+            modifier = modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(state.myPostedShifts) { exchangeShift ->
+                MyPostedShiftCard(
+                    exchangeShift = exchangeShift,
+                    requests = state.myShiftRequests[exchangeShift.id] ?: emptyList(),
+                    onViewRequests = { 
+                        onAction(ShiftExchangeAction.ShowRequestsDialog(exchangeShift))
+                    },
+                    onCancelShift = {
+                        onAction(ShiftExchangeAction.CancelExchangeShift(exchangeShift.id))
                     }
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(state.myPostedShifts) { exchangeShift ->
-                        MyPostedShiftCard(
-                            exchangeShift = exchangeShift,
-                            requests = state.myShiftRequests[exchangeShift.id] ?: emptyList(),
-                            onViewRequests = { 
-                                onAction(ShiftExchangeAction.ShowRequestsDialog(exchangeShift))
-                            },
-                            onCancelShift = {
-                                onAction(ShiftExchangeAction.CancelExchangeShift(exchangeShift.id))
-                            }
-                        )
-                    }
-                }
+                )
             }
         }
     }

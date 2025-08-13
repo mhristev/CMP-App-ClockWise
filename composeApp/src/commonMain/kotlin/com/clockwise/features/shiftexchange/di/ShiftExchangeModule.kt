@@ -5,6 +5,7 @@ import com.clockwise.features.shiftexchange.data.network.RemoteShiftExchangeData
 import com.clockwise.features.shiftexchange.data.repository.ShiftExchangeRepositoryImpl
 import com.clockwise.features.shiftexchange.domain.repository.ShiftExchangeRepository
 import com.clockwise.features.shiftexchange.domain.usecase.AcceptRequestUseCase
+import com.clockwise.features.shiftexchange.domain.usecase.CancelExchangeShiftUseCase
 import com.clockwise.features.shiftexchange.domain.usecase.GetAvailableShiftsUseCase
 import com.clockwise.features.shiftexchange.domain.usecase.GetMyPostedShiftsUseCase
 import com.clockwise.features.shiftexchange.domain.usecase.GetRequestsForMyShiftUseCase
@@ -27,7 +28,8 @@ val shiftExchangeModule = module {
     // Repositories
     single<ShiftExchangeRepository> {
         ShiftExchangeRepositoryImpl(
-            remoteDataSource = get()
+            remoteDataSource = get(),
+            userService = get()
         )
     }
     
@@ -68,6 +70,12 @@ val shiftExchangeModule = module {
         )
     }
     
+    single {
+        CancelExchangeShiftUseCase(
+            repository = get()
+        )
+    }
+    
     // ViewModels
     viewModel {
         ShiftExchangeViewModel(
@@ -77,6 +85,7 @@ val shiftExchangeModule = module {
             submitShiftRequestUseCase = get(),
             getRequestsForMyShiftUseCase = get(),
             acceptRequestUseCase = get(),
+            cancelExchangeShiftUseCase = get(),
             shiftRepository = get(),
             userService = get()
         )

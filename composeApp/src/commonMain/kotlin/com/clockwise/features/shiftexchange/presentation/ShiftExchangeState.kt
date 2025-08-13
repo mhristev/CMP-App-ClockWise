@@ -22,6 +22,9 @@ data class ShiftExchangeState(
     val userShifts: List<Shift> = emptyList(),
     val isLoadingUserShifts: Boolean = false,
     
+    // Cancel operation state
+    val cancellingExchangeShiftIds: Set<String> = emptySet(),
+    
     // UI state
     val showPostShiftDialog: Boolean = false,
     val selectedShiftToPost: Shift? = null,
@@ -31,7 +34,8 @@ data class ShiftExchangeState(
     val selectedExchangeShiftForRequests: ExchangeShift? = null,
     
     // Current user context
-    val currentBusinessUnitId: String? = null
+    val currentBusinessUnitId: String? = null,
+    val currentUserId: String? = null
 )
 
 enum class ShiftExchangeTab {

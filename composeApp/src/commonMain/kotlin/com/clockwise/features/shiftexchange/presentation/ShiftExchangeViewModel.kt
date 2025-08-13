@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.clockwise.features.auth.UserService
 import com.clockwise.features.shift.domain.repositories.ShiftRepository
 import com.clockwise.features.shiftexchange.domain.usecase.AcceptRequestUseCase
+import com.clockwise.features.shiftexchange.domain.usecase.CancelExchangeShiftUseCase
 import com.clockwise.features.shiftexchange.domain.usecase.GetAvailableShiftsUseCase
 import com.clockwise.features.shiftexchange.domain.usecase.GetMyPostedShiftsUseCase
 import com.clockwise.features.shiftexchange.domain.usecase.GetRequestsForMyShiftUseCase
@@ -29,6 +30,7 @@ class ShiftExchangeViewModel(
     private val submitShiftRequestUseCase: SubmitShiftRequestUseCase,
     private val getRequestsForMyShiftUseCase: GetRequestsForMyShiftUseCase,
     private val acceptRequestUseCase: AcceptRequestUseCase,
+    private val cancelExchangeShiftUseCase: CancelExchangeShiftUseCase,
     private val shiftRepository: ShiftRepository,
     private val userService: UserService
 ) : ViewModel() {
@@ -80,9 +82,12 @@ class ShiftExchangeViewModel(
         println("DEBUG: ShiftExchangeViewModel - initializeUserContext called")
         viewModelScope.launch {
             userService.currentUser.collect { user ->
-                println("DEBUG: ShiftExchangeViewModel - User updated: ${user?.email}, BusinessUnitId: ${user?.businessUnitId}")
+                println("DEBUG: ShiftExchangeViewModel - User updated: ${user?.email}, BusinessUnitId: ${user?.businessUnitId}, UserId: ${user?.id}")
                 _state.update { 
-                    it.copy(currentBusinessUnitId = user?.businessUnitId)
+                    it.copy(
+                        currentBusinessUnitId = user?.businessUnitId,
+                        currentUserId = user?.id
+                    )
                 }
             }
         }
@@ -131,8 +136,13 @@ class ShiftExchangeViewModel(
                         is Result.Success -> {
                             println("DEBUG: loadAvailableShifts - Success with ${result.data.size} posted shifts from marketplace")
                             result.data.forEach { exchangeShift ->
-                                println("DEBUG: loadAvailableShifts - ExchangeShift: ${exchangeShift.id}, ${exchangeShift.position}, ${exchangeShift.posterName}")
+                                println("DEBUG: loadAvailableShifts - ExchangeShift: ${exchangeShift.id}, ${exchangeShift.position}, ${exchangeShift.posterName}, posterUserId: ${exchangeShift.posterUserId}")
                             }
+                            
+                            // Show all shifts including user's own shifts
+                            // The UI will differentiate between own shifts and others
+                            println("DEBUG: loadAvailableShifts - Showing all ${result.data.size} shifts including user's own")
+                            
                             it.copy(
                                 availableShifts = result.data,
                                 isLoadingAvailableShifts = false,
@@ -322,9 +332,9 @@ class ShiftExchangeViewModel(
                 return@launch
             }
             
-            // Format times as ISO 8601 strings
-            val shiftStartTime = "${shift.startTime}:00Z"
-            val shiftEndTime = "${shift.endTime}:00Z"
+            // Format times as ISO 8601 strings using TimeProvider
+            val shiftStartTime = TimeProvider.formatIsoDateTime(shift.startTime)
+            val shiftEndTime = TimeProvider.formatIsoDateTime(shift.endTime)
             
             postShiftToMarketplaceUseCase(
                 planningServiceShiftId = shift.id,
@@ -477,9 +487,35 @@ class ShiftExchangeViewModel(
     }
     
     private fun cancelExchangeShift(exchangeShiftId: String) {
-        // This would be implemented similarly to accept request
-        // For now, just refresh the data
-        loadMyPostedShifts()
+        viewModelScope.launch {
+            _state.update { 
+                it.copy(
+                    cancellingExchangeShiftIds = it.cancellingExchangeShiftIds + exchangeShiftId
+                )
+            }
+            
+            cancelExchangeShiftUseCase(exchangeShiftId).collect { result ->
+                _state.update { currentState ->
+                    val updatedCancellingIds = currentState.cancellingExchangeShiftIds - exchangeShiftId
+                    
+                    when (result) {
+                        is Result.Success -> {
+                            // Refresh both tabs since the shift is removed from marketplace
+                            loadAvailableShifts()
+                            loadMyPostedShifts()
+                            currentState.copy(
+                                cancellingExchangeShiftIds = updatedCancellingIds,
+                                errorMessage = null
+                            )
+                        }
+                        is Result.Error -> currentState.copy(
+                            cancellingExchangeShiftIds = updatedCancellingIds,
+                            errorMessage = "Failed to cancel exchange shift"
+                        )
+                    }
+                }
+            }
+        }
     }
     
     private fun clearError() {

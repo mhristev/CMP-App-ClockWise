@@ -124,6 +124,10 @@ class KtorRemoteShiftExchangeDataSource(
             println("DEBUG: submitShiftRequest - Request: $request")
             println("DEBUG: submitShiftRequest - RequestType: ${request.requestType}")
             println("DEBUG: submitShiftRequest - SwapShiftId: ${request.swapShiftId}")
+            println("DEBUG: submitShiftRequest - SwapShiftStartTime: ${request.swapShiftStartTime}")
+            println("DEBUG: submitShiftRequest - SwapShiftEndTime: ${request.swapShiftEndTime}")
+            println("DEBUG: submitShiftRequest - RequesterUserFirstName: ${request.requesterUserFirstName}")
+            println("DEBUG: submitShiftRequest - RequesterUserLastName: ${request.requesterUserLastName}")
             
             val response = httpClient.post(url) {
                 setBody(request)
@@ -141,11 +145,33 @@ class KtorRemoteShiftExchangeDataSource(
                     println("DEBUG: submitShiftRequest - Bad Request (400)")
                     try {
                         val errorBody = response.body<String>()
-                        println("DEBUG: submitShiftRequest - Error body: $errorBody")
+                        println("DEBUG: submitShiftRequest - Error body: '$errorBody'")
+                        println("DEBUG: submitShiftRequest - Error body length: ${errorBody.length}")
                     } catch (e: Exception) {
                         println("DEBUG: submitShiftRequest - Could not read error body: ${e.message}")
+                        println("DEBUG: submitShiftRequest - Exception type: ${e::class.simpleName}")
                     }
                     Result.Error(DataError.Remote.REQUEST_TIMEOUT)
+                }
+                response.status == HttpStatusCode.NotFound -> {
+                    println("DEBUG: submitShiftRequest - Not Found (404) - Server routing issue")
+                    try {
+                        val errorBody = response.body<String>()
+                        println("DEBUG: submitShiftRequest - 404 Error body: '$errorBody'")
+                    } catch (e: Exception) {
+                        println("DEBUG: submitShiftRequest - Could not read 404 error body: ${e.message}")
+                    }
+                    Result.Error(DataError.Remote.UNKNOWN)
+                }
+                response.status.value in 500..599 -> {
+                    println("DEBUG: submitShiftRequest - Server Error (${response.status})")
+                    try {
+                        val errorBody = response.body<String>()
+                        println("DEBUG: submitShiftRequest - Server error body: '$errorBody'")
+                    } catch (e: Exception) {
+                        println("DEBUG: submitShiftRequest - Could not read server error body: ${e.message}")
+                    }
+                    Result.Error(DataError.Remote.SERVER)
                 }
                 else -> {
                     println("DEBUG: submitShiftRequest - Other error: ${response.status}")
