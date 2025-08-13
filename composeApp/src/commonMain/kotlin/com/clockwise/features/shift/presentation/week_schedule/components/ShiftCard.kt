@@ -37,8 +37,17 @@ fun ShiftCard(shift: Shift) {
             Spacer(modifier = Modifier.height(8.dp))
             // Position or role
 
+            // Employee name or fallback to employeeId
+            val displayName = when {
+                shift.userFirstName != null && shift.userLastName != null -> 
+                    "${shift.userFirstName} ${shift.userLastName}"
+                shift.userFirstName != null -> shift.userFirstName
+                shift.userLastName != null -> shift.userLastName
+                else -> shift.employeeId
+            }
+            
             Text(
-                text = shift.employeeId,
+                text = displayName,
                 style = MaterialTheme.typography.subtitle1,
                 color = ShiftColors.TextSecondary
             )

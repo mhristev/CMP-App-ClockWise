@@ -127,7 +127,9 @@ class WeeklyScheduleViewModel(
                     startTime = startTime,
                     endTime = endTime,
                     position = shiftDto.position ?: "General Staff",
-                    employeeId = shiftDto.employeeId
+                    employeeId = shiftDto.employeeId,
+                    userFirstName = shiftDto.userFirstName,
+                    userLastName = shiftDto.userLastName
                 )
                 
                 // Add to the appropriate day

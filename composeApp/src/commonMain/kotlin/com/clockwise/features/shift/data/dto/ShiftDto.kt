@@ -12,5 +12,7 @@ data class ShiftDto(
     val position: String? = null,
     val createdAt: Double,
     val updatedAt: Double,
-    val workSession: WorkSessionDto? = null
+    val workSession: WorkSessionDto? = null,
+    val userFirstName: String? = null,
+    val userLastName: String? = null
 )

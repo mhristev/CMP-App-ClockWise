@@ -139,7 +139,9 @@ class WelcomeViewModel(
                                         }
                                     } ?: ShiftStatus.SCHEDULED,
                                     clockInTime = workSession?.clockInTime,
-                                    clockOutTime = workSession?.clockOutTime
+                                    clockOutTime = workSession?.clockOutTime,
+                                    userFirstName = shiftDto.userFirstName,
+                                    userLastName = shiftDto.userLastName
                                 )
                             }
                             
@@ -239,7 +241,9 @@ class WelcomeViewModel(
                                         }
                                     } ?: ShiftStatus.SCHEDULED,
                                     clockInTime = workSession?.clockInTime,
-                                    clockOutTime = workSession?.clockOutTime
+                                    clockOutTime = workSession?.clockOutTime,
+                                    userFirstName = shiftDto.userFirstName,
+                                    userLastName = shiftDto.userLastName
                                 )
                             }
                             

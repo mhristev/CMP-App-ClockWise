@@ -11,5 +11,7 @@ data class Shift(
     val status: ShiftStatus = ShiftStatus.SCHEDULED,
     val clockInTime: LocalDateTime? = null,
     val clockOutTime: LocalDateTime? = null,
-    val workSession: WorkSession? = null
+    val workSession: WorkSession? = null,
+    val userFirstName: String? = null,
+    val userLastName: String? = null
 ) 
