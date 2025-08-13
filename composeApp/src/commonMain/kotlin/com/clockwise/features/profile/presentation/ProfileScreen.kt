@@ -1,8 +1,13 @@
+@file:OptIn(ExperimentalMaterialApi::class)
+
 package com.clockwise.features.profile.presentation
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -29,44 +34,67 @@ fun ProfileScreen(
         onAction(ProfileAction.LoadUserProfile)
     }
 
-    LazyColumn(
+    // Pull to refresh state
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = state.isLoading,
+        onRefresh = {
+            onAction(ProfileAction.LoadUserProfile)
+        }
+    )
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+            .pullRefresh(pullRefreshState)
     ) {
-        item {
-            // Profile Header
-            ProfileHeader(userProfile = state.userProfile)
-        }
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            item {
+                // Profile Header
+                ProfileHeader(userProfile = state.userProfile)
+            }
 
-        item {
-            // Profile Information Section
-            ProfileInformationSection(state = state)
-        }
+            item {
+                // Profile Information Section
+                ProfileInformationSection(state = state)
+            }
 
-        item {
-            // Settings Section
-            SettingsSection()
-        }
-        
-        item {
-            // GDPR Section
-            GdprSection(onAction = onAction)
-        }
+            item {
+                // Settings Section
+                SettingsSection()
+            }
+            
+            item {
+                // GDPR Section
+                GdprSection(onAction = onAction)
+            }
 
-        item {
-            // Logout Button
-            LogoutButton(
-                onLogout = {
-                    onAction(ProfileAction.Logout)
-                    navController?.navigate(NavigationRoutes.Auth.route) {
-                        popUpTo(navController.graph.startDestinationRoute ?: NavigationRoutes.Auth.route) { inclusive = true }
-                        launchSingleTop = true
+            item {
+                // Logout Button
+                LogoutButton(
+                    onLogout = {
+                        onAction(ProfileAction.Logout)
+                        navController?.navigate(NavigationRoutes.Auth.route) {
+                            popUpTo(navController.graph.startDestinationRoute ?: NavigationRoutes.Auth.route) { inclusive = true }
+                            launchSingleTop = true
+                        }
                     }
-                }
-            )
+                )
+            }
         }
+
+        // Pull to refresh indicator
+        PullRefreshIndicator(
+            refreshing = state.isLoading,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            backgroundColor = Color.White,
+            contentColor = MaterialTheme.colors.primary
+        )
     }
     
     // Confirmation Dialog

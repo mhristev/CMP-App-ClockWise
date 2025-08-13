@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterialApi::class)
+
 package com.clockwise.features.shiftexchange.presentation
 
 import androidx.compose.foundation.layout.*
@@ -6,9 +8,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -148,12 +154,25 @@ private fun AvailableShiftsContent(
             println("DEBUG: AvailableShiftsContent - ExchangeShift: ${exchangeShift.id}, ${exchangeShift.position}, posted by ${exchangeShift.posterName}")
         }
     }
-    Box(modifier = modifier.fillMaxSize()) {
-        if (state.isLoadingAvailableShifts) {
+
+    // Pull to refresh state
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = state.isLoadingAvailableShifts,
+        onRefresh = {
+            onAction(ShiftExchangeAction.LoadAvailableShifts)
+        }
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
+        if (state.isLoadingAvailableShifts && state.availableShifts.isEmpty()) {
             CircularProgressIndicator(
                 modifier = Modifier.align(Alignment.Center)
             )
-        } else if (state.availableShifts.isEmpty()) {
+        } else if (state.availableShifts.isEmpty() && !state.isLoadingAvailableShifts) {
             Text(
                 text = "No shifts available for exchange",
                 modifier = Modifier.align(Alignment.Center),
@@ -186,6 +205,15 @@ private fun AvailableShiftsContent(
                 }
             }
         }
+
+        // Pull to refresh indicator
+        PullRefreshIndicator(
+            refreshing = state.isLoadingAvailableShifts,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            backgroundColor = Color.White,
+            contentColor = MaterialTheme.colors.primary
+        )
         
         // Floating Action Button for posting shifts
         FloatingActionButton(
@@ -211,54 +239,77 @@ private fun MyPostedExchangesContent(
     onAction: (ShiftExchangeAction) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (state.isLoadingMyPostedShifts) {
-        Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator()
+    // Pull to refresh state
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = state.isLoadingMyPostedShifts,
+        onRefresh = {
+            onAction(ShiftExchangeAction.LoadMyPostedShifts)
         }
-    } else if (state.myPostedShifts.isEmpty()) {
-        Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .pullRefresh(pullRefreshState)
+    ) {
+        if (state.isLoadingMyPostedShifts && state.myPostedShifts.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = "You haven't posted any shifts for exchange",
-                    style = MaterialTheme.typography.body1,
-                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
-                    textAlign = TextAlign.Center
-                )
-                Text(
-                    text = "Switch to the Available Shifts tab to post your first shift",
-                    style = MaterialTheme.typography.body2,
-                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.4f),
-                    textAlign = TextAlign.Center
-                )
+                CircularProgressIndicator()
+            }
+        } else if (state.myPostedShifts.isEmpty() && !state.isLoadingMyPostedShifts) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "You haven't posted any shifts for exchange",
+                        style = MaterialTheme.typography.body1,
+                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.6f),
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        text = "Switch to the Available Shifts tab to post your first shift",
+                        style = MaterialTheme.typography.body2,
+                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.4f),
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(state.myPostedShifts) { exchangeShift ->
+                    MyPostedShiftCard(
+                        exchangeShift = exchangeShift,
+                        requests = state.myShiftRequests[exchangeShift.id] ?: emptyList(),
+                        onViewRequests = { 
+                            onAction(ShiftExchangeAction.ShowRequestsDialog(exchangeShift))
+                        },
+                        onCancelShift = {
+                            onAction(ShiftExchangeAction.CancelExchangeShift(exchangeShift.id))
+                        }
+                    )
+                }
             }
         }
-    } else {
-        LazyColumn(
-            modifier = modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(state.myPostedShifts) { exchangeShift ->
-                MyPostedShiftCard(
-                    exchangeShift = exchangeShift,
-                    requests = state.myShiftRequests[exchangeShift.id] ?: emptyList(),
-                    onViewRequests = { 
-                        onAction(ShiftExchangeAction.ShowRequestsDialog(exchangeShift))
-                    },
-                    onCancelShift = {
-                        onAction(ShiftExchangeAction.CancelExchangeShift(exchangeShift.id))
-                    }
-                )
-            }
-        }
+
+        // Pull to refresh indicator
+        PullRefreshIndicator(
+            refreshing = state.isLoadingMyPostedShifts,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            backgroundColor = Color.White,
+            contentColor = MaterialTheme.colors.primary
+        )
     }
 }

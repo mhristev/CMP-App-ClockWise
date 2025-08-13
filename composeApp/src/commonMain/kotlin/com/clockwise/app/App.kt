@@ -58,7 +58,6 @@ import com.clockwise.features.sidemenu.presentation.SideMenuViewModel
 import com.clockwise.features.sidemenu.presentation.SideMenuAction
 import com.clockwise.features.sidemenu.presentation.BusinessUnitLandingScreen
 import com.clockwise.features.sidemenu.presentation.components.DrawerContent
-import com.clockwise.app.navigation.BottomNavigationBar
 
 @Composable
 @Preview
@@ -92,14 +91,11 @@ fun App() {
         
         // Single NavHost for all screens
         Box(modifier = Modifier.fillMaxSize()) {
-            // Main content with bottom padding when showing bottom navigation
+            // Main content
             NavHost(
                 navController = navController, 
                 startDestination = NavigationRoutes.Splash.route,
-                modifier = if (shouldShowDrawer) 
-                    Modifier.fillMaxSize().padding(bottom = 88.dp) 
-                else 
-                    Modifier.fillMaxSize()
+                modifier = Modifier.fillMaxSize()
             ) {
                 // Auth and splash screens (no drawer)
                 composable(NavigationRoutes.Auth.route) {
@@ -413,30 +409,6 @@ fun App() {
                         imageVector = Icons.Default.Menu,
                         contentDescription = "Open menu",
                         modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
-            
-            // Bottom navigation (only for authenticated screens)
-            if (shouldShowDrawer) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .fillMaxWidth()
-                ) {
-                    BottomNavigationBar(
-                        currentRoute = currentRoute,
-                        onNavigateToBusinessUnit = {
-                            navController.navigate(NavigationRoutes.BusinessUnitLanding.route) {
-                                popUpTo(NavigationRoutes.BusinessUnitLanding.route) { inclusive = true }
-                            }
-                        },
-                        onNavigateToClockIn = {
-                            navController.navigate(NavigationRoutes.Welcome.route)
-                        },
-                        onNavigateToSchedule = {
-                            navController.navigate(NavigationRoutes.WeeklySchedule.route)
-                        }
                     )
                 }
             }

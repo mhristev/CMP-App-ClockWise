@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterialApi::class)
+
 package com.clockwise.features.availability.presentation.calendar
 
 import androidx.compose.foundation.background
@@ -7,6 +9,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
@@ -14,6 +18,9 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,13 +86,24 @@ fun CalendarScreen(
         onAction(CalendarAction.LoadMonthlySchedule)
     }
 
+    // Pull to refresh state
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = state.isLoading,
+        onRefresh = {
+            onAction(CalendarAction.LoadMonthlySchedule)
+        }
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp)
+            .pullRefresh(pullRefreshState)
     ) {
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp)
         ) {
             Text(
                 text = "Calendar",
@@ -161,7 +179,7 @@ fun CalendarScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (state.isLoading) {
+            if (state.isLoading && state.monthlySchedule.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -277,6 +295,15 @@ fun CalendarScreen(
                 }
             )
         }
+
+        // Pull to refresh indicator
+        PullRefreshIndicator(
+            refreshing = state.isLoading,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            backgroundColor = Color.White,
+            contentColor = Color(0xFF4A2B8C)
+        )
     }
 }
 

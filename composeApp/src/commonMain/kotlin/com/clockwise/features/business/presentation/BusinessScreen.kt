@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterialApi::class)
+
 package com.clockwise.features.business.presentation
 
 import androidx.compose.animation.*
@@ -6,10 +8,15 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,13 +41,27 @@ fun BusinessScreen(
     LaunchedEffect(Unit) {
         onAction(BusinessAction.LoadBusinessData)
     }
+
+    // Pull to refresh state
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = state.isLoading,
+        onRefresh = {
+            onAction(BusinessAction.LoadBusinessData)
+        }
+    )
     
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF8F9FA))
-            .padding(horizontal = 20.dp)
+            .pullRefresh(pullRefreshState)
     ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFF8F9FA))
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+        ) {
         // Header with business name and back button
         Row(
             modifier = Modifier
@@ -213,6 +234,16 @@ fun BusinessScreen(
             // Employees List
             EmployeesList(state.employees)
         }
+        }
+
+        // Pull to refresh indicator
+        PullRefreshIndicator(
+            refreshing = state.isLoading,
+            state = pullRefreshState,
+            modifier = Modifier.align(Alignment.TopCenter),
+            backgroundColor = Color.White,
+            contentColor = Purple
+        )
     }
 }
 

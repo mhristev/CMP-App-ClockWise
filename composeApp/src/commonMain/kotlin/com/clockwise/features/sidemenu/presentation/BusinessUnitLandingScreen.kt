@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalMaterialApi::class)
+
 package com.clockwise.features.sidemenu.presentation
 
 import androidx.compose.foundation.layout.*
@@ -6,10 +8,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.pullrefresh.PullRefreshIndicator
+import androidx.compose.material.pullrefresh.pullRefresh
+import androidx.compose.material.pullrefresh.rememberPullRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -30,6 +35,15 @@ fun BusinessUnitLandingScreen(
             onAction(SideMenuAction.RefreshBusinessUnit)
         }
     }
+
+    // Pull to refresh state
+    val pullRefreshState = rememberPullRefreshState(
+        refreshing = state.isLoading,
+        onRefresh = {
+            onAction(SideMenuAction.RefreshBusinessUnit)
+        }
+    )
+
     Column(
         modifier = modifier.fillMaxSize()
     ) {
@@ -41,48 +55,52 @@ fun BusinessUnitLandingScreen(
                     fontWeight = FontWeight.Bold
                 )
             },
-            actions = {
-                IconButton(
-                    onClick = { onAction(SideMenuAction.RefreshBusinessUnit) },
-                    enabled = !state.isLoading
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Refresh"
-                    )
-                }
-            },
             backgroundColor = MaterialTheme.colors.primary,
             contentColor = MaterialTheme.colors.onPrimary,
             elevation = 8.dp
         )
         
-        // Content
-        when {
-            state.isLoading -> {
-                LoadingContent(modifier = Modifier.weight(1f))
+        // Content with pull-to-refresh
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .pullRefresh(pullRefreshState)
+        ) {
+            when {
+                state.isLoading -> {
+                    LoadingContent(modifier = Modifier.fillMaxSize())
+                }
+                state.error != null -> {
+                    ErrorContent(
+                        error = state.error,
+                        onRetryClick = { onAction(SideMenuAction.RefreshBusinessUnit) },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                state.businessUnit != null -> {
+                    BusinessUnitContent(
+                        state = state,
+                        onAction = onAction,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                else -> {
+                    ErrorContent(
+                        error = "No business unit information available",
+                        onRetryClick = { onAction(SideMenuAction.RefreshBusinessUnit) },
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
-            state.error != null -> {
-                ErrorContent(
-                    error = state.error,
-                    onRetryClick = { onAction(SideMenuAction.RefreshBusinessUnit) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            state.businessUnit != null -> {
-                BusinessUnitContent(
-                    state = state,
-                    onAction = onAction,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-            else -> {
-                ErrorContent(
-                    error = "No business unit information available",
-                    onRetryClick = { onAction(SideMenuAction.RefreshBusinessUnit) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
+
+            // Pull to refresh indicator
+            PullRefreshIndicator(
+                refreshing = state.isLoading,
+                state = pullRefreshState,
+                modifier = Modifier.align(Alignment.TopCenter),
+                backgroundColor = Color.White,
+                contentColor = MaterialTheme.colors.primary
+            )
         }
     }
 }
