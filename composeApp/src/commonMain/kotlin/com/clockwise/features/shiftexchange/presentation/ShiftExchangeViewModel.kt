@@ -348,11 +348,35 @@ class ShiftExchangeViewModel(
                 _state.update { currentState ->
                     when (result) {
                         is Result.Success -> {
+                            println("DEBUG: postShiftToMarketplace - SUCCESS! 201 Created response received")
+                            println("DEBUG: postShiftToMarketplace - Returned ExchangeShift:")
+                            println("DEBUG: postShiftToMarketplace - ID: ${result.data.id}")
+                            println("DEBUG: postShiftToMarketplace - Status: ${result.data.status}")
+                            println("DEBUG: postShiftToMarketplace - Position: ${result.data.position}")
+                            println("DEBUG: postShiftToMarketplace - BusinessUnitId: ${result.data.businessUnitId}")
+                            println("DEBUG: postShiftToMarketplace - PosterUserId: ${result.data.posterUserId}")
+                            println("DEBUG: postShiftToMarketplace - PosterName: ${result.data.posterName}")
+                            
                             hidePostShiftDialog()
-                            loadMyPostedShifts() // Refresh the posted shifts
+                            // Add the newly created exchange shift directly to the UI instead of refreshing
+                            val updatedPostedShifts = listOf(result.data) + currentState.myPostedShifts
+                            // Also add to available shifts at the beginning - this should make it appear immediately at the top
+                            val updatedAvailableShifts = listOf(result.data) + currentState.availableShifts
+                            
+                            println("DEBUG: postShiftToMarketplace - Before update:")
+                            println("DEBUG: postShiftToMarketplace - myPostedShifts count: ${currentState.myPostedShifts.size}")
+                            println("DEBUG: postShiftToMarketplace - availableShifts count: ${currentState.availableShifts.size}")
+                            println("DEBUG: postShiftToMarketplace - After update:")
+                            println("DEBUG: postShiftToMarketplace - myPostedShifts count: ${updatedPostedShifts.size}")
+                            println("DEBUG: postShiftToMarketplace - availableShifts count: ${updatedAvailableShifts.size}")
+                            println("DEBUG: postShiftToMarketplace - Redirecting to MY_POSTED_EXCHANGES tab")
+                            
                             currentState.copy(
                                 isLoading = false,
-                                errorMessage = null
+                                errorMessage = null,
+                                myPostedShifts = updatedPostedShifts,
+                                availableShifts = updatedAvailableShifts,
+                                selectedTab = ShiftExchangeTab.MY_POSTED_EXCHANGES // Redirect to My Posted Exchanges tab to show the newly posted shift
                             )
                         }
                         is Result.Error -> currentState.copy(
@@ -470,10 +494,25 @@ class ShiftExchangeViewModel(
                     when (result) {
                         is Result.Success -> {
                             hideRequestsDialog()
-                            loadMyPostedShifts() // Refresh posted shifts
+                            // Update the exchange shift status to reflect it's been accepted
+                            val updatedPostedShifts = currentState.myPostedShifts.map { exchangeShift ->
+                                if (exchangeShift.id == exchangeShiftId) {
+                                    exchangeShift.copy(
+                                        status = com.clockwise.features.shiftexchange.domain.model.ExchangeShiftStatus.AWAITING_MANAGER_APPROVAL,
+                                        acceptedRequestId = requestId
+                                    )
+                                } else {
+                                    exchangeShift
+                                }
+                            }
+                            // Remove from available shifts since it's no longer available
+                            val updatedAvailableShifts = currentState.availableShifts.filterNot { it.id == exchangeShiftId }
+                            
                             currentState.copy(
                                 isLoading = false,
-                                errorMessage = null
+                                errorMessage = null,
+                                myPostedShifts = updatedPostedShifts,
+                                availableShifts = updatedAvailableShifts
                             )
                         }
                         is Result.Error -> currentState.copy(
@@ -500,12 +539,15 @@ class ShiftExchangeViewModel(
                     
                     when (result) {
                         is Result.Success -> {
-                            // Refresh both tabs since the shift is removed from marketplace
-                            loadAvailableShifts()
-                            loadMyPostedShifts()
+                            // Remove the cancelled shift from both lists immediately
+                            val updatedPostedShifts = currentState.myPostedShifts.filterNot { it.id == exchangeShiftId }
+                            val updatedAvailableShifts = currentState.availableShifts.filterNot { it.id == exchangeShiftId }
+                            
                             currentState.copy(
                                 cancellingExchangeShiftIds = updatedCancellingIds,
-                                errorMessage = null
+                                errorMessage = null,
+                                myPostedShifts = updatedPostedShifts,
+                                availableShifts = updatedAvailableShifts
                             )
                         }
                         is Result.Error -> currentState.copy(

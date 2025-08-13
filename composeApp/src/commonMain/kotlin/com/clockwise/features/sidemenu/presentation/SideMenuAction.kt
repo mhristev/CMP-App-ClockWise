@@ -17,6 +17,5 @@ sealed interface SideMenuAction {
     data object NavigateToCalendar : SideMenuAction
     data object NavigateToClockIn : SideMenuAction
     data object NavigateToBusinessUnit : SideMenuAction
-    data object NavigateToNotifications : SideMenuAction
     data object Logout : SideMenuAction
 }

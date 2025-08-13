@@ -26,7 +26,7 @@ class KtorRemoteShiftExchangeDataSource(
         request: CreateExchangeShiftRequest
     ): Result<ExchangeShiftDto, DataError.Remote> {
         return try {
-            val response = httpClient.post("${apiConfig.baseCollaborationUrl}/shifts/$planningServiceShiftId") {
+            val response = httpClient.post("${apiConfig.baseShiftExchangeUrl}/shifts/$planningServiceShiftId") {
                 setBody(request)
             }
             
@@ -57,7 +57,7 @@ class KtorRemoteShiftExchangeDataSource(
         size: Int
     ): Result<ExchangeShiftListResponse, DataError.Remote> {
         return try {
-            val url = "${apiConfig.baseCollaborationUrl}/shifts"
+            val url = "${apiConfig.baseShiftExchangeUrl}/shifts"
             println("DEBUG: getAvailableShifts - URL: $url")
             println("DEBUG: getAvailableShifts - BusinessUnitId: $businessUnitId")
             println("DEBUG: getAvailableShifts - Page: $page, Size: $size")
@@ -95,7 +95,7 @@ class KtorRemoteShiftExchangeDataSource(
     
     override suspend fun getMyPostedShifts(): Result<List<ExchangeShiftDto>, DataError.Remote> {
         return try {
-            val response = httpClient.get("${apiConfig.baseCollaborationUrl}/my-shifts")
+            val response = httpClient.get("${apiConfig.baseShiftExchangeUrl}/my-shifts")
             
             when {
                 response.status.isSuccess() -> {
@@ -118,7 +118,7 @@ class KtorRemoteShiftExchangeDataSource(
         request: CreateShiftRequestRequest
     ): Result<ShiftRequestDto, DataError.Remote> {
         return try {
-            val url = "${apiConfig.baseCollaborationUrl}/shifts/$exchangeShiftId/requests"
+            val url = "${apiConfig.baseShiftExchangeUrl}/shifts/$exchangeShiftId/requests"
             println("DEBUG: submitShiftRequest - URL: $url")
             println("DEBUG: submitShiftRequest - ExchangeShiftId: $exchangeShiftId")
             println("DEBUG: submitShiftRequest - Request: $request")
@@ -192,7 +192,7 @@ class KtorRemoteShiftExchangeDataSource(
     
     override suspend fun getMyRequests(): Result<List<ShiftRequestDto>, DataError.Remote> {
         return try {
-            val response = httpClient.get("${apiConfig.baseCollaborationUrl}/my-requests")
+            val response = httpClient.get("${apiConfig.baseShiftExchangeUrl}/my-requests")
             
             when {
                 response.status.isSuccess() -> {
@@ -214,7 +214,7 @@ class KtorRemoteShiftExchangeDataSource(
         exchangeShiftId: String
     ): Result<List<ShiftRequestDto>, DataError.Remote> {
         return try {
-            val response = httpClient.get("${apiConfig.baseCollaborationUrl}/my-shifts/$exchangeShiftId/requests")
+            val response = httpClient.get("${apiConfig.baseShiftExchangeUrl}/my-shifts/$exchangeShiftId/requests")
             
             when {
                 response.status.isSuccess() -> {
@@ -237,7 +237,7 @@ class KtorRemoteShiftExchangeDataSource(
         requestId: String
     ): Result<ShiftRequestDto, DataError.Remote> {
         return try {
-            val response = httpClient.put("${apiConfig.baseCollaborationUrl}/my-shifts/$exchangeShiftId/requests/$requestId/accept")
+            val response = httpClient.put("${apiConfig.baseShiftExchangeUrl}/my-shifts/$exchangeShiftId/requests/$requestId/accept")
             
             when {
                 response.status.isSuccess() -> {
@@ -262,7 +262,7 @@ class KtorRemoteShiftExchangeDataSource(
         exchangeShiftId: String
     ): Result<ExchangeShiftDto, DataError.Remote> {
         return try {
-            val response = httpClient.delete("${apiConfig.baseCollaborationUrl}/my-shifts/$exchangeShiftId")
+            val response = httpClient.delete("${apiConfig.baseShiftExchangeUrl}/my-shifts/$exchangeShiftId")
             
             when {
                 response.status.isSuccess() -> {

@@ -74,19 +74,6 @@ fun WelcomeScreen(
         ) {
             item {
                 Text(
-                    text = "Welcome back!",
-                    style = MaterialTheme.typography.h4,
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF4A2B8C)
-                )
-            }
-
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            item {
-                Text(
                     text = "Today's Shift",
                     style = MaterialTheme.typography.h6,
                     color = Color(0xFF333333)

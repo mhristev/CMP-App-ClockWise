@@ -74,9 +74,7 @@ fun BusinessUnitHeader(
                 Text(
                     text = businessUnit.description,
                     style = MaterialTheme.typography.body2,
-                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.8f),
-                    maxLines = 3,
-                    overflow = TextOverflow.Ellipsis
+                    color = MaterialTheme.colors.onSurface.copy(alpha = 0.8f)
                 )
             }
         }

@@ -378,10 +378,6 @@ fun App() {
                             closeDrawer()
                             navController.navigate(NavigationRoutes.Settings.route)
                         },
-                        onNavigateToNotifications = {
-                            closeDrawer()
-                            navController.navigate(NavigationRoutes.Notifications.route)
-                        },
                         onLogout = {
                             closeDrawer()
                             sideMenuViewModel.onAction(SideMenuAction.Logout)

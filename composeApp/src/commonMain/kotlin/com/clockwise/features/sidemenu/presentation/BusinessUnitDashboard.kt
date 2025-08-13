@@ -20,7 +20,6 @@ import androidx.compose.ui.semantics.semantics
 import com.clockwise.core.model.UserRole
 import com.clockwise.features.sidemenu.presentation.components.BusinessUnitHeader
 import com.clockwise.features.sidemenu.presentation.components.QuickActionButtons
-import com.clockwise.features.sidemenu.presentation.components.BusinessUnitDetails
 import com.clockwise.features.sidemenu.presentation.components.NavigationActions
 
 @Composable
@@ -262,9 +261,6 @@ private fun BusinessUnitContent(
             onEmailClick = { onAction(SideMenuAction.EmailBusinessUnit) },
             onDirectionsClick = { onAction(SideMenuAction.GetDirections) }
         )
-        
-        // Business Unit Details
-        BusinessUnitDetails(businessUnit = businessUnit)
         
         // Navigation Actions
         NavigationActions(

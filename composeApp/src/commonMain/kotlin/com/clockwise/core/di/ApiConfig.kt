@@ -10,4 +10,5 @@ interface ApiConfig {
     val baseWorkSessionUrl: String
     val baseOrganizationUrl: String
     val baseCollaborationUrl: String
+    val baseShiftExchangeUrl: String
 } 

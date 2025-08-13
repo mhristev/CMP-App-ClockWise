@@ -36,7 +36,6 @@ fun DrawerContent(
     onNavigateToShiftExchange: () -> Unit,
     onNavigateToPosts: () -> Unit,
     onNavigateToSettings: () -> Unit,
-    onNavigateToNotifications: () -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -121,13 +120,6 @@ fun DrawerContent(
                             onClick = onNavigateToBusinessUnit
                         )
                     }
-                    
-                    DrawerMenuItem(
-                        icon = Icons.Default.Notifications,
-                        title = "Notifications",
-                        isSelected = currentRoute == "notifications",
-                        onClick = onNavigateToNotifications
-                    )
                     
                     DrawerMenuItem(
                         icon = Icons.Default.Settings,

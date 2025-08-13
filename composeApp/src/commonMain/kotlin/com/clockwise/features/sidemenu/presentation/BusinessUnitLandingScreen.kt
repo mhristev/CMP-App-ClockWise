@@ -20,7 +20,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.clockwise.features.sidemenu.presentation.components.BusinessUnitHeader
 import com.clockwise.features.sidemenu.presentation.components.QuickActionButtons
-import com.clockwise.features.sidemenu.presentation.components.BusinessUnitDetails
 
 @Composable
 fun BusinessUnitLandingScreen(
@@ -198,9 +197,6 @@ private fun BusinessUnitContent(
             onEmailClick = { onAction(SideMenuAction.EmailBusinessUnit) },
             onDirectionsClick = { onAction(SideMenuAction.GetDirections) }
         )
-        
-        // Business Unit Details
-        BusinessUnitDetails(businessUnit = businessUnit)
         
         // Bottom spacer
         Spacer(modifier = Modifier.height(16.dp))

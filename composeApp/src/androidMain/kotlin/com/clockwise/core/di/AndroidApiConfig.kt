@@ -9,5 +9,6 @@ class AndroidApiConfig : ApiConfig {
     override val gdprUrl: String = "http://10.0.2.2:8082/v1/gdpr"
     override val baseWorkSessionUrl: String = "http://10.0.2.2:8083/v1/work-sessions"
     override val baseOrganizationUrl: String = "http://10.0.2.2:8084/v1"
-    override val baseCollaborationUrl: String = "http://10.0.2.2:8085/v1/marketplace"
+    override val baseCollaborationUrl: String = "http://10.0.2.2:8085/v1"
+    override val baseShiftExchangeUrl: String = "http://10.0.2.2:8085/v1/marketplace"
 } 
