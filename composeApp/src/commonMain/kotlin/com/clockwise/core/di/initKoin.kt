@@ -5,6 +5,7 @@ import com.clockwise.features.organization.di.organizationModule
 import com.clockwise.features.consumption.di.consumptionModule
 import com.clockwise.features.sidemenu.di.sideMenuModule
 import com.clockwise.features.shiftexchange.di.shiftExchangeModule
+import com.clockwise.features.collaboration.di.collaborationModule
 import org.koin.core.context.startKoin
 import org.koin.dsl.KoinAppDeclaration
 
@@ -21,7 +22,8 @@ fun initKoin(config: KoinAppDeclaration? = null) {
             organizationModule,
             consumptionModule,
             sideMenuModule,
-            shiftExchangeModule
+            shiftExchangeModule,
+            collaborationModule
         )
     }
 }

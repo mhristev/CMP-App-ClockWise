@@ -34,6 +34,7 @@ fun DrawerContent(
     onNavigateToClockIn: () -> Unit,
     onNavigateToBusinessUnit: () -> Unit,
     onNavigateToShiftExchange: () -> Unit,
+    onNavigateToPosts: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onLogout: () -> Unit,
@@ -102,6 +103,13 @@ fun DrawerContent(
                         title = "Shift Exchange",
                         isSelected = currentRoute == "shift_exchange",
                         onClick = onNavigateToShiftExchange
+                    )
+                    
+                    DrawerMenuItem(
+                        icon = Icons.Default.Article,
+                        title = "Posts",
+                        isSelected = currentRoute == "posts",
+                        onClick = onNavigateToPosts
                     )
                     
                     // Show Business Unit for Admin/Manager only

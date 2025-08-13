@@ -18,6 +18,7 @@ sealed class NavigationRoutes(val route: String) {
     object Search : NavigationRoutes("search")
     object Business : NavigationRoutes("business")
     object ShiftExchange : NavigationRoutes("shift_exchange")
+    object Posts : NavigationRoutes("posts")
     object Settings : NavigationRoutes("settings")
     object Notifications : NavigationRoutes("notifications")
     
@@ -36,6 +37,7 @@ sealed class NavigationRoutes(val route: String) {
                 Search.route -> Search
                 Business.route -> Business
                 ShiftExchange.route -> ShiftExchange
+                Posts.route -> Posts
                 Settings.route -> Settings
                 Notifications.route -> Notifications
                 else -> throw IllegalArgumentException("Route $route is not recognized.")

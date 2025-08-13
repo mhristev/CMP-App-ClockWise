@@ -31,6 +31,8 @@ import com.clockwise.features.business.presentation.add_employee.SearchViewModel
 import com.clockwise.features.business.presentation.add_employee.SearchScreenRoot
 import com.clockwise.features.shiftexchange.presentation.ShiftExchangeViewModel
 import com.clockwise.features.shiftexchange.presentation.ShiftExchangeScreenRoot
+import com.clockwise.features.collaboration.presentation.PostsViewModel
+import com.clockwise.features.collaboration.presentation.PostsScreenRoot
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -210,6 +212,22 @@ fun App() {
                     }
                 }
                 
+                composable(NavigationRoutes.Posts.route) {
+                    val viewModel = koinViewModel<PostsViewModel>()
+                    if (shouldShowDrawer) {
+                        PostsScreenWithDrawer(
+                            viewModel = viewModel,
+                            navController = navController,
+                            onOpenDrawer = openDrawer
+                        )
+                    } else {
+                        PostsScreenRoot(
+                            navController = navController,
+                            viewModel = viewModel
+                        )
+                    }
+                }
+                
                 composable(NavigationRoutes.Business.route) {
                     if (AccessControl.hasAccessToScreen("business", currentUserRole)) {
                         val viewModel = koinViewModel<BusinessViewModel>()
@@ -355,6 +373,10 @@ fun App() {
                         onNavigateToShiftExchange = {
                             closeDrawer()
                             navController.navigate(NavigationRoutes.ShiftExchange.route)
+                        },
+                        onNavigateToPosts = {
+                            closeDrawer()
+                            navController.navigate(NavigationRoutes.Posts.route)
                         },
                         onNavigateToSettings = {
                             closeDrawer()
@@ -556,6 +578,18 @@ private fun ShiftExchangeScreenWithDrawer(
         )
         ShiftExchangeScreenRoot(viewModel = viewModel)
     }
+}
+
+@Composable
+private fun PostsScreenWithDrawer(
+    viewModel: PostsViewModel,
+    navController: androidx.navigation.NavController,
+    onOpenDrawer: () -> Unit
+) {
+    PostsScreenRoot(
+        navController = navController,
+        viewModel = viewModel
+    )
 }
 
 @Composable

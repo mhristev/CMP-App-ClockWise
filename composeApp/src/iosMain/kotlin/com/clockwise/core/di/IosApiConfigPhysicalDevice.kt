@@ -17,5 +17,5 @@ class IosApiConfigPhysicalDevice : ApiConfig {
     override val gdprUrl: String = "$baseHost:8082/v1/gdpr"
     override val baseWorkSessionUrl: String = "$baseHost:8083/v1/work-sessions"
     override val baseOrganizationUrl: String = "$baseHost:8084/v1"
-    override val baseCollaborationUrl: String = "$baseHost:8085/v1/marketplace"
+    override val baseCollaborationUrl: String = "$baseHost:8085/v1"
 }
