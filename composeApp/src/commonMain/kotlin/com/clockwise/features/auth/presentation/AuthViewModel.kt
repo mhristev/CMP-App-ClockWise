@@ -6,6 +6,7 @@ import com.clockwise.core.model.PrivacyConsent
 import com.clockwise.features.auth.UserService
 import com.clockwise.features.auth.domain.repository.AuthRepository
 import com.clockwise.features.profile.domain.repository.UserProfileRepository
+import com.clockwise.features.notifications.domain.service.FCMInitializationService
 import com.plcoding.bookpedia.core.domain.onError
 import com.plcoding.bookpedia.core.domain.onSuccess
 import kotlinx.coroutines.launch
@@ -19,7 +20,8 @@ import kotlinx.coroutines.flow.update
 class AuthViewModel(
     private val userService: UserService,
     private val authRepository: AuthRepository,
-    private val userProfileRepository: UserProfileRepository
+    private val userProfileRepository: UserProfileRepository,
+    private val fcmInitializationService: FCMInitializationService
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(AuthState())
@@ -76,6 +78,12 @@ class AuthViewModel(
                         .onSuccess { user ->
                             // Update UserService with the full User object
                             userService.saveUser(user)
+                            
+                            // Initialize FCM token after successful login
+                            launch {
+                                fcmInitializationService.initializeAfterLogin()
+                            }
+                            
                             _state.value = _state.value.copy(
                                 isLoading = false,
                                 isAuthenticated = true,
@@ -156,6 +164,12 @@ class AuthViewModel(
                         .onSuccess { user ->
                             // Update UserService with the full User object
                             userService.saveUser(user)
+                            
+                            // Initialize FCM token after successful registration
+                            launch {
+                                fcmInitializationService.initializeAfterLogin()
+                            }
+                            
                             _state.value = _state.value.copy(
                                 isLoading = false,
                                 isAuthenticated = true,

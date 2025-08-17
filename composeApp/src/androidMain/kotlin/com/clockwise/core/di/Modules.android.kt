@@ -8,6 +8,8 @@ import com.clockwise.features.clockin.domain.service.LocationService
 import com.clockwise.features.clockin.data.service.AndroidLocationServiceImpl
 import com.clockwise.features.sidemenu.platform.PlatformActions
 import com.clockwise.features.sidemenu.platform.AndroidPlatformActions
+import com.clockwise.core.data.AndroidPushNotificationService
+import com.clockwise.core.domain.PushNotificationService
 import com.liftric.kvault.KVault
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
@@ -43,5 +45,10 @@ actual val platformModule: Module
         // Android-specific data cleaner
         single<PlatformDataCleaner> {
             AndroidPlatformDataCleaner(androidContext())
+        }
+        
+        // Android push notification service
+        single<PushNotificationService> {
+            AndroidPushNotificationService(androidContext())
         }
     }

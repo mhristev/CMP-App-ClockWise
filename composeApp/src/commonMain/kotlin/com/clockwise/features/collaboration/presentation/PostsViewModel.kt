@@ -31,6 +31,8 @@ class PostsViewModel(
             is PostsAction.SelectPost -> selectPost(action.postId)
             PostsAction.DismissPostDetail -> dismissPostDetail()
             PostsAction.ClearError -> clearError()
+            is PostsAction.HighlightPost -> highlightPost(action.postId)
+            PostsAction.ClearNotifications -> clearNotifications()
         }
     }
 
@@ -166,5 +168,39 @@ class PostsViewModel(
         _state.update {
             it.copy(error = null)
         }
+    }
+    
+    /**
+     * Highlights a post (typically from a push notification)
+     */
+    private fun highlightPost(postId: String) {
+        _state.update { 
+            it.copy(
+                highlightedPostIds = it.highlightedPostIds + postId,
+                notificationBadgeCount = it.notificationBadgeCount + 1
+            )
+        }
+    }
+    
+    /**
+     * Clears all notification highlights and badge count
+     */
+    private fun clearNotifications() {
+        _state.update { 
+            it.copy(
+                highlightedPostIds = emptySet(),
+                notificationBadgeCount = 0
+            )
+        }
+    }
+    
+    /**
+     * Called by notification handler when a new post notification is received
+     */
+    fun onPostNotificationReceived(postId: String) {
+        onAction(PostsAction.HighlightPost(postId))
+        
+        // Auto-refresh posts to show the new post
+        onAction(PostsAction.RefreshPosts)
     }
 }

@@ -107,6 +107,6 @@ val sharedModule = module {
     includes(viewModelModule)
 
     // Auth view model is still defined here since it's not part of our refactoring
-    viewModel { AuthViewModel(get(), get(), get()) }
+    viewModel { AuthViewModel(get(), get(), get(), get()) }
     viewModel { CompanyViewModel(get()) }
 }

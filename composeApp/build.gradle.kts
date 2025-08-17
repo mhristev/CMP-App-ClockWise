@@ -10,6 +10,7 @@ plugins {
     kotlin("plugin.serialization") version "1.9.0"
 
     id("co.touchlab.skie") version "0.10.1"
+    id("com.google.gms.google-services") version "4.4.2"
 }
 
 repositories {
@@ -68,6 +69,10 @@ kotlin {
             
             // Accompanist Permissions for handling permissions in Compose
             implementation("com.google.accompanist:accompanist-permissions:0.32.0")
+            
+            // Firebase Cloud Messaging for push notifications
+            implementation("com.google.firebase:firebase-messaging-ktx:24.1.0")
+            implementation("com.google.firebase:firebase-analytics-ktx:22.1.0")
         }
         commonMain.dependencies {
             implementation(libs.jetbrains.compose.navigation)
@@ -140,3 +145,4 @@ dependencies {
     //    implementation(libs.androidx.navigation.compose)
     debugImplementation(compose.uiTooling)
 }
+

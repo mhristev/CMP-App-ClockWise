@@ -11,5 +11,7 @@ data class PostsState(
     val error: String? = null,
     val currentPage: Int = 0,
     val hasMorePages: Boolean = true,
-    val showPostDetail: Boolean = false
+    val showPostDetail: Boolean = false,
+    val highlightedPostIds: Set<String> = emptySet(),
+    val notificationBadgeCount: Int = 0
 )

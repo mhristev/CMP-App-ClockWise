@@ -23,7 +23,8 @@ fun initKoin(config: KoinAppDeclaration? = null) {
             consumptionModule,
             sideMenuModule,
             shiftExchangeModule,
-            collaborationModule
+            collaborationModule,
+            notificationModule
         )
     }
 }

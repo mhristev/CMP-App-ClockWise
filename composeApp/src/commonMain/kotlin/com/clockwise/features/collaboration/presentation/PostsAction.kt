@@ -7,4 +7,6 @@ sealed interface PostsAction {
     data class SelectPost(val postId: String) : PostsAction
     data object DismissPostDetail : PostsAction
     data object ClearError : PostsAction
+    data class HighlightPost(val postId: String) : PostsAction
+    data object ClearNotifications : PostsAction
 }

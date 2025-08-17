@@ -6,6 +6,8 @@ import com.clockwise.features.clockin.domain.service.LocationService
 import com.clockwise.features.clockin.data.service.IOSLocationServiceImpl
 import com.clockwise.features.sidemenu.platform.PlatformActions
 import com.clockwise.features.sidemenu.platform.IOSPlatformActions
+import com.clockwise.core.data.IOSPushNotificationService
+import com.clockwise.core.domain.PushNotificationService
 import com.liftric.kvault.KVault
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.darwin.Darwin
@@ -37,5 +39,10 @@ actual val platformModule: Module = module {
     // iOS-specific data cleaner
     single<PlatformDataCleaner> {
         IOSPlatformDataCleaner()
+    }
+    
+    // iOS push notification service
+    single<PushNotificationService> {
+        IOSPushNotificationService()
     }
 } 
