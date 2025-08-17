@@ -16,3 +16,37 @@ captures
 !*.xcodeproj/project.xcworkspace/
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
+
+# Security-sensitive files - DO NOT COMMIT
+# Google Services configuration files
+google-services.json
+GoogleService-Info.plist
+composeApp/google-services.json
+iosApp/GoogleService-Info.plist
+
+# Firebase configuration
+firebase-adminsdk-*.json
+serviceAccountKey.json
+
+# API keys and secrets
+api-keys.properties
+secrets.properties
+keystore.properties
+
+# Signing keys
+*.keystore
+*.jks
+*.p8
+*.p12
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output
