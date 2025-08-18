@@ -35,6 +35,7 @@ fun DrawerContent(
     onNavigateToBusinessUnit: () -> Unit,
     onNavigateToShiftExchange: () -> Unit,
     onNavigateToPosts: () -> Unit,
+    onNavigateToManagerApproval: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onLogout: () -> Unit,
     modifier: Modifier = Modifier
@@ -118,6 +119,13 @@ fun DrawerContent(
                             title = "Business Unit",
                             isSelected = currentRoute == "business",
                             onClick = onNavigateToBusinessUnit
+                        )
+                        
+                        DrawerMenuItem(
+                            icon = Icons.Default.Assignment,
+                            title = "Manager Approval",
+                            isSelected = currentRoute == "manager_approval",
+                            onClick = onNavigateToManagerApproval
                         )
                     }
                     

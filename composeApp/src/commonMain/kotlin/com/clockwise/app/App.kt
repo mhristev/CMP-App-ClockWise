@@ -33,6 +33,8 @@ import com.clockwise.features.shiftexchange.presentation.ShiftExchangeViewModel
 import com.clockwise.features.shiftexchange.presentation.ShiftExchangeScreenRoot
 import com.clockwise.features.collaboration.presentation.PostsViewModel
 import com.clockwise.features.collaboration.presentation.PostsScreenRoot
+import com.clockwise.features.managerapproval.presentation.ManagerApprovalViewModel
+import com.clockwise.features.managerapproval.presentation.ManagerApprovalScreenRoot
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -250,6 +252,24 @@ fun App() {
                     }
                 }
                 
+                composable(NavigationRoutes.ManagerApproval.route) {
+                    if (AccessControl.hasAccessToScreen("manager_approval", currentUserRole)) {
+                        val viewModel = koinViewModel<ManagerApprovalViewModel>()
+                        if (shouldShowDrawer) {
+                            ManagerApprovalScreenWithDrawer(
+                                viewModel = viewModel,
+                                onOpenDrawer = openDrawer
+                            )
+                        } else {
+                            ManagerApprovalScreenRoot(viewModel = viewModel)
+                        }
+                    } else {
+                        LaunchedEffect(Unit) {
+                            navController.navigate(NavigationRoutes.BusinessUnitLanding.route)
+                        }
+                    }
+                }
+                
                 composable(NavigationRoutes.Search.route) {
                     if (AccessControl.hasAccessToScreen("search", currentUserRole)) {
                         val viewModel = koinViewModel<SearchViewModel>()
@@ -373,6 +393,10 @@ fun App() {
                         onNavigateToPosts = {
                             closeDrawer()
                             navController.navigate(NavigationRoutes.Posts.route)
+                        },
+                        onNavigateToManagerApproval = {
+                            closeDrawer()
+                            navController.navigate(NavigationRoutes.ManagerApproval.route)
                         },
                         onNavigateToSettings = {
                             closeDrawer()
@@ -558,6 +582,22 @@ private fun PostsScreenWithDrawer(
         navController = navController,
         viewModel = viewModel
     )
+}
+
+@Composable
+private fun ManagerApprovalScreenWithDrawer(
+    viewModel: ManagerApprovalViewModel,
+    onOpenDrawer: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        TopAppBar(
+            title = { Text("Manager Approval") },
+            backgroundColor = MaterialTheme.colors.primary,
+            contentColor = MaterialTheme.colors.onPrimary,
+            elevation = 8.dp
+        )
+        ManagerApprovalScreenRoot(viewModel = viewModel)
+    }
 }
 
 @Composable

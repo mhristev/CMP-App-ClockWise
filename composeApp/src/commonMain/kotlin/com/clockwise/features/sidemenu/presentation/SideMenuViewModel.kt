@@ -60,6 +60,7 @@ class SideMenuViewModel(
             is SideMenuAction.NavigateToCalendar -> handleNavigateToCalendar()
             is SideMenuAction.NavigateToClockIn -> handleNavigateToClockIn()
             is SideMenuAction.NavigateToBusinessUnit -> handleNavigateToBusinessUnit()
+            is SideMenuAction.NavigateToManagerApproval -> handleNavigateToManagerApproval()
             is SideMenuAction.Logout -> handleLogout()
         }
     }
@@ -175,6 +176,11 @@ class SideMenuViewModel(
     }
 
     private fun handleNavigateToBusinessUnit() {
+        // Navigation will be handled by the calling screen
+        closeMenu()
+    }
+
+    private fun handleNavigateToManagerApproval() {
         // Navigation will be handled by the calling screen
         closeMenu()
     }

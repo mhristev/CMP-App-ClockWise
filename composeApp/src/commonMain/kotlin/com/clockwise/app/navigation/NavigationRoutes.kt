@@ -21,6 +21,7 @@ sealed class NavigationRoutes(val route: String) {
     object Posts : NavigationRoutes("posts")
     object Settings : NavigationRoutes("settings")
     object Notifications : NavigationRoutes("notifications")
+    object ManagerApproval : NavigationRoutes("manager_approval")
     
     companion object {
         // Helper function to get route by name (for backward compatibility)
@@ -40,6 +41,7 @@ sealed class NavigationRoutes(val route: String) {
                 Posts.route -> Posts
                 Settings.route -> Settings
                 Notifications.route -> Notifications
+                ManagerApproval.route -> ManagerApproval
                 else -> throw IllegalArgumentException("Route $route is not recognized.")
             }
         }
