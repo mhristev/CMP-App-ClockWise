@@ -168,6 +168,7 @@ fun ManagerApprovalScreen(
                     ) { exchange ->
                         ExchangeCard(
                             exchange = exchange,
+                            isRecheckingConflicts = state.recheckingRequests.contains(exchange.requestId),
                             onApprove = { 
                                 viewModel.onAction(
                                     ManagerApprovalAction.ShowConfirmationDialog(
@@ -182,6 +183,11 @@ fun ManagerApprovalScreen(
                                         requestId = exchange.requestId,
                                         isApproval = false
                                     )
+                                )
+                            },
+                            onRecheckConflicts = {
+                                viewModel.onAction(
+                                    ManagerApprovalAction.RecheckConflicts(exchange.requestId)
                                 )
                             }
                         )
@@ -249,8 +255,10 @@ fun ManagerApprovalScreen(
 @Composable
 private fun ExchangeCard(
     exchange: PendingExchangeShift,
+    isRecheckingConflicts: Boolean,
     onApprove: () -> Unit,
-    onReject: () -> Unit
+    onReject: () -> Unit,
+    onRecheckConflicts: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -326,6 +334,95 @@ private fun ExchangeCard(
                 }
                 Spacer(modifier = Modifier.height(8.dp))
             }
+            
+            // Conflict indicator with recheck button
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    when {
+                        isRecheckingConflicts -> {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Rechecking conflicts...",
+                                style = MaterialTheme.typography.body2,
+                                color = MaterialTheme.colors.primary
+                            )
+                        }
+                        exchange.isExecutionPossible == null -> {
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = "Checking conflicts",
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colors.onSurface.copy(alpha = 0.6f)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Checking for schedule conflicts...",
+                                style = MaterialTheme.typography.body2,
+                                color = MaterialTheme.colors.onSurface.copy(alpha = 0.8f)
+                            )
+                        }
+                        exchange.isExecutionPossible == true -> {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = "No conflicts",
+                                modifier = Modifier.size(20.dp),
+                                tint = androidx.compose.ui.graphics.Color.Green
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "No schedule conflicts",
+                                style = MaterialTheme.typography.body2,
+                                color = androidx.compose.ui.graphics.Color.Green
+                            )
+                        }
+                        exchange.isExecutionPossible == false -> {
+                            Icon(
+                                imageVector = Icons.Default.Warning,
+                                contentDescription = "Schedule conflict",
+                                modifier = Modifier.size(20.dp),
+                                tint = MaterialTheme.colors.error
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Schedule conflicts detected",
+                                style = MaterialTheme.typography.body2,
+                                color = MaterialTheme.colors.error
+                            )
+                        }
+                    }
+                }
+                
+                // Recheck button
+                TextButton(
+                    onClick = onRecheckConflicts,
+                    enabled = !isRecheckingConflicts,
+                    modifier = Modifier.padding(start = 8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = "Recheck conflicts",
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Recheck",
+                        style = MaterialTheme.typography.caption
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
             
             // Original shift info
             Text(
@@ -439,15 +536,28 @@ private fun ExchangeCard(
                 
                 Button(
                     onClick = onApprove,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    enabled = exchange.isExecutionPossible != false,
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = if (exchange.isExecutionPossible == false) {
+                            MaterialTheme.colors.onSurface.copy(alpha = 0.12f)
+                        } else {
+                            MaterialTheme.colors.primary
+                        },
+                        contentColor = if (exchange.isExecutionPossible == false) {
+                            MaterialTheme.colors.onSurface.copy(alpha = 0.38f)
+                        } else {
+                            MaterialTheme.colors.onPrimary
+                        }
+                    )
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Check,
+                        imageVector = if (exchange.isExecutionPossible == false) Icons.Default.Warning else Icons.Default.Check,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Approve")
+                    Text(if (exchange.isExecutionPossible == false) "Conflicts" else "Approve")
                 }
             }
         }

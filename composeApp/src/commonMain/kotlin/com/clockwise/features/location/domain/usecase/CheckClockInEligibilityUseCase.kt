@@ -52,6 +52,18 @@ class CheckClockInEligibilityUseCase(
             is LocationResult.Success -> {
                 val userLocation = locationResult.location
                 val businessLocation = businessUnitAddress.toLocation()
+                
+                if (businessLocation == null) {
+                    // Business unit doesn't have location coordinates set up
+                    return ClockInEligibility(
+                        isEligible = false,
+                        userLocation = userLocation,
+                        businessLocation = businessUnitAddress,
+                        distance = null,
+                        reason = "Business unit location is not configured. Please contact your manager to set up location coordinates."
+                    )
+                }
+                
                 val distance = calculateDistance(userLocation, businessLocation)
                 
                 val isWithinRadius = distance <= businessUnitAddress.allowedRadius

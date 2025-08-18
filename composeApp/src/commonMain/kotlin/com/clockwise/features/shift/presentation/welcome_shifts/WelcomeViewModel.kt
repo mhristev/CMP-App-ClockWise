@@ -667,7 +667,10 @@ class WelcomeViewModel(
             
             organizationRepository.getBusinessUnitById(businessUnitId)
                 .onSuccess { businessUnitAddress ->
-                    println("DEBUG: Successfully fetched business unit location from API: ${businessUnitAddress.name} at ${businessUnitAddress.latitude}, ${businessUnitAddress.longitude}")
+                    val latitude = businessUnitAddress.latitude
+                    val longitude = businessUnitAddress.longitude
+                    
+                    println("DEBUG: Successfully fetched business unit location from API: ${businessUnitAddress.name} at ${latitude}, ${longitude}")
                     
                     // Cache the address in state for display
                     _state.update { currentState ->
@@ -676,7 +679,13 @@ class WelcomeViewModel(
                         )
                     }
                     
-                    return Pair(businessUnitAddress.latitude, businessUnitAddress.longitude)
+                    // Return coordinates only if both are available
+                    if (latitude != null && longitude != null) {
+                        return Pair(latitude, longitude)
+                    } else {
+                        println("DEBUG: Business unit location coordinates are null")
+                        return null
+                    }
                 }
                 .onError { error ->
                     println("DEBUG: Failed to fetch business unit location from API: $error")

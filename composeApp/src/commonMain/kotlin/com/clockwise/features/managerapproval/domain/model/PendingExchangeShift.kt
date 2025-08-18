@@ -21,7 +21,8 @@ data class PendingExchangeShift(
     val swapShiftEndTime: Instant?,
     val swapShiftPosition: String?,
     val businessUnitId: String,
-    val createdAt: Instant
+    val createdAt: Instant,
+    val isExecutionPossible: Boolean?
 )
 
 enum class RequestType {

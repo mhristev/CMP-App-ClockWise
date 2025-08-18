@@ -8,4 +8,5 @@ interface ManagerApprovalRepository {
     suspend fun getPendingExchanges(): Result<List<PendingExchangeShift>, DataError>
     suspend fun approveExchange(requestId: String): Result<Unit, DataError>
     suspend fun rejectExchange(requestId: String): Result<Unit, DataError>
+    suspend fun recheckConflicts(requestId: String, existingExchange: PendingExchangeShift): Result<PendingExchangeShift, DataError>
 }

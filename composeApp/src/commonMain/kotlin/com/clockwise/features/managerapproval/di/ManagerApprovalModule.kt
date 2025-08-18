@@ -6,6 +6,7 @@ import com.clockwise.features.managerapproval.data.repository.ManagerApprovalRep
 import com.clockwise.features.managerapproval.domain.repository.ManagerApprovalRepository
 import com.clockwise.features.managerapproval.domain.usecase.ApproveExchangeUseCase
 import com.clockwise.features.managerapproval.domain.usecase.GetPendingExchangesUseCase
+import com.clockwise.features.managerapproval.domain.usecase.RecheckConflictsUseCase
 import com.clockwise.features.managerapproval.domain.usecase.RejectExchangeUseCase
 import com.clockwise.features.managerapproval.presentation.ManagerApprovalViewModel
 import org.koin.compose.viewmodel.dsl.viewModel
@@ -27,7 +28,8 @@ val managerApprovalModule = module {
     factory { GetPendingExchangesUseCase(get()) }
     factory { ApproveExchangeUseCase(get()) }
     factory { RejectExchangeUseCase(get()) }
+    factory { RecheckConflictsUseCase(get()) }
     
     // ViewModels
-    viewModel { ManagerApprovalViewModel(get(), get(), get(), get()) }
+    viewModel { ManagerApprovalViewModel(get(), get(), get(), get(), get()) }
 }

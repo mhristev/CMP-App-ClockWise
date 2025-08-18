@@ -7,8 +7,8 @@ data class BusinessUnitAddressDto(
     val id: String,
     val name: String,
     val address: String,
-    val latitude: Double,
-    val longitude: Double,
+    val latitude: Double?,
+    val longitude: Double?,
     val allowedRadius: Double = 200.0 // Default 200m radius
 )
 
@@ -20,8 +20,8 @@ data class BusinessUnitDto(
     val location: String,
     val description: String?,
     val companyId: String,
-    val latitude: Double,
-    val longitude: Double,
+    val latitude: Double?,
+    val longitude: Double?,
     val allowedRadius: Double = 200.0,
     val phoneNumber: String?,
     val email: String?
@@ -32,8 +32,8 @@ data class BusinessUnitAddress(
     val id: String,
     val name: String,
     val address: String,
-    val latitude: Double,
-    val longitude: Double,
+    val latitude: Double?,
+    val longitude: Double?,
     val allowedRadius: Double = 200.0
 )
 
@@ -44,8 +44,8 @@ data class BusinessUnit(
     val location: String,
     val description: String?,
     val companyId: String,
-    val latitude: Double,
-    val longitude: Double,
+    val latitude: Double?,
+    val longitude: Double?,
     val allowedRadius: Double = 200.0,
     val phoneNumber: String?,
     val email: String?

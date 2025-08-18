@@ -7,6 +7,7 @@ data class ManagerApprovalState(
     val filteredExchanges: List<PendingExchangeShift> = emptyList(),
     val isLoading: Boolean = false,
     val isProcessing: Boolean = false,
+    val recheckingRequests: Set<String> = emptySet(),
     val error: String? = null,
     val searchQuery: String = "",
     val showConfirmationDialog: Boolean = false,

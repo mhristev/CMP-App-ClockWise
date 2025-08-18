@@ -17,7 +17,9 @@ data class ShiftRequest(
     // Additional swap shift details if applicable
     val swapShiftStartTime: LocalDateTime? = null,
     val swapShiftEndTime: LocalDateTime? = null,
-    val swapShiftPosition: String? = null
+    val swapShiftPosition: String? = null,
+    // Conflict detection result
+    val isExecutionPossible: Boolean? = null
 ) {
     val requesterName: String
         get() = if (requesterFirstName != null && requesterLastName != null) {

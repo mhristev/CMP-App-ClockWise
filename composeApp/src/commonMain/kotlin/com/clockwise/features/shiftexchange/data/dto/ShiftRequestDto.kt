@@ -30,6 +30,8 @@ data class ShiftRequestDto(
     val requesterUserFirstName: String? = null,
     @SerialName("requesterUserLastName")
     val requesterUserLastName: String? = null,
+    @SerialName("isExecutionPossible")
+    val isExecutionPossible: Boolean? = null,
     val status: RequestStatus,
     @SerialName("createdAt")
     val createdAt: String, // ISO 8601 format from backend
@@ -78,6 +80,7 @@ fun ShiftRequestDto.toDomain(): ShiftRequest {
         swapShiftEndTime = swapShiftEndTime?.let { Instant.parse(it).toLocalDateTime(TimeZone.currentSystemDefault()) },
         requesterFirstName = requesterUserFirstName,
         requesterLastName = requesterUserLastName,
+        isExecutionPossible = isExecutionPossible,
         status = status,
         createdAt = Instant.parse(createdAt).toLocalDateTime(TimeZone.currentSystemDefault()),
         updatedAt = Instant.parse(updatedAt).toLocalDateTime(TimeZone.currentSystemDefault())

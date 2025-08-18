@@ -132,11 +132,19 @@ class SideMenuViewModel(
     private fun handleGetDirections() {
         val businessUnit = _state.value.businessUnit
         businessUnit?.let { unit ->
-            platformActions.openDirections(
-                latitude = unit.latitude,
-                longitude = unit.longitude,
-                locationName = unit.name
-            )
+            val latitude = unit.latitude
+            val longitude = unit.longitude
+            
+            if (latitude != null && longitude != null) {
+                platformActions.openDirections(
+                    latitude = latitude,
+                    longitude = longitude,
+                    locationName = unit.name
+                )
+            } else {
+                println("⚠️ Cannot open directions: Business unit location coordinates are not available")
+                // Could show a toast or error message to user here
+            }
         }
     }
 

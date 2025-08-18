@@ -35,7 +35,8 @@ class ManagerApprovalRepositoryImpl(
                     swapShiftEndTime = dto.acceptedRequest.swapShiftEndTime?.let { Instant.parse(it) },
                     swapShiftPosition = dto.acceptedRequest.swapShiftPosition,
                     businessUnitId = dto.exchangeShift.businessUnitId,
-                    createdAt = Instant.parse(dto.exchangeShift.createdAt)
+                    createdAt = Instant.parse(dto.exchangeShift.createdAt),
+                    isExecutionPossible = dto.acceptedRequest.isExecutionPossible
                 )
             }
         }
@@ -47,5 +48,14 @@ class ManagerApprovalRepositoryImpl(
 
     override suspend fun rejectExchange(requestId: String): Result<Unit, DataError> {
         return remoteDataSource.rejectExchange(requestId)
+    }
+
+    override suspend fun recheckConflicts(requestId: String, existingExchange: PendingExchangeShift): Result<PendingExchangeShift, DataError> {
+        return remoteDataSource.recheckConflicts(requestId).map { shiftRequestDto: com.clockwise.features.managerapproval.data.dto.ShiftRequestDto ->
+            // Update only the fields that come from the ShiftRequestDto response
+            existingExchange.copy(
+                isExecutionPossible = shiftRequestDto.isExecutionPossible
+            )
+        }
     }
 }

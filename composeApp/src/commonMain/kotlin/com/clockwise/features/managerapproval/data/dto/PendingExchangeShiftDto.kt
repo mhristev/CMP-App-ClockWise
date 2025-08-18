@@ -37,6 +37,7 @@ data class ShiftRequestDto(
     val swapShiftEndTime: String?,
     val requesterUserFirstName: String?,
     val requesterUserLastName: String?,
+    val isExecutionPossible: Boolean?,
     val status: String,
     val createdAt: String,
     val updatedAt: String
