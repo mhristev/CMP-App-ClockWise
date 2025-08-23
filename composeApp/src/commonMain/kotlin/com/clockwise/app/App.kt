@@ -3,6 +3,7 @@ package com.clockwise.app
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import com.clockwise.app.theme.ClockWiseThemeProvider
 
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -35,11 +36,20 @@ import com.clockwise.features.collaboration.presentation.PostsViewModel
 import com.clockwise.features.collaboration.presentation.PostsScreenRoot
 import com.clockwise.features.managerapproval.presentation.ManagerApprovalViewModel
 import com.clockwise.features.managerapproval.presentation.ManagerApprovalScreenRoot
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -49,22 +59,32 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import kotlinx.coroutines.delay
 import com.clockwise.features.profile.presentation.ProfileViewModel
 import com.clockwise.features.sidemenu.presentation.SideMenuViewModel
 import com.clockwise.features.sidemenu.presentation.SideMenuAction
 import com.clockwise.features.sidemenu.presentation.BusinessUnitLandingScreen
 import com.clockwise.features.sidemenu.presentation.components.DrawerContent
+import com.clockwise.shared.ui.DelightfulMenuButton
+import com.clockwise.app.theme.ClockWiseThemeProvider
 
 @Composable
 @Preview
 fun App() {
-    MaterialTheme {
+    ClockWiseThemeProvider {
         val navController = rememberNavController()
         val userService = koinInject<UserService>()
         val currentRoute = navController.currentBackStackEntryAsState().value?.destination?.route
@@ -91,8 +111,12 @@ fun App() {
         val shouldShowDrawer = currentRoute != NavigationRoutes.Auth.route && 
                               currentRoute != NavigationRoutes.Splash.route
         
-        // Single NavHost for all screens
-        Box(modifier = Modifier.fillMaxSize()) {
+        // Single NavHost for all screens with proper safe area handling
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.systemBars)
+        ) {
             // Main content
             NavHost(
                 navController = navController, 
@@ -413,25 +437,6 @@ fun App() {
                 }
             }
             
-            // Top right menu button (only for authenticated screens)
-            if (shouldShowDrawer) {
-                FloatingActionButton(
-                    onClick = openDrawer,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(16.dp)
-                        .size(56.dp),
-                    backgroundColor = MaterialTheme.colors.primary,
-                    contentColor = MaterialTheme.colors.onPrimary,
-                    elevation = FloatingActionButtonDefaults.elevation(8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Menu,
-                        contentDescription = "Open menu",
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-            }
         }
     }
 }
@@ -445,6 +450,14 @@ private fun WelcomeScreenWithDrawer(
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("Clock In") },
+            actions = {
+                IconButton(onClick = onOpenDrawer) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Open menu"
+                    )
+                }
+            },
             backgroundColor = MaterialTheme.colors.primary,
             contentColor = MaterialTheme.colors.onPrimary,
             elevation = 8.dp
@@ -462,6 +475,14 @@ private fun WeeklyScheduleScreenWithDrawer(
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("Weekly Schedule") },
+            actions = {
+                IconButton(onClick = onOpenDrawer) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Open menu"
+                    )
+                }
+            },
             backgroundColor = MaterialTheme.colors.primary,
             contentColor = MaterialTheme.colors.onPrimary,
             elevation = 8.dp
@@ -479,6 +500,14 @@ private fun CalendarScreenWithDrawer(
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("Calendar") },
+            actions = {
+                IconButton(onClick = onOpenDrawer) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Open menu"
+                    )
+                }
+            },
             backgroundColor = MaterialTheme.colors.primary,
             contentColor = MaterialTheme.colors.onPrimary,
             elevation = 8.dp
@@ -497,6 +526,14 @@ private fun ProfileScreenWithDrawer(
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("Profile") },
+            actions = {
+                IconButton(onClick = onOpenDrawer) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Open menu"
+                    )
+                }
+            },
             backgroundColor = MaterialTheme.colors.primary,
             contentColor = MaterialTheme.colors.onPrimary,
             elevation = 8.dp
@@ -517,6 +554,14 @@ private fun BusinessScreenWithDrawer(
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("Business Unit Management") },
+            actions = {
+                IconButton(onClick = onOpenDrawer) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Open menu"
+                    )
+                }
+            },
             backgroundColor = MaterialTheme.colors.primary,
             contentColor = MaterialTheme.colors.onPrimary,
             elevation = 8.dp
@@ -545,6 +590,14 @@ private fun SearchScreenWithDrawer(
                     )
                 }
             },
+            actions = {
+                IconButton(onClick = onOpenDrawer) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Open menu"
+                    )
+                }
+            },
             backgroundColor = MaterialTheme.colors.primary,
             contentColor = MaterialTheme.colors.onPrimary,
             elevation = 8.dp
@@ -564,6 +617,14 @@ private fun ShiftExchangeScreenWithDrawer(
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("Shift Exchange") },
+            actions = {
+                IconButton(onClick = onOpenDrawer) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Open menu"
+                    )
+                }
+            },
             backgroundColor = MaterialTheme.colors.primary,
             contentColor = MaterialTheme.colors.onPrimary,
             elevation = 8.dp
@@ -580,7 +641,7 @@ private fun PostsScreenWithDrawer(
 ) {
     PostsScreenRoot(
         navController = navController,
-        viewModel = viewModel
+        onOpenDrawer = onOpenDrawer
     )
 }
 
@@ -592,6 +653,14 @@ private fun ManagerApprovalScreenWithDrawer(
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("Manager Approval") },
+            actions = {
+                IconButton(onClick = onOpenDrawer) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Open menu"
+                    )
+                }
+            },
             backgroundColor = MaterialTheme.colors.primary,
             contentColor = MaterialTheme.colors.onPrimary,
             elevation = 8.dp
@@ -605,6 +674,14 @@ private fun NotificationsScreenWithDrawer(onOpenDrawer: () -> Unit) {
     Column(modifier = Modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text("Notifications") },
+            actions = {
+                IconButton(onClick = onOpenDrawer) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Open menu"
+                    )
+                }
+            },
             backgroundColor = MaterialTheme.colors.primary,
             contentColor = MaterialTheme.colors.onPrimary,
             elevation = 8.dp

@@ -54,6 +54,14 @@ fun BusinessUnitLandingScreen(
                     fontWeight = FontWeight.Bold
                 )
             },
+            actions = {
+                IconButton(onClick = onOpenDrawer) {
+                    Icon(
+                        imageVector = Icons.Default.Menu,
+                        contentDescription = "Open menu"
+                    )
+                }
+            },
             backgroundColor = MaterialTheme.colors.primary,
             contentColor = MaterialTheme.colors.onPrimary,
             elevation = 8.dp

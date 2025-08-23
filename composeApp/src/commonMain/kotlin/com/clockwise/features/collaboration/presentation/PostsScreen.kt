@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.pullrefresh.PullRefreshIndicator
 import androidx.compose.material.pullrefresh.pullRefresh
 import androidx.compose.material.pullrefresh.rememberPullRefreshState
@@ -38,6 +39,7 @@ import org.koin.compose.viewmodel.koinViewModel
 @Composable
 fun PostsScreen(
     onNavigateBack: () -> Unit,
+    onOpenDrawer: (() -> Unit)? = null,
     viewModel: PostsViewModel = koinViewModel()
 ) {
     val state by viewModel.state.collectAsState()
@@ -62,6 +64,16 @@ fun PostsScreen(
                         text = "Posts",
                         style = MaterialTheme.typography.h5
                     ) 
+                },
+                actions = {
+                    onOpenDrawer?.let { openDrawer ->
+                        IconButton(onClick = openDrawer) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Open menu"
+                            )
+                        }
+                    }
                 },
                 backgroundColor = MaterialTheme.colors.primary,
                 contentColor = MaterialTheme.colors.onPrimary,
